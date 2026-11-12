@@ -1,0 +1,682 @@
+{% extends "base.html" %}
+
+{% block title %}{{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block body_class %}{% if embed %}ficha-embed{% endif %}{% endblock %}
+
+{% block content %}
+<div class="radio-detalle" id="ficha-equipo" data-inicial="{{ pestana_inicial }}">
+    <div class="rd-heading">
+        <div>
+            <h1>{{ equipo.get_tipo_display }} {{ equipo.placa }}</h1>
+            <p>{{ equipo.marca|default:"-" }} {{ equipo.modelo|default:"-" }}</p>
+        </div>
+        <div class="rd-actions">
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:equipos_lista' %}">Volver al inventario</a>
+        </div>
+    </div>
+
+    {% if not equipo.activo %}
+    <div class="rd-alert rd-alert-baja">
+        <strong>Dado de baja{% if equipo.fecha_baja %} el {{ equipo.fecha_baja|date:"d/m/Y" }}{% endif %}</strong>
+        {{ equipo.motivo_baja|default:"-" }}
+        {% if permisos.equipos %}
+        <form method="post" action="{% url 'inventario:equipo_reactivar' equipo.placa %}" class="rd-inline-form">
+            {% csrf_token %}
+            <button class="rd-btn rd-btn-secondary" type="submit">Volver a activar</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if equipo.requiere_revision %}
+    <div class="rd-alert"><strong>Requiere revisión</strong> {{ equipo.motivo_revision|default:"-" }}</div>
+    {% endif %}
+
+    <div class="rd-tabs" role="tablist" aria-label="Secciones de la ficha">
+        <button type="button" class="rd-tab" role="tab" id="tab-resumen" aria-controls="panel-resumen" data-tab="resumen">Resumen</button>
+        {% if equipo.tipo != "RADIO" %}
+        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Entregas y actas <span class="rd-tab-count">{{ asignaciones|length }}</span></button>
+        {% endif %}
+        <button type="button" class="rd-tab" role="tab" id="tab-mantenimientos" aria-controls="panel-mantenimientos" data-tab="mantenimientos">Mantenimientos <span class="rd-tab-count">{{ mantenimientos|length }}</span></button>
+        <button type="button" class="rd-tab" role="tab" id="tab-hoja-de-vida" aria-controls="panel-hoja-de-vida" data-tab="hoja-de-vida">Hoja de vida</button>
+        {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
+        <button type="button" class="rd-tab" role="tab" id="tab-politica" aria-controls="panel-politica" data-tab="politica">Política de seguridad</button>
+        {% endif %}
+        {% if permisos.equipos %}
+        <button type="button" class="rd-tab" role="tab" id="tab-editar" aria-controls="panel-editar" data-tab="editar">Editar</button>
+        <button type="button" class="rd-tab rd-tab-danger" role="tab" id="tab-baja" aria-controls="panel-baja" data-tab="baja">{% if equipo.activo %}Dar de baja{% else %}Baja{% endif %}</button>
+        {% endif %}
+    </div>
+
+    <!-- RESUMEN -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-resumen" aria-labelledby="tab-resumen" hidden>
+        <div class="rd-panel-heading">
+            <h2>Resumen</h2>
+            <p>Información general del equipo.</p>
+        </div>
+        <div class="rd-panel-body">
+            <h3 class="rd-subtitle">Identificación</h3>
+            <div class="rd-grid">
+                <div class="rd-item"><span class="rd-label">Placa</span><span class="rd-value">{{ equipo.placa }}</span></div>
+                <div class="rd-item"><span class="rd-label">Tipo</span><span class="rd-value">{{ equipo.get_tipo_display }}</span></div>
+                <div class="rd-item"><span class="rd-label">Serial</span><span class="rd-value">{{ equipo.serial|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Marca</span><span class="rd-value">{{ equipo.marca|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Modelo</span><span class="rd-value">{{ equipo.modelo|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Propiedad</span><span class="rd-value">{{ equipo.propiedad|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Fecha de compra</span><span class="rd-value">{{ equipo.fecha_compra|date:"d/m/Y"|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Estado operativo</span><span class="rd-value">{{ equipo.estado_texto|default:"-" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Responsable</span><span class="rd-value">{{ equipo.responsable_nombre|default:"-" }}{% if equipo.responsable_cedula %} · C.C. {{ equipo.responsable_cedula }}{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Ubicación</span><span class="rd-value">{{ equipo.ubicacion|default:"-" }}</span></div>
+            </div>
+
+            {% for titulo, filas in secciones_detalle %}
+            <h3 class="rd-subtitle">{{ titulo }}</h3>
+            <div class="rd-grid">
+                {% for etiqueta, valor in filas %}
+                <div class="rd-item"><span class="rd-label">{{ etiqueta }}</span><span class="rd-value">{% if valor.year %}{{ valor|date:"d/m/Y" }}{% elif valor or valor == 0 %}{{ valor|linebreaksbr }}{% else %}-{% endif %}</span></div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            {% if cambios_gps %}
+            <h3 class="rd-subtitle">Cambios del GPS</h3>
+            <div class="rd-table-wrap">
+                <table class="rd-table">
+                    <thead><tr><th>Fecha</th><th>Cambio</th><th>Vehículo</th><th>Línea</th><th>Responsable</th></tr></thead>
+                    <tbody>
+                        {% for cambio in cambios_gps %}
+                        <tr>
+                            <td>{{ cambio.fecha|date:"d/m/Y H:i"|default:"-" }}</td>
+                            <td>{{ cambio.dato_actualizado|default:"-" }}<br><small>{{ cambio.observaciones|default:"-" }}</small></td>
+                            <td>{{ cambio.placa_vehiculo|default:"-" }}<br><small>{{ cambio.nombre_vehiculo|default:"-" }}</small></td>
+                            <td>{{ cambio.linea|default:"-" }}<br><small>{{ cambio.operador|default:"-" }}</small></td>
+                            <td>{{ cambio.responsable|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <h3 class="rd-subtitle">Observaciones</h3>
+            <p class="rd-note">{% if equipo.observaciones %}{{ equipo.observaciones|linebreaksbr }}{% else %}-{% endif %}</p>
+        </div>
+    </section>
+
+    <!-- ENTREGAS -->
+    {% if equipo.tipo != "RADIO" %}
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregas" aria-labelledby="tab-entregas" hidden>
+        <div class="rd-panel-heading">
+            <h2>Entregas y actas</h2>
+            <p>
+                {% if asignacion_activa %}Entregado a {{ asignacion_activa.nombre_recibe }} desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y" }}.
+                {% else %}Sin entrega activa.{% endif %}
+            </p>
+        </div>
+        <div class="rd-panel-body">
+            {% if permisos.entregas and equipo.activo %}
+                {% if asignacion_activa %}
+                <div class="rd-devolver">
+                    <button class="rd-devolver-trigger" type="button" data-abrir-devolucion="modal-devolucion-equipo">Registrar devolución</button>
+                </div>
+                <dialog class="rd-devolucion-modal" id="modal-devolucion-equipo" aria-labelledby="modal-devolucion-equipo-titulo">
+                    <div class="rd-devolucion-caja">
+                        <header class="rd-devolucion-cab">
+                            <h2 id="modal-devolucion-equipo-titulo">Registrar devolución del equipo</h2>
+                        </header>
+                        <form method="post" action="{% url 'inventario:equipo_devolver' asignacion_activa.pk %}" class="rd-baja-form">
+                            {% csrf_token %}
+                            <label for="obs-devolucion">Observaciones de la devolución</label>
+                            <textarea id="obs-devolucion" name="observaciones_devolucion" rows="2"
+                                      placeholder="Estado del equipo y accesorios recibidos"></textarea>
+                            <div class="rd-devolucion-acciones">
+                                <button class="rd-devolucion-cancelar" type="button" data-cerrar-devolucion>Cancelar</button>
+                                <button class="rd-btn" type="submit">Confirmar devolución</button>
+                            </div>
+                        </form>
+                    </div>
+                </dialog>
+                {% else %}
+                <a class="rd-btn" href="{% url 'inventario:equipo_entregar' equipo.placa %}">Entregar a un funcionario</a>
+                {% endif %}
+            {% endif %}
+
+            {% if asignaciones %}
+            <div class="rd-split">
+                <ul class="rd-entregas" id="lista-entregas">
+                    {% for a in asignaciones %}
+                    <li>
+                        <button type="button" class="rd-entrega" data-acta="{% url 'inventario:equipo_acta' a.pk %}?embed=1">
+                            <span class="rd-entrega-top">
+                                <strong>{{ a.fecha_entrega|date:"d/m/Y H:i" }}</strong>
+                                {% if a.estado == "ASIGNADO" %}
+                                <span class="badge-green">Asignado</span>
+                                {% else %}
+                                <span class="badge-gray">Devuelto</span>
+                                {% endif %}
+                            </span>
+                            <span class="rd-entrega-linea">{{ a.nombre_recibe|default:"-" }}{% if a.area %} · {{ a.area }}{% endif %}</span>
+                            <span class="rd-entrega-linea rd-muted">C.C. {{ a.cedula_recibe|default:"-" }}</span>
+                            {% if a.fecha_devolucion %}
+                            <span class="rd-entrega-linea rd-muted">Devuelto el {{ a.fecha_devolucion|date:"d/m/Y H:i" }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="rd-visor">
+                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una entrega para ver su acta.</p>
+                    <iframe id="visor-acta" title="Acta de entrega" class="rd-iframe" hidden></iframe>
+                </div>
+            </div>
+            {% elif not permisos.entregas %}
+            <div class="rd-empty">Este equipo no tiene entregas registradas.</div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- MANTENIMIENTOS -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-mantenimientos" aria-labelledby="tab-mantenimientos" hidden>
+        <div class="rd-panel-heading rd-panel-heading-row">
+            <div>
+                <h2>Historial de mantenimientos</h2>
+                <p>{{ mantenimientos|length }} intervenci{{ mantenimientos|length|pluralize:"ón,ones" }} registrada{{ mantenimientos|length|pluralize }}.</p>
+            </div>
+            {% if permisos.mantenimientos and equipo.activo %}
+            <a class="rd-btn rd-btn-mant" data-mant-modal href="{% url 'inventario:mantenimiento_crear' %}?equipo={{ equipo.placa|urlencode }}">Registrar mantenimiento</a>
+            {% endif %}
+        </div>
+        <div class="rd-panel-body">
+            {% if mantenimientos %}
+            <p class="rd-history-summary">
+                Intervenciones registradas: <strong>{{ mantenimientos|length }}</strong>
+            </p>
+            {% for mantenimiento in mantenimientos %}
+            <details class="rd-maintenance" name="rd-mantenimientos">
+                <summary class="rd-maintenance-head">
+                    <div class="rd-maintenance-title">
+                        <h3>{{ mantenimiento.get_tipo_display }}</h3>
+                        <div class="rd-date">
+                            {% if mantenimiento.fecha_intervencion %}
+                            {{ mantenimiento.fecha_intervencion|date:"d/m/Y H:i" }}
+                            {% else %}
+                            -
+                            {% endif %}
+                            {% if mantenimiento.tecnico_responsable %}· {{ mantenimiento.tecnico_responsable }}{% endif %}
+                        </div>
+                    </div>
+                    <span class="rd-badge rd-estado {% if mantenimiento.estado_final == 'OPERATIVO' %}rd-estado-ok{% elif mantenimiento.estado_final == 'NO_OPERATIVO' %}rd-estado-mal{% elif mantenimiento.estado_final == 'PENDIENTE_PRUEBAS' %}rd-estado-pend{% else %}rd-estado-sin{% endif %}">
+                        {{ mantenimiento.get_estado_final_display|default:"-" }}
+                    </span>
+                    <span class="rd-maintenance-chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="rd-maintenance-body">
+                    <div class="rd-maintenance-grid">
+                        <div class="rd-maintenance-field"><strong>Técnico responsable</strong><p>{{ mantenimiento.tecnico_responsable|default:"-" }}</p></div>
+                        <div class="rd-maintenance-field"><strong>Resultado</strong><p>{{ mantenimiento.get_resultado_display|default:"-" }}</p></div>
+                        <div class="rd-maintenance-field"><strong>Motivo</strong><p>{{ mantenimiento.motivo|default:"-"|linebreaksbr }}</p></div>
+                        <div class="rd-maintenance-field"><strong>Diagnóstico</strong><p>{{ mantenimiento.diagnostico|default:"-"|linebreaksbr }}</p></div>
+                        <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_realizado|default:"-"|linebreaksbr }}</p></div>
+                        <div class="rd-maintenance-field"><strong>Repuestos utilizados</strong><p>{{ mantenimiento.repuestos_utilizados|default:"-"|linebreaksbr }}</p></div>
+                    </div>
+                    {% if mantenimiento.observaciones or mantenimiento.origen_archivo or mantenimiento.origen_hoja or mantenimiento.fila_origen %}
+                    <details class="rd-trace">
+                        <summary>Ver observaciones y trazabilidad</summary>
+                        <div class="rd-trace-content">
+                            {% if mantenimiento.observaciones %}
+                            <p><strong>Observaciones:</strong><br>{{ mantenimiento.observaciones|linebreaksbr }}</p>
+                            {% endif %}
+                            {% if mantenimiento.origen_archivo %}
+                            <p><strong>Archivo de origen:</strong> {{ mantenimiento.origen_archivo }}</p>
+                            {% endif %}
+                            {% if mantenimiento.origen_hoja %}
+                            <p><strong>Hoja de origen:</strong> {{ mantenimiento.origen_hoja }}</p>
+                            {% endif %}
+                            {% if mantenimiento.fila_origen %}
+                            <p><strong>Fila original en Excel:</strong> {{ mantenimiento.fila_origen }}</p>
+                            {% endif %}
+                            <p>
+                                <strong>Registrado por:</strong>
+                                {% if mantenimiento.registrado_por %}
+                                {{ mantenimiento.registrado_por.get_username }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </p>
+                        </div>
+                    </details>
+                    {% endif %}
+                </div>
+            </details>
+            {% endfor %}
+            {% else %}
+            <div class="rd-empty">Este equipo todavía no tiene intervenciones registradas.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- HOJA DE VIDA -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-hoja-de-vida" aria-labelledby="tab-hoja-de-vida" hidden>
+        <div class="rd-panel-body">
+            <iframe id="visor-hoja" title="Hoja de vida" class="rd-iframe" data-src="{% url 'inventario:equipo_hoja_vida' equipo.placa %}?embed=1"></iframe>
+        </div>
+    </section>
+
+    <!-- POLÍTICA DE SEGURIDAD -->
+    {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-politica" aria-labelledby="tab-politica" hidden>
+        <div class="rd-panel-heading rd-panel-heading-row">
+            <div>
+                <h2>Política de seguridad</h2>
+                <p>{% if verificaciones %}Última verificación: {{ verificaciones.0.fecha|date:"d/m/Y"|default:"-" }}.{% else %}Sin verificaciones registradas.{% endif %}</p>
+            </div>
+            <div>
+                {% if permisos.mantenimientos and equipo.activo %}
+                <a class="rd-btn" target="_top" data-seguridad-modal href="{% url 'inventario:politica_registrar' equipo.placa %}">Verificar política</a>
+                {% endif %}
+                {% if permisos.licencias and equipo.activo %}
+                <a class="rd-btn rd-btn-secondary" data-seguridad-modal href="{% url 'inventario:equipo_renovar_antivirus' equipo.placa %}">Renovar antivirus</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="rd-panel-body">
+            {% if renovaciones %}
+            <p class="rd-note">Renovaciones de antivirus:
+                {% for r in renovaciones %}{{ r.fecha|date:"d/m/Y"|default:"-" }} ({{ r.antivirus|default:"-" }}, vence {{ r.vencimiento|date:"d/m/Y"|default:"-" }}){% if not forloop.last %} · {% endif %}{% endfor %}
+            </p>
+            {% endif %}
+            {% if verificaciones %}
+            <div class="rd-table-wrap">
+                <table class="rd-table">
+                    <thead><tr><th>Fecha</th><th>Especialista</th><th>Resultado</th></tr></thead>
+                    <tbody>
+                        {% for v in verificaciones %}
+                        <tr>
+                            <td><a target="_top" href="{% url 'inventario:politica_detalle' v.pk %}">{{ v.fecha|date:"d/m/Y"|default:"-" }}</a></td>
+                            <td>{{ v.especialista|default:"-" }}</td>
+                            <td>{% if v.incumplimientos %}<span class="rd-badge rd-red">{{ v.incumplimientos|length }} no cumple</span>{% else %}<span class="rd-badge rd-green">Cumple</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if permisos.equipos %}
+    <!-- EDITAR -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-editar" aria-labelledby="tab-editar" hidden>
+        <div class="rd-panel-heading">
+            <h2>Editar datos del equipo</h2>
+            <p>Actualiza los datos generales y las características específicas.</p>
+        </div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:equipo_editar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-editar-equipo" novalidate data-con-errores="{% if formulario_edicion.errors or detalle_edicion.errors %}1{% endif %}">
+                {% csrf_token %}
+                {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                {% if formulario_edicion.errors or detalle_edicion.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario_edicion.non_field_errors }}
+                    {% if detalle_edicion %}{{ detalle_edicion.non_field_errors }}{% endif %}
+                </div>
+                {% endif %}
+
+                <div class="ficha-progreso">
+                    <div class="ficha-progreso-info">
+                        <span>Paso <strong data-p-actual>1</strong> de <strong data-p-total>{{ pasos_edicion|length }}</strong> · <span data-p-titulo></span></span>
+                        <span data-p-porcentaje>0%</span>
+                    </div>
+                    <div class="ficha-progreso-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la edición"><span></span></div>
+                    <ol class="ficha-progreso-lista" data-p-lista></ol>
+                </div>
+
+                {% for paso in pasos_edicion %}
+                <fieldset class="ficha-paso" data-paso="{{ forloop.counter }}" data-titulo="{{ paso.titulo }}">
+                    <legend class="ficha-section-heading">
+                        <span class="ficha-section-number">{{ forloop.counter|stringformat:"02d" }}</span>
+                        {{ paso.titulo }}
+                    </legend>
+                    <div class="ficha-form-grid">
+                    {% for field in paso.campos %}
+                        {% if field.widget_type == "textarea" %}
+                            {% include "inventario/_campo.html" with ancho_completo=True %}
+                        {% else %}
+                            {% include "inventario/_campo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+                </fieldset>
+                {% endfor %}
+                {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
+                    {% if not permisos.licencias %}
+                    <p class="ficha-field-help">Las claves de licencia solo las ven y editan el técnico y el administrador.</p>
+                    {% endif %}
+                {% endif %}
+
+                <p class="ficha-paso-aviso" role="alert" data-p-aviso hidden></p>
+
+                <div class="ficha-form-actions">
+                    <button class="ficha-form-button ficha-form-button-secondary" type="button" data-ir="resumen">Cancelar</button>
+                    <div class="ficha-acciones-der">
+                        <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
+                        <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Guardar cambios</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- DAR DE BAJA -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-baja" aria-labelledby="tab-baja" hidden>
+        <div class="rd-panel-heading">
+            <h2>{% if equipo.activo %}Dar de baja{% else %}Equipo dado de baja{% endif %}</h2>
+            <p>El equipo conserva su historial, pero deja de generar alertas.</p>
+        </div>
+        <div class="rd-panel-body">
+            {% if not equipo.activo %}
+            <p>Dado de baja <strong>{% if equipo.fecha_baja %} el {{ equipo.fecha_baja|date:"d/m/Y" }}{% endif %}</strong>. {{ equipo.motivo_baja }}</p>
+            <form method="post" action="{% url 'inventario:equipo_reactivar' equipo.placa %}" class="rd-inline-form">
+                {% csrf_token %}
+                <button class="rd-btn" type="submit">Volver a activar</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'inventario:equipo_dar_baja' equipo.placa %}" class="rd-baja-form">
+                {% csrf_token %}
+                <label for="{{ formulario_baja.motivo_baja.id_for_label }}">{{ formulario_baja.motivo_baja.label }}</label>
+                {{ formulario_baja.motivo_baja }}
+                <button class="rd-btn rd-btn-danger" type="submit"
+                        onclick="return confirm('¿Dar de baja este equipo?');">Dar de baja</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<script>
+(function () {
+    document.querySelectorAll("[data-abrir-devolucion]").forEach(function (boton) {
+        var dialogo = document.getElementById(boton.getAttribute("data-abrir-devolucion"));
+        if (!dialogo) return;
+        boton.addEventListener("click", function () {
+            if (document.body.classList.contains("ficha-embed") && window.frameElement) {
+                var marcoTop = window.frameElement.getBoundingClientRect().top + window.parent.scrollY;
+                window.parent.scrollTo(0, marcoTop);
+            }
+            dialogo.showModal();
+        });
+        dialogo.querySelectorAll("[data-cerrar-devolucion]").forEach(function (cerrar) {
+            cerrar.addEventListener("click", function () { dialogo.close(); });
+        });
+        dialogo.addEventListener("click", function (evento) {
+            if (evento.target === dialogo) dialogo.close();
+        });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    var raiz = document.getElementById("ficha-equipo");
+    var tabs = Array.prototype.slice.call(raiz.querySelectorAll(".rd-tab"));
+    var paneles = raiz.querySelectorAll(".rd-tabpanel");
+    var visorActa = document.getElementById("visor-acta");
+    var visorHoja = document.getElementById("visor-hoja");
+
+    var embebido = document.body.classList.contains("ficha-embed");
+
+    function ajustar(iframe) {
+        if (!iframe) return;
+        if (embebido) {
+            if (!iframe.offsetParent) return;
+            var alto = window.innerHeight - iframe.getBoundingClientRect().top - 14;
+            iframe.style.height = Math.max(alto, 220) + "px";
+            return;
+        }
+        try {
+            var doc = iframe.contentDocument;
+            if (doc && doc.body) {
+                iframe.style.height = Math.max(doc.documentElement.offsetHeight, 200) + "px";
+            }
+        } catch (e) { /* mismo origen: no debería fallar */ }
+    }
+
+    function acomodar() {
+        var visibles = [visorActa, visorHoja].filter(function (f) { return f && f.offsetParent; });
+        if (embebido) document.documentElement.classList.toggle("fill-activo", visibles.length > 0);
+        visibles.forEach(ajustar);
+    }
+
+    [visorActa, visorHoja].forEach(function (f) {
+        if (!f) return;
+        f.addEventListener("load", function () {
+            ajustar(f);
+            if (embebido) return;
+            try {
+                if (window.ResizeObserver) {
+                    new ResizeObserver(function () { ajustar(f); }).observe(f.contentDocument.body);
+                }
+            } catch (e) { /* ignorar */ }
+        });
+    });
+    window.addEventListener("resize", acomodar);
+    raiz.querySelectorAll(".rd-devolver").forEach(function (d) {
+        d.addEventListener("toggle", acomodar);
+    });
+
+    var visorVacio = document.getElementById("visor-vacio");
+
+    function mostrarActa(abrir) {
+        visorActa.hidden = !abrir;
+        if (visorVacio) visorVacio.hidden = abrir;
+        if (!abrir) visorActa.removeAttribute("src");
+        acomodar();
+    }
+
+    // Clic en una entrega: abre su acta. Clic otra vez en la misma: la cierra.
+    function elegirEntrega(boton) {
+        var yaActiva = boton.classList.contains("is-activa");
+        raiz.querySelectorAll(".rd-entrega").forEach(function (b) {
+            b.classList.toggle("is-activa", b === boton && !yaActiva);
+        });
+        if (yaActiva) { mostrarActa(false); return; }
+        if (visorActa.getAttribute("src") !== boton.dataset.acta) {
+            visorActa.setAttribute("src", boton.dataset.acta);
+        }
+        mostrarActa(true);
+        if (boton.scrollIntoView) boton.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    raiz.querySelectorAll(".rd-entrega").forEach(function (b) {
+        b.addEventListener("click", function () { elegirEntrega(b); });
+    });
+
+    function activar(nombre, actualizarUrl) {
+        if (!document.getElementById("panel-" + nombre)) nombre = "resumen";
+        tabs.forEach(function (t) {
+            var on = t.dataset.tab === nombre;
+            t.classList.toggle("is-activa", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+            t.tabIndex = on ? 0 : -1;
+        });
+        paneles.forEach(function (p) { p.hidden = (p.id !== "panel-" + nombre); });
+        if (actualizarUrl) history.replaceState(null, "", "#" + nombre);
+
+        if (nombre === "hoja-de-vida" && visorHoja && !visorHoja.getAttribute("src")) {
+            visorHoja.setAttribute("src", visorHoja.dataset.src);
+        }
+        acomodar();
+    }
+
+    tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { activar(t.dataset.tab, true); });
+        t.addEventListener("keydown", function (e) {
+            var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!d) return;
+            var sig = tabs[(i + d + tabs.length) % tabs.length];
+            sig.focus();
+            activar(sig.dataset.tab, true);
+            e.preventDefault();
+        });
+    });
+    raiz.querySelectorAll("[data-ir]").forEach(function (b) {
+        b.addEventListener("click", function () { activar(b.dataset.ir, true); });
+    });
+
+    var inicial = raiz.dataset.inicial || "resumen";
+    var hash = location.hash.replace("#", "");
+    activar(inicial !== "resumen" ? inicial : (hash || "resumen"), false);
+    window.addEventListener("hashchange", function () {
+        activar(location.hash.replace("#", "") || "resumen", false);
+    });
+
+    function iniciarPasos(form) {
+        if (!form) return;
+        var pasos = Array.prototype.slice.call(form.querySelectorAll(".ficha-paso"));
+        if (!pasos.length) return;
+        var barra = form.querySelector(".ficha-progreso-barra");
+        var lista = form.querySelector("[data-p-lista]");
+        var aviso = form.querySelector("[data-p-aviso]");
+        var anterior = form.querySelector("[data-p-anterior]");
+        var siguiente = form.querySelector("[data-p-siguiente]");
+        var guardar = form.querySelector("[data-p-guardar]");
+        var actual = 0;
+        var desbloqueado = 0;
+        var botones = pasos.map(function (paso, indice) {
+            var item = document.createElement("li");
+            var boton = document.createElement("button");
+            boton.type = "button";
+            boton.className = "ficha-progreso-paso";
+            boton.innerHTML = "<b>" + (indice + 1) + "</b><span></span>";
+            boton.lastChild.textContent = paso.dataset.titulo;
+            boton.addEventListener("click", function () {
+                if (indice <= desbloqueado) ir(indice);
+            });
+            item.appendChild(boton);
+            lista.appendChild(item);
+            return boton;
+        });
+
+        function camposDe(paso) {
+            return Array.prototype.slice.call(
+                paso.querySelectorAll("input, select, textarea")
+            );
+        }
+
+        function validar(indice) {
+            var primero = null;
+            camposDe(pasos[indice]).forEach(function (campo) {
+                var invalido = !campo.checkValidity();
+                campo.classList.toggle("is-invalido", invalido);
+                if (invalido && !primero) primero = campo;
+            });
+            aviso.hidden = !primero;
+            aviso.textContent = primero
+                ? "Completa los campos marcados para continuar."
+                : "";
+            if (primero) primero.focus();
+            return !primero;
+        }
+
+        function pintar() {
+            var porcentaje = Math.round(actual / pasos.length * 100);
+            form.querySelector("[data-p-actual]").textContent = actual + 1;
+            form.querySelector("[data-p-titulo]").textContent =
+                pasos[actual].dataset.titulo;
+            form.querySelector("[data-p-porcentaje]").textContent =
+                porcentaje + "%";
+            barra.setAttribute("aria-valuenow", porcentaje);
+            barra.firstElementChild.style.width = porcentaje + "%";
+            pasos.forEach(function (paso, indice) {
+                paso.hidden = indice !== actual;
+            });
+            botones.forEach(function (boton, indice) {
+                boton.disabled = indice > desbloqueado;
+                boton.classList.toggle("is-actual", indice === actual);
+                boton.classList.toggle("is-hecho", indice < actual);
+                if (indice === actual) boton.setAttribute("aria-current", "step");
+                else boton.removeAttribute("aria-current");
+            });
+            anterior.hidden = actual === 0;
+            siguiente.hidden = actual === pasos.length - 1;
+            guardar.hidden = actual !== pasos.length - 1;
+        }
+
+        function ir(indice) {
+            actual = indice;
+            desbloqueado = Math.max(desbloqueado, indice);
+            pintar();
+            aviso.hidden = true;
+            var primero = camposDe(pasos[indice])[0];
+            if (primero && form.offsetParent) primero.focus({ preventScroll: true });
+        }
+
+        siguiente.addEventListener("click", function () {
+            if (validar(actual)) ir(actual + 1);
+        });
+        anterior.addEventListener("click", function () { ir(actual - 1); });
+        form.addEventListener("keydown", function (evento) {
+            if (evento.key !== "Enter" ||
+                evento.target.tagName === "TEXTAREA" ||
+                evento.target.tagName === "BUTTON") return;
+            evento.preventDefault();
+            if (actual < pasos.length - 1) {
+                if (validar(actual)) ir(actual + 1);
+            } else if (validar(actual)) {
+                form.requestSubmit();
+            }
+        });
+        form.addEventListener("input", function (evento) {
+            evento.target.classList.remove("is-invalido");
+        });
+        form.addEventListener("submit", function (evento) {
+            for (var indice = 0; indice < pasos.length; indice++) {
+                if (!validar(indice)) {
+                    evento.preventDefault();
+                    ir(indice);
+                    validar(indice);
+                    return;
+                }
+            }
+        });
+
+        if (form.dataset.conErrores) {
+            var indiceError = pasos.findIndex(function (paso) {
+                return paso.querySelector(".ficha-field-error");
+            });
+            desbloqueado = pasos.length - 1;
+            actual = indiceError >= 0 ? indiceError : 0;
+        }
+        pintar();
+    }
+
+    iniciarPasos(document.getElementById("form-editar-equipo"));
+})();
+{% if embed %}
+(function () {
+    document.querySelectorAll(".radio-detalle a[href]").forEach(function (a) {
+        if (!a.target) a.target = "_top";
+    });
+})();
+{% endif %}
+</script>
+<script>
+(function () {
+    // "Registrar mantenimiento" abre su formulario en una ventana aquí mismo (no sale de la ficha).
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest("a[data-mant-modal]")) return;
+        if (document.body.classList.contains("ficha-embed") && window.frameElement) {
+            var marco = window.frameElement.getBoundingClientRect().top + window.parent.scrollY;
+            window.parent.scrollTo(0, marco);
+        }
+    }, true);
+})();
+</script>
+{% include "inventario/_mant_ventana.html" %}
+{% include "inventario/_seguridad_ventana.html" %}
+{% endblock %}

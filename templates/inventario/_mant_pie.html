@@ -1,0 +1,46 @@
+{% comment %}Pie de las listas de Mantenimiento: rango mostrado y paginación como en Equipos. Espera page_obj, parametros y total.{% endcomment %}
+<div class="table-footer mant-pie">
+    <span class="mant-rango">{% if total %}Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ total }}{% endif %}</span>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="eq-pag" aria-label="Paginación">
+        {% if page_obj.has_previous %}
+        <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page=1" title="Primera página" aria-label="Primera página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6l-6 6 6 6M7 6v12"/></svg></a>
+        <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.previous_page_number }}" title="Anterior" aria-label="Página anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+        {% else %}
+        <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 6l-6 6 6 6M7 6v12"/></svg></span>
+        <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></span>
+        {% endif %}
+        <label class="eq-pag-ir">
+            <input type="number" id="eq-pag-input" min="1" max="{{ page_obj.paginator.num_pages }}" value="{{ page_obj.number }}" aria-label="Ir a la página">
+            <span>de {{ page_obj.paginator.num_pages }}</span>
+        </label>
+        {% if page_obj.has_next %}
+        <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.next_page_number }}" title="Siguiente" aria-label="Página siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" title="Última página" aria-label="Última página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6l6 6-6 6M17 6v12"/></svg></a>
+        {% else %}
+        <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+        <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 6l6 6-6 6M17 6v12"/></svg></span>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>
+<script>
+(function () {
+    if (window.__pagIrListo) return;
+    window.__pagIrListo = true;
+    function ir(entrada) {
+        var n = parseInt(entrada.value, 10);
+        var max = parseInt(entrada.max, 10);
+        if (isNaN(n)) return;
+        n = Math.max(1, Math.min(max, n));
+        var url = new URL(window.location.href);
+        url.searchParams.set("page", n);
+        if (window.cargarLista) window.cargarLista(url.toString()); else window.location.href = url.toString();
+    }
+    document.addEventListener("keydown", function (e) {
+        if (e.target.id === "eq-pag-input" && e.key === "Enter") { e.preventDefault(); ir(e.target); }
+    });
+    document.addEventListener("change", function (e) { if (e.target.id === "eq-pag-input") ir(e.target); });
+    document.addEventListener("focusin", function (e) { if (e.target.id === "eq-pag-input") e.target.select(); });
+})();
+</script>

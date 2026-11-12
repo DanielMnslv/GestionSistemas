@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Verificación {{ verificacion.equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<div class="radio-detalle">
+    <div class="rd-heading">
+        <div>
+            <h1>Política de seguridad · {{ verificacion.equipo.placa }}</h1>
+            <p>{{ verificacion.fecha|date:"d/m/Y H:i" }} · {{ verificacion.especialista|default:"Especialista sin dato" }}</p>
+        </div>
+        <div class="rd-actions">
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:equipo_detalle' verificacion.equipo.placa %}">Ver equipo</a>
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:politica_lista' %}">Todas las verificaciones</a>
+        </div>
+    </div>
+
+    {% if verificacion.incumplimientos %}
+    <div class="rd-alert rd-alert-baja"><strong>{{ verificacion.incumplimientos|length }} incumplimiento{{ verificacion.incumplimientos|length|pluralize }}</strong></div>
+    {% endif %}
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Puntos verificados</h2><p>Responsable: {{ verificacion.responsable|default:"-" }}</p></div>
+        <div class="rd-panel-body">
+            <div class="rd-table-wrap">
+                <table class="rd-table">
+                    <tbody>
+                        {% for texto, valor in filas %}
+                        <tr>
+                            <td>{{ texto }}</td>
+                            <td>{% if valor == "CUMPLE" %}<span class="rd-badge rd-green">Cumple</span>{% elif valor == "NO CUMPLE" %}<span class="rd-badge rd-red">No cumple</span>{% elif valor == "NO APLICA" %}<span class="rd-badge rd-gray">No aplica</span>{% else %}<span class="rd-badge rd-gray">{{ valor }}</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if verificacion.observaciones %}<p class="rd-note"><strong>Observaciones:</strong> {{ verificacion.observaciones }}</p>{% endif %}
+            {% if verificacion.actualizacion %}<p class="rd-note"><strong>Actualizaciones:</strong> {{ verificacion.actualizacion }}</p>{% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

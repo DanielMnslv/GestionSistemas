@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de mantenimientos | JANO Inventario{% endblock %}
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page">
+    {% include "inventario/_mant_cabecera.html" %}
+
+    <section class="panel mant-filtros">
+        <form method="get" data-lista-filtros>
+            <div class="filters filters-hist">
+                <div class="field">
+                    <label class="solo-lector" for="busqueda">Buscar</label>
+                    <input id="busqueda" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar: placa, serial, técnico o trabajo realizado">
+                </div>
+                <div class="field">
+                    <label class="solo-lector" for="tipo_equipo">Tipo de equipo</label>
+                    <select id="tipo_equipo" name="tipo_equipo">
+                        <option value="">Todos los equipos</option>
+                        {% for valor, etiqueta in tipos_equipo %}<option value="{{ valor }}" {% if tipo_equipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="solo-lector" for="tipo">Tipo de intervención</label>
+                    <select id="tipo" name="tipo">
+                        <option value="">Todas las intervenciones</option>
+                        {% for valor, etiqueta in tipos_mantenimiento %}<option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="solo-lector" for="resultado">Resultado</label>
+                    <select id="resultado" name="resultado">
+                        <option value="">Todos los resultados</option>
+                        {% for valor, etiqueta in resultados_mantenimiento %}<option value="{{ valor }}" {% if resultado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-primary" type="submit">Buscar</button>
+                    {% if hay_filtros %}<a class="btn btn-light" href="{% url 'inventario:mantenimientos_lista' %}">Limpiar</a>{% endif %}
+                </div>
+            </div>
+            <details class="mant-mas"{% if hay_filtros_extra %} open{% endif %}>
+                <summary>Más filtros</summary>
+                <div class="filters filters-hist-mas">
+                    <div class="field">
+                        <label for="tecnico">Técnico responsable</label>
+                        <input id="tecnico" type="search" name="tecnico" value="{{ tecnico_seleccionado }}" placeholder="Nombre del técnico">
+                    </div>
+                    <div class="field">
+                        <label for="estado_final">Estado final</label>
+                        <select id="estado_final" name="estado_final">
+                            <option value="">Todos los estados</option>
+                            {% for valor, etiqueta in estados_finales %}<option value="{{ valor }}" {% if estado_final_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="fecha_desde">Desde</label>
+                        <input id="fecha_desde" type="date" name="fecha_desde" value="{{ fecha_desde }}">
+                    </div>
+                    <div class="field">
+                        <label for="fecha_hasta">Hasta</label>
+                        <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
+                    </div>
+                    <div class="field">
+                        <label for="origen">Origen del registro</label>
+                        <select id="origen" name="origen">
+                            <option value="">Todos los registros</option>
+                            <option value="historico" {% if origen_seleccionado == "historico" %}selected{% endif %}>Histórico importado</option>
+                            <option value="nuevo" {% if origen_seleccionado == "nuevo" %}selected{% endif %}>Registrado en JANO</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>Intervenciones realizadas</h2>
+                <p>{{ total_resultados }} de {{ total_registros }} registro{{ total_registros|pluralize }} · las más recientes primero</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista mant-hist">
+                <thead>
+                    <tr><th>Equipo</th><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Trabajo realizado</th><th>Resultado</th><th>Estado final</th><th>Origen</th><th>Registrado por</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in mantenimientos %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" with equipo=item.equipo %}<span class="subtext">{{ item.equipo.get_tipo_display }} · {{ item.equipo.serial|default:"Sin serial" }}</span></td>
+                        <td data-label="Fecha">{% if item.origen_archivo %}{{ item.fecha_intervencion|date:"d/m/Y" }}{% else %}{{ item.fecha_intervencion|date:"d/m/Y H:i" }}{% endif %}</td>
+                        <td data-label="Tipo">{{ item.get_tipo_display }}</td>
+                        <td data-label="Técnico">{{ item.tecnico_responsable }}</td>
+                        <td data-label="Trabajo" class="mant-trabajo">{{ item.trabajo_realizado|truncatechars:90 }}</td>
+                        <td data-label="Resultado"><span class="mant-etiqueta mant-{{ item.resultado|lower }}">{{ item.get_resultado_display }}</span></td>
+                        <td data-label="Estado final">{% if item.estado_final %}{{ item.get_estado_final_display }}{% else %}<span class="mant-sin-dato">Sin registrar</span>{% endif %}</td>
+                        <td data-label="Origen">{% if item.origen_archivo %}<span class="mant-etiqueta mant-sin_mantenimiento">Histórico</span>{% else %}<span class="mant-etiqueta mant-info">JANO</span>{% endif %}</td>
+                        <td data-label="Registrado por">{% if item.registrado_por %}{{ item.registrado_por.get_username }}{% else %}<span class="mant-sin-dato">No disponible</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9" class="mant-vacio">No hay intervenciones que coincidan con los filtros seleccionados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_resultados %}
+    </section>
+</div>
+
+{% include "inventario/_mant_ajuste_filas.html" with defecto=50 clave="mantHistPpIntento" %}
+<script>
+(function () {
+    // Filtrar sin recargar: al cambiar un filtro (incluidas las fechas) se pide la lista filtrada y solo se
+    // reemplazan los resultados. "Más filtros" queda abierto y se conserva "pp" (filas por página).
+    var form = document.querySelector(".mant-filtros form");
+    if (!form || !document.querySelector(".mant-resultados")) return;
+    var ultima = 0;
+
+    function urlDesdeFormulario() {
+        var url = new URL(window.location.href);
+        var pp = url.searchParams.get("pp");
+        var params = new URLSearchParams();
+        new FormData(form).forEach(function (v, k) { if (String(v).trim() !== "") params.append(k, v); });
+        if (pp) params.set("pp", pp);
+        url.search = params.toString();
+        return url.toString();
+    }
+    function reemplazar(sel, doc, fuera) {
+        var a = document.querySelector(sel), b = doc.querySelector(sel);
+        if (!a || !b) return;
+        if (fuera) a.replaceWith(b); else a.innerHTML = b.innerHTML;
+    }
+
+    window.cargarLista = function (destino, sinHistorial) {
+        var id = ++ultima;
+        var caja = document.querySelector(".mant-resultados .table-wrap");
+        if (caja) caja.style.opacity = "0.55";
+        fetch(destino, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+            .then(function (html) {
+                if (id !== ultima) return; // llegó una respuesta más nueva
+                var doc = new DOMParser().parseFromString(html, "text/html");
+                reemplazar(".mant-resultado-cabeza", doc);
+                reemplazar(".mant-resultados tbody", doc);
+                reemplazar(".mant-pie", doc, true);
+                reemplazar(".mant-filtros .actions", doc);
+                if (!sinHistorial) history.pushState({ lista: 1 }, "", destino);
+            })
+            .catch(function () { window.location.href = destino; }) // si falla, recarga normal
+            .then(function () { if (id === ultima && caja) caja.style.opacity = ""; });
+    };
+
+    function aplicar() { window.cargarLista(urlDesdeFormulario()); }
+
+    // Selectores y fechas aplican al elegirlos; la búsqueda por texto, con Enter o "Buscar".
+    form.addEventListener("change", function (e) {
+        if (e.target.name && e.target.name !== "q") aplicar();
+    });
+    form.addEventListener("submit", function (e) { e.preventDefault(); aplicar(); });
+
+    // Paginación sin recarga
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest(".mant-pie .eq-pag a");
+        if (!a) return;
+        e.preventDefault();
+        window.cargarLista(a.href);
+    });
+    // Limpiar: vacía los campos y conserva "pp"
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest(".mant-filtros .actions a.btn-light");
+        if (!a) return;
+        e.preventDefault();
+        form.querySelectorAll("input:not([type=submit]), select").forEach(function (c) {
+            if (c.tagName === "SELECT") c.selectedIndex = 0; else c.value = "";
+        });
+        aplicar();
+    });
+    window.addEventListener("popstate", function () { window.location.reload(); });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% comment %}
+Paginación reutilizable. Espera page_obj y parametros (la consulta actual
+sin "page", para conservar los filtros).
+{% endcomment %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="paginacion" aria-label="Paginación">
+    {% if page_obj.has_previous %}
+        <a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page=1">Primera</a>
+        <a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+    {% endif %}
+
+    <span class="paginacion-numero">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+        <a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+        <a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}">Última</a>
+    {% endif %}
+</nav>
+{% endif %}

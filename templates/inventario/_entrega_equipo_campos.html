@@ -1,0 +1,53 @@
+{% comment %}Pasos del registro de entrega de un equipo (pestaña «Entregar» de la ficha). Espera "formulario_entrega" y "clausula".{% endcomment %}
+            <fieldset class="ficha-paso" data-paso="1" data-titulo="Funcionario">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Funcionario que recibe
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.funcionario %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Área y entrega">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Datos del área y de la entrega
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.area %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.accesorios ancho_completo=True %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.observaciones_entrega ancho_completo=True %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="3" data-titulo="Cláusula y firma">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">03</span>
+                Cláusula de confidencialidad y firma
+            </legend>
+
+            <p class="ficha-clausula">{{ clausula }}</p>
+
+            <div class="ficha-field">
+                <label class="ficha-check">
+                    {{ formulario_entrega.clausula_aceptada }}
+                    {{ formulario_entrega.clausula_aceptada.label }}
+                    <span class="ficha-required">*</span>
+                </label>
+                {% for error in formulario_entrega.clausula_aceptada.errors %}
+                    <p class="ficha-field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario_entrega.firma etiqueta="Firma del funcionario" %}
+
+            <aside class="ficha-responsibility-note">
+                <span aria-hidden="true">ⓘ</span>
+                <div>
+                    <strong>Control y trazabilidad.</strong>
+                    El sistema registra al usuario autenticado como responsable de la entrega.
+                    Verifica el funcionario y el área antes de guardar.
+                </div>
+            </aside>
+            </fieldset>

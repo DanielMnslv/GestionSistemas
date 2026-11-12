@@ -1,0 +1,23 @@
+{% comment %}
+Encabezado y pestañas de la sección Mantenimiento. Espera "pestana"
+(resumen, equipos, programados o historial) y, opcional, "total_equipos".
+{% endcomment %}
+<div class="page-heading">
+    <div>
+        <h1>Mantenimiento</h1>
+        <p>{% if pestana == "programados" %}Visitas previstas y actividades vencidas.{% elif pestana == "historial" %}Intervenciones realizadas, resultados y trazabilidad técnica.{% else %}Preventivo cada seis meses desde la última intervención. Solo equipos activos.{% endif %}</p>
+    </div>
+    <div class="mant-heading-actions">
+        {% if permisos.mantenimientos %}<a class="btn btn-primary" data-mant-modal href="{% url 'inventario:mantenimiento_crear' %}">Registrar mantenimiento</a>{% endif %}
+        {% if permisos.programar %}<a class="btn btn-light" data-mant-modal href="{% url 'inventario:mantenimiento_programado_crear' %}">Programar</a>{% endif %}
+    </div>
+</div>
+
+<nav class="mant-tabs" aria-label="Vistas">
+    <a class="mant-tab{% if pestana == 'resumen' %} activa{% endif %}" href="{% url 'inventario:panel_mantenimientos' %}?vista=resumen"{% if pestana == 'resumen' %} aria-current="page"{% endif %}>Resumen por tipo</a>
+    <a class="mant-tab{% if pestana == 'equipos' %} activa{% endif %}" href="{% url 'inventario:panel_mantenimientos' %}?vista=equipos"{% if pestana == 'equipos' %} aria-current="page"{% endif %}>Equipos{% if total_equipos %}<span class="mant-tab-n">{{ total_equipos }}</span>{% endif %}</a>
+    <a class="mant-tab{% if pestana == 'programados' %} activa{% endif %}" href="{% url 'inventario:mantenimientos_programados_lista' %}"{% if pestana == 'programados' %} aria-current="page"{% endif %}>Intervenciones</a>
+    <a class="mant-tab{% if pestana == 'historial' %} activa{% endif %}" href="{% url 'inventario:mantenimientos_lista' %}"{% if pestana == 'historial' %} aria-current="page"{% endif %}>Historial de mantenimientos</a>
+</nav>
+
+{% include "inventario/_mant_ventana.html" %}

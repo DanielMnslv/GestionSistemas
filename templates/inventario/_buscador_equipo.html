@@ -1,0 +1,76 @@
+{% comment %}Convierte el desplegable "Equipo" en un selector con búsqueda (Tom Select).
+Se incluye en la ventana emergente (_mant_ventana.html) y en la página completa (mantenimiento_form.html).
+Expone window.buscadorEquipo(raiz): activa los select[name="equipo"] que haya dentro de "raiz" y devuelve una promesa.
+Si no hay internet (o falla el CDN) el desplegable normal sigue funcionando.{% endcomment %}
+<style>
+    /* Mismo aspecto que los demás campos del formulario de mantenimiento. */
+    .maintenance-form-field .ts-wrapper { width: 100%; }
+    .maintenance-form-field .ts-control {
+        min-height: 44px; padding: 11px 12px; border: 1px solid #d5dce7;
+        border-radius: 8px; box-shadow: none; font-size: 13px; background: #fff;
+    }
+    .mant-modal .maintenance-form-field .ts-control { min-height: 38px; padding: 8px 11px; }
+    .maintenance-form-field .ts-wrapper.focus .ts-control {
+        border-color: var(--f-blue, #080D79); box-shadow: 0 0 0 3px rgba(8, 13, 121, .09);
+    }
+    /* La regla ".maintenance-form-field input" no debe estirar el cuadro de búsqueda interno. */
+    .maintenance-form-field .ts-control > input {
+        width: auto !important; min-height: 0 !important; padding: 0 !important;
+        border: 0 !important; box-shadow: none !important; background: transparent !important;
+    }
+    .ts-dropdown { border-radius: 8px; font-size: 13px; z-index: 1000; }
+    .ts-dropdown .option { padding: 7px 12px; }
+</style>
+<script>
+(function () {
+    if (window.buscadorEquipo) return;
+    var VERSION = "2.3.1";
+    var CSS = "https://cdn.jsdelivr.net/npm/tom-select@" + VERSION + "/dist/css/tom-select.default.min.css";
+    var JS = "https://cdn.jsdelivr.net/npm/tom-select@" + VERSION + "/dist/js/tom-select.complete.min.js";
+    var carga = null;
+
+    function cargar() {
+        if (carga) return carga;
+        carga = new Promise(function (ok, fallo) {
+            if (window.TomSelect) { ok(); return; }
+            var hoja = document.createElement("link");
+            hoja.rel = "stylesheet";
+            hoja.href = CSS;
+            document.head.appendChild(hoja);
+            var script = document.createElement("script");
+            script.src = JS;
+            script.onload = ok;
+            script.onerror = function () { carga = null; fallo(new Error("tom-select")); };
+            document.head.appendChild(script);
+        });
+        return carga;
+    }
+
+    window.buscadorEquipo = function (raiz) {
+        var campos = (raiz || document).querySelectorAll('select[name="equipo"]');
+        if (!campos.length) return Promise.resolve();
+        return cargar().then(function () {
+            Array.prototype.forEach.call(campos, function (el) {
+                if (el.tomselect) return;
+                // Sin texto en la opción vacía, el campo muestra el aviso "Escribe la placa…" en vez de las rayas.
+                var vacio = el.querySelector('option[value=""]');
+                if (vacio) vacio.textContent = "";
+                var ts = new window.TomSelect(el, {
+                    placeholder: "Escribe la placa o el modelo (ej. RJ-4012, DEP450)…",
+                    maxOptions: 5000,       // por defecto Tom Select solo muestra 50
+                    allowEmptyOption: false,  // oculta la opción vacía "---------" de Django
+                    selectOnTab: true,
+                    render: {
+                        no_results: function () {
+                            return '<div class="no-results" style="padding:8px 12px;">Sin resultados</div>';
+                        }
+                    }
+                });
+                ts.wrapper.classList.remove("form-control");
+            });
+        }).catch(function () { /* sin CDN: queda el desplegable normal */ });
+    };
+
+    document.addEventListener("DOMContentLoaded", function () { window.buscadorEquipo(document); });
+})();
+</script>

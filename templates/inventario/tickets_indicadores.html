@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Indicadores de tickets | JANO Inventario{% endblock %}
+
+{% block content %}
+<div class="radios-page">
+    <div class="page-heading">
+        <div>
+            <h1>Indicadores de tickets</h1>
+            <p>Carga de trabajo actual y tiempos de respuesta de los últimos 90 días (solicitudes y preventivos).</p>
+        </div>
+        <a class="btn btn-light" href="{% url 'inventario:tickets_lista' %}">Ver tickets</a>
+    </div>
+
+    <section class="equipos-tipos">
+        {% for etiqueta, n in por_estado %}
+        <div class="equipos-tipo"><span>{{ etiqueta }}</span><strong>{{ n }}</strong></div>
+        {% endfor %}
+        <a class="equipos-tipo" href="{% url 'inventario:tickets_lista' %}?estado=vencidos"><span>Visitas atrasadas</span><strong>{{ atrasados }}</strong></a>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Por técnico</h2></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Técnico</th><th>Activos</th><th>Resueltos (90 días)</th><th>Respuesta promedio</th></tr></thead>
+                <tbody>
+                    {% for nombre, activos, resueltos, promedio in por_tecnico %}
+                    <tr><td>{{ nombre }}</td><td>{{ activos }}</td><td>{{ resueltos }}</td><td>{% if promedio is not None %}{{ promedio }} h{% else %}—{% endif %}</td></tr>
+                    {% empty %}<tr><td colspan="4">Sin datos todavía.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Por tipo de equipo</h2></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Tipo</th><th>Activos</th><th>Resueltos (90 días)</th><th>Respuesta promedio</th></tr></thead>
+                <tbody>
+                    {% for nombre, activos, resueltos, promedio in por_tipo %}
+                    <tr><td>{{ nombre }}</td><td>{{ activos }}</td><td>{{ resueltos }}</td><td>{% if promedio is not None %}{{ promedio }} h{% else %}—{% endif %}</td></tr>
+                    {% empty %}<tr><td colspan="4">Sin datos todavía.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Últimos seis meses</h2><p>Sin contar los tickets importados del Sheet.</p></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Mes</th><th>Creados</th><th>Resueltos</th></tr></thead>
+                <tbody>
+                    {% for mes, creados, resueltos in meses %}
+                    <tr><td>{{ mes|date:"F Y"|capfirst }}</td><td>{{ creados }}</td><td>{{ resueltos }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

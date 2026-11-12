@@ -1,0 +1,52 @@
+{% comment %}Contenido de la ventana "Verificar" (se pide por fetch desde Política de seguridad). Espera "formulario" y "equipo".{% endcomment %}
+<div class="maintenance-form-page mant-modal-contenido pol-form">
+    <header class="mant-modal-cabeza">
+        <div>
+            <span class="maintenance-form-eyebrow">POLÍTICA DE SEGURIDAD INFORMÁTICA</span>
+            <h2 id="pol-modal-titulo">Verificar {{ equipo.placa }}</h2>
+            <p class="mant-modal-equipo">{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.responsable_nombre %} · {{ equipo.responsable_nombre }}{% endif %}</p>
+        </div>
+        <button type="button" class="mant-modal-cerrar" data-cerrar aria-label="Cerrar">&times;</button>
+    </header>
+
+    <form method="post" action="{% url 'inventario:politica_registrar' equipo.placa %}" data-pol-form data-seguridad-form novalidate>
+        {% csrf_token %}
+        <div class="mant-modal-cuerpo">
+            {% if formulario.non_field_errors %}<div class="maintenance-form-errors" role="alert">{{ formulario.non_field_errors }}</div>{% endif %}
+            <div class="pol-grid">
+                {% for field in formulario.visible_fields %}{% if field.name == "especialista" or field.name == "responsable" %}
+                <div class="maintenance-form-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="maintenance-form-required" aria-hidden="true">*</span>{% endif %}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<span class="maintenance-form-errors" role="alert">{{ error }}</span>{% endfor %}
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+
+            <ol class="politica-puntos pol-puntos">
+                {% for punto in formulario.puntos %}
+                <li>
+                    <span>{{ punto.label }}</span>
+                    <div class="politica-opciones">{% for opcion in punto %}<label>{{ opcion.tag }} {{ opcion.choice_label }}</label>{% endfor %}</div>
+                </li>
+                {% endfor %}
+            </ol>
+
+            <div class="pol-grid pol-grid-1">
+                {% for field in formulario.visible_fields %}{% if field.name == "observaciones" or field.name == "actualizacion" %}
+                <div class="maintenance-form-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                </div>
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+        <div class="maintenance-form-actions mant-modal-pie">
+            <span class="mant-modal-ayuda">Los campos con <span class="maintenance-form-required">*</span> son obligatorios · Ctrl + Enter para guardar</span>
+            <div class="mant-modal-botones">
+                <button type="submit" class="maintenance-form-button">Guardar verificación</button>
+                <button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-cerrar>Cancelar</button>
+            </div>
+        </div>
+    </form>
+</div>

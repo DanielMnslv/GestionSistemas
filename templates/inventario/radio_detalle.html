@@ -1,0 +1,787 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ficha del radio {{ radio.placa|default:"sin placa" }} | JANO{% endblock %}
+
+{% block body_class %}{% if embed %}ficha-embed{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/actas.css' %}?v=20261103e">
+{% endblock %}
+
+{% block content %}
+<div class="radio-detalle" id="ficha-radio" data-inicial="{{ pestana_inicial }}">
+    <div class="rd-heading">
+        <div>
+            <h1>Ficha del radio {{ radio.placa|default:"sin placa" }}</h1>
+            <p>{{ radio.marca }} {{ radio.modelo }}{% if radio.serial %} · Serial {{ radio.serial }}{% endif %}</p>
+        </div>
+        <div class="rd-actions">
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:equipos_lista' %}?tipo=RADIO">Volver a equipos</a>
+        </div>
+    </div>
+
+    {% if not radio.activo %}
+    <div class="rd-alert rd-alert-baja">
+        <strong>Dado de baja el {{ radio.fecha_baja|date:"d/m/Y" }}</strong>
+        {{ radio.motivo_baja }}
+    </div>
+    {% endif %}
+
+    {% if radio.requiere_revision %}
+    <div class="rd-alert">
+        <strong>Requiere revisión</strong>
+        {{ radio.motivo_revision|default:"Motivo no especificado" }}
+    </div>
+    {% endif %}
+
+    <div class="rd-tabs" role="tablist" aria-label="Secciones de la ficha">
+        <button type="button" class="rd-tab" role="tab" id="tab-resumen" aria-controls="panel-resumen" data-tab="resumen">Resumen</button>
+        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Entregas y actas <span class="rd-tab-count">{{ historial_asignaciones|length }}</span></button>
+        <button type="button" class="rd-tab" role="tab" id="tab-mantenimientos" aria-controls="panel-mantenimientos" data-tab="mantenimientos">Mantenimientos <span class="rd-tab-count">{{ historial_mantenimientos|length }}</span></button>
+        {% if radio.equipo %}
+        <button type="button" class="rd-tab" role="tab" id="tab-hoja-de-vida" aria-controls="panel-hoja-de-vida" data-tab="hoja-de-vida">Hoja de vida</button>
+        {% endif %}
+        {% if permisos.radios %}
+        <button type="button" class="rd-tab" role="tab" id="tab-editar" aria-controls="panel-editar" data-tab="editar">Editar</button>
+        <button type="button" class="rd-tab rd-tab-danger" role="tab" id="tab-baja" aria-controls="panel-baja" data-tab="baja">{% if radio.activo %}Dar de baja{% else %}Baja{% endif %}</button>
+        {% endif %}
+    </div>
+
+    <!-- RESUMEN -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-resumen" aria-labelledby="tab-resumen" hidden>
+        <div class="rd-panel-heading">
+            <h2>Resumen</h2>
+            <p>
+                {% if asignacion_activa %}
+                Entregado desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y H:i" }}.
+                {% else %}
+                Sin entrega activa: disponible para entregar.
+                {% endif %}
+            </p>
+        </div>
+        <div class="rd-panel-body">
+            {% if ficha %}
+            <div class="rd-progreso">
+                <span class="rd-prog-txt"><strong>{{ ficha.completos }} de {{ ficha.total }}</strong> datos completos</span>
+                <span class="rd-barra" role="progressbar" aria-label="Datos completos" aria-valuemin="0" aria-valuemax="{{ ficha.total }}" aria-valuenow="{{ ficha.completos }}"><i style="width: {{ ficha.porcentaje }}%"></i></span>
+                {% if ficha.faltantes %}<label class="rd-solo"><input type="checkbox" data-rd-solo> Resaltar solo lo pendiente</label>{% endif %}
+            </div>
+            {% endif %}
+            <h3 class="rd-subtitle">Identificación</h3>
+            <div class="rd-grid">
+                <div class="rd-item{% if not radio.placa %} rd-vacio{% endif %}"><span class="rd-label">Placa</span><span class="rd-value">{{ radio.placa|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.serial %} rd-vacio{% endif %}"><span class="rd-label">Serial</span><span class="rd-value">{{ radio.serial|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.codigo_fisico %} rd-vacio{% endif %}"><span class="rd-label">Código físico</span><span class="rd-value">{{ radio.codigo_fisico|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.marca and not radio.modelo %} rd-vacio{% endif %}"><span class="rd-label">Marca y modelo</span><span class="rd-value">{% if radio.marca or radio.modelo %}{{ radio.marca }} {{ radio.modelo|default:"" }}{% else %}-{% endif %}</span></div>
+                <div class="rd-item{% if not radio.tipo_frecuencia %} rd-vacio{% endif %}"><span class="rd-label">Tipo de frecuencia</span><span class="rd-value">{{ radio.tipo_frecuencia|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.modalidad_servicio %} rd-vacio{% endif %}"><span class="rd-label">Modalidad de servicio</span><span class="rd-value">{{ radio.modalidad_servicio|default:"-" }}</span></div>
+            </div>
+
+            <h3 class="rd-subtitle">Asignación actual</h3>
+            <div class="rd-grid">
+                <div class="rd-item{% if not radio.coordinador_zona %} rd-vacio{% endif %}"><span class="rd-label">Coordinador de zona</span><span class="rd-value">{{ radio.coordinador_zona|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.cedula_funcionario %} rd-vacio{% endif %}"><span class="rd-label">Cédula del funcionario</span><span class="rd-value">{{ radio.cedula_funcionario|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.cliente_asignado %} rd-vacio{% endif %}"><span class="rd-label">Cliente asignado</span><span class="rd-value">{{ radio.cliente_asignado|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.puesto_asignado %} rd-vacio{% endif %}"><span class="rd-label">Puesto asignado</span><span class="rd-value">{{ radio.puesto_asignado|default:"-" }}</span></div>
+            </div>
+
+            <h3 class="rd-subtitle">Estado del equipo</h3>
+            <div class="rd-grid">
+                <div class="rd-item{% if not radio.estado_radio %} rd-vacio{% endif %}"><span class="rd-label">Radio</span><span class="rd-value">{{ radio.estado_radio|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_base %} rd-vacio{% endif %}"><span class="rd-label">Base</span><span class="rd-value">{{ radio.estado_base|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_cargador %} rd-vacio{% endif %}"><span class="rd-label">Cargador</span><span class="rd-value">{{ radio.estado_cargador|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_antena %} rd-vacio{% endif %}"><span class="rd-label">Antena</span><span class="rd-value">{{ radio.estado_antena|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_baterias %} rd-vacio{% endif %}"><span class="rd-label">Baterías</span><span class="rd-value">{{ radio.estado_baterias|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_perilla_encendido %} rd-vacio{% endif %}"><span class="rd-label">Perilla de encendido</span><span class="rd-value">{{ radio.estado_perilla_encendido|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_perilla_frecuencia %} rd-vacio{% endif %}"><span class="rd-label">Perilla de frecuencia</span><span class="rd-value">{{ radio.estado_perilla_frecuencia|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.estado_clip %} rd-vacio{% endif %}"><span class="rd-label">Clip</span><span class="rd-value">{{ radio.estado_clip|default:"-" }}</span></div>
+            </div>
+
+            <h3 class="rd-subtitle">Accesorios</h3>
+            <div class="rd-grid">
+                {% for nombre, tiene in accesorios %}
+                <div class="rd-item{% if tiene is None %} rd-vacio{% endif %}">
+                    <span class="rd-label">{{ nombre }}</span>
+                    <span class="rd-value">
+                        {% if tiene is True %}<span class="rd-badge rd-green">Sí</span>
+                        {% elif tiene is False %}<span class="rd-badge rd-red">No</span>
+                        {% else %}<span class="rd-badge rd-gray">-</span>{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <h3 class="rd-subtitle">Software y compra</h3>
+            <div class="rd-grid">
+                <div class="rd-item{% if not radio.software_programacion %} rd-vacio{% endif %}"><span class="rd-label">Software de programación</span><span class="rd-value">{{ radio.software_programacion|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.version_software %} rd-vacio{% endif %}"><span class="rd-label">Versión</span><span class="rd-value">{{ radio.version_software|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.tipo_licencia %} rd-vacio{% endif %}"><span class="rd-label">Tipo de licencia</span><span class="rd-value">{{ radio.tipo_licencia|default:"-" }}</span></div>
+                <div class="rd-item{% if not radio.fecha_compra %} rd-vacio{% endif %}"><span class="rd-label">Fecha de compra</span><span class="rd-value">{{ radio.fecha_compra|date:"d/m/Y"|default:"-" }}</span></div>
+            </div>
+
+            <h3 class="rd-subtitle">Observaciones</h3>
+            {% if radio.observaciones %}
+            <p class="rd-note">{{ radio.observaciones|linebreaksbr }}</p>
+            {% else %}
+            <p class="rd-note rd-vacio-nota">-</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- ENTREGAS Y ACTAS -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregas" aria-labelledby="tab-entregas" hidden>
+        <div class="rd-panel-heading">
+            <h2>Entregas y actas</h2>
+            <p>Elige una entrega de la lista para ver su acta completa al lado.</p>
+        </div>
+        <div class="rd-panel-body">
+            {% if asignacion_activa and radio.activo and permisos.entregas %}
+            <div class="rd-devolver">
+                <button class="rd-devolver-trigger" type="button" data-abrir-devolucion="modal-devolucion-radio">Registrar devolución</button>
+            </div>
+            <dialog class="rd-devolucion-modal" id="modal-devolucion-radio" aria-labelledby="modal-devolucion-radio-titulo">
+                <div class="rd-devolucion-caja">
+                    <header class="rd-devolucion-cab">
+                        <h2 id="modal-devolucion-radio-titulo">Registrar devolución del radio</h2>
+                    </header>
+                    <form method="post" action="{% url 'inventario:asignacion_devolver' asignacion_activa.pk %}" class="rd-baja-form">
+                        {% csrf_token %}
+                        {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                        <label for="obs-devolucion-radio">Observaciones de la devolución</label>
+                        <textarea id="obs-devolucion-radio" name="observaciones_devolucion" rows="2"
+                                  placeholder="Estado del radio y accesorios recibidos"></textarea>
+                        <div class="rd-devolucion-acciones">
+                            <button class="rd-devolucion-cancelar" type="button" data-cerrar-devolucion>Cancelar</button>
+                            <button class="rd-btn" type="submit">Confirmar devolución</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+            {% endif %}
+
+            {% if not asignacion_activa and radio.activo and permisos.entregas %}
+            <p class="rd-devolver rd-entregar"><button type="button" data-ir="entregar">Registrar entrega</button></p>
+            {% endif %}
+
+            {% if historial_asignaciones %}
+            <div class="rd-split">
+                <ul class="rd-entregas" id="lista-entregas">
+                    {% for asignacion in historial_asignaciones %}
+                    <li>
+                        <button type="button" class="rd-entrega" data-acta="acta-{{ asignacion.pk }}">
+                            <span class="rd-entrega-top">
+                                <strong>{{ asignacion.fecha_entrega|date:"d/m/Y H:i" }}</strong>
+                                {% if asignacion.estado == "ASIGNADO" %}
+                                <span class="badge-green">Asignado</span>
+                                {% else %}
+                                <span class="badge-gray">Devuelto</span>
+                                {% endif %}
+                            </span>
+                            <span class="rd-entrega-linea">{{ asignacion.cliente_asignado|default:"Sin cliente" }} · {{ asignacion.puesto_asignado|default:"Sin puesto" }}</span>
+                            <span class="rd-entrega-linea rd-muted">{{ asignacion.coordinador_zona|default:"Sin responsable" }} · C.C. {{ asignacion.cedula_funcionario|default:"sin dato" }}</span>
+                            {% if asignacion.fecha_devolucion %}
+                            <span class="rd-entrega-linea rd-muted">Devuelto el {{ asignacion.fecha_devolucion|date:"d/m/Y H:i" }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="rd-visor">
+                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una entrega para ver su acta.</p>
+                    {% for asignacion in historial_asignaciones %}
+                    <div class="acta-embed rd-acta" id="acta-{{ asignacion.pk }}" hidden>
+                        {% include "inventario/_acta_radio.html" %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="rd-empty">Este radio no tiene entregas registradas.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- MANTENIMIENTOS -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-mantenimientos" aria-labelledby="tab-mantenimientos" hidden>
+        <div class="rd-panel-heading rd-panel-heading-row">
+            <div>
+                <h2>Historial de mantenimientos</h2>
+                <p>Seguimiento cronológico de las intervenciones registradas.</p>
+            </div>
+            {% if radio.equipo and radio.activo and permisos.mantenimientos %}
+            <a class="rd-btn rd-btn-mant" data-mant-modal href="{% url 'inventario:mantenimiento_crear' %}?equipo={{ radio.equipo.placa|urlencode }}">Registrar mantenimiento</a>
+            {% endif %}
+        </div>
+        <div class="rd-panel-body">
+            {% if historial_mantenimientos %}
+            <p class="rd-history-summary">
+                Intervenciones registradas: <strong>{{ historial_mantenimientos|length }}</strong>
+            </p>
+
+            {% for mantenimiento in historial_mantenimientos %}
+            <details class="rd-maintenance" name="rd-mantenimientos">
+                <summary class="rd-maintenance-head">
+                    <div class="rd-maintenance-title">
+                        <h3>{{ mantenimiento.get_tipo_display }}</h3>
+                        <div class="rd-date">
+                            {% if mantenimiento.fecha_intervencion %}
+                            {{ mantenimiento.fecha_intervencion|date:"d/m/Y H:i" }}
+                            {% else %}
+                            Sin fecha registrada
+                            {% endif %}
+                            {% if mantenimiento.tecnico_responsable %}· {{ mantenimiento.tecnico_responsable }}{% endif %}
+                        </div>
+                    </div>
+                    <span class="rd-badge rd-estado {% if mantenimiento.estado_final == 'OPERATIVO' %}rd-estado-ok{% elif mantenimiento.estado_final == 'NO_OPERATIVO' %}rd-estado-mal{% elif mantenimiento.estado_final == 'PENDIENTE_PRUEBAS' %}rd-estado-pend{% else %}rd-estado-sin{% endif %}">
+                        {{ mantenimiento.get_estado_final_display|default:"Estado sin dato" }}
+                    </span>
+                    <span class="rd-maintenance-chevron" aria-hidden="true"></span>
+                </summary>
+
+                <div class="rd-maintenance-body">
+                <div class="rd-maintenance-grid">
+                    <div class="rd-maintenance-field"><strong>Técnico responsable</strong><p>{{ mantenimiento.tecnico_responsable|default:"-" }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Resultado</strong><p>{{ mantenimiento.get_resultado_display|default:"-" }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Motivo</strong><p>{{ mantenimiento.motivo|default:"Sin información"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Diagnóstico</strong><p>{{ mantenimiento.diagnostico|default:"Sin información"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_realizado|default:"Sin información"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Repuestos utilizados</strong><p>{{ mantenimiento.repuestos_utilizados|default:"Sin información"|linebreaksbr }}</p></div>
+                </div>
+
+                {% if mantenimiento.observaciones or mantenimiento.origen_archivo or mantenimiento.origen_hoja or mantenimiento.fila_origen %}
+                <details class="rd-trace">
+                    <summary>Ver observaciones y trazabilidad</summary>
+                    <div class="rd-trace-content">
+                        {% if mantenimiento.observaciones %}
+                        <p><strong>Observaciones:</strong><br>{{ mantenimiento.observaciones|linebreaksbr }}</p>
+                        {% endif %}
+                        {% if mantenimiento.origen_archivo %}
+                        <p><strong>Archivo de origen:</strong> {{ mantenimiento.origen_archivo }}</p>
+                        {% endif %}
+                        {% if mantenimiento.origen_hoja %}
+                        <p><strong>Hoja de origen:</strong> {{ mantenimiento.origen_hoja }}</p>
+                        {% endif %}
+                        {% if mantenimiento.fila_origen %}
+                        <p><strong>Fila original en Excel:</strong> {{ mantenimiento.fila_origen }}</p>
+                        {% endif %}
+                        <p>
+                            <strong>Registrado por:</strong>
+                            {% if mantenimiento.registrado_por %}
+                            {{ mantenimiento.registrado_por.get_username }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </p>
+                    </div>
+                </details>
+                {% endif %}
+                </div>
+            </details>
+            {% endfor %}
+            {% else %}
+            <div class="rd-empty">Este radio todavía no tiene intervenciones registradas.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- HOJA DE VIDA -->
+    {% if radio.equipo %}
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-hoja-de-vida" aria-labelledby="tab-hoja-de-vida" hidden>
+        <div class="rd-panel-body">
+            <iframe id="visor-hoja" title="Hoja de vida" class="rd-iframe" data-src="{% url 'inventario:equipo_hoja_vida' radio.equipo.placa %}?embed=1"></iframe>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if permisos.radios %}
+    <!-- EDITAR -->
+    <!-- REGISTRAR ENTREGA (se abre con el botón de la pestaña Entregas y actas) -->
+    {% if formulario_entrega %}
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregar" aria-label="Registrar entrega" hidden>
+        <div class="rd-panel-heading">
+            <h2>Registrar entrega</h2>
+            <p>Los campos marcados con * son obligatorios.</p>
+        </div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:asignacion_crear' %}" class="ficha-form-content ficha-pasos" id="form-entregar-radio" novalidate data-con-errores="{% if formulario_entrega.errors %}1{% endif %}">
+                {% csrf_token %}
+                <input type="hidden" name="radio" value="{{ radio.pk }}">
+                {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                {% if formulario_entrega.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario_entrega.non_field_errors }}
+                    {{ formulario_entrega.radio.errors }}
+                </div>
+                {% endif %}
+
+                <div class="ficha-progreso">
+                    <div class="ficha-progreso-info">
+                        <span>Paso <strong data-p-actual>1</strong> de <strong data-p-total>4</strong> · <span data-p-titulo></span></span>
+                        <span data-p-porcentaje>0%</span>
+                    </div>
+                    <div class="ficha-progreso-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso del registro"><span></span></div>
+                    <ol class="ficha-progreso-lista" data-p-lista></ol>
+                </div>
+
+                {% include "inventario/_entrega_campos.html" %}
+
+                <p class="ficha-paso-aviso" role="alert" data-p-aviso hidden></p>
+
+                <div class="ficha-form-actions">
+                    <button class="ficha-form-button ficha-form-button-secondary" type="button" data-ir="entregas">Cancelar</button>
+                    <div class="ficha-acciones-der">
+                        <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
+                        <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Registrar entrega →</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-editar" aria-labelledby="tab-editar" hidden>
+        <div class="rd-panel-heading">
+            <h2>Editar datos</h2>
+            <p>La placa y el serial no pueden repetirse entre radios.</p>
+        </div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:radio_editar' radio.pk %}" class="ficha-form-content ficha-pasos" id="form-editar-radio" novalidate data-con-errores="{% if formulario.errors %}1{% endif %}">
+                {% csrf_token %}
+                {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                {% if formulario.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="ficha-progreso" id="progreso-editar">
+                    <div class="ficha-progreso-info">
+                        <span>Paso <strong data-p-actual>1</strong> de <strong data-p-total>5</strong> · <span data-p-titulo></span></span>
+                        <span data-p-porcentaje>0%</span>
+                    </div>
+                    <div class="ficha-progreso-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la edición"><span></span></div>
+                    <ol class="ficha-progreso-lista" data-p-lista></ol>
+                </div>
+
+                {% include "inventario/_radio_campos.html" %}
+
+                <p class="ficha-paso-aviso" role="alert" data-p-aviso hidden></p>
+
+                <div class="ficha-form-actions">
+                    <button class="ficha-form-button ficha-form-button-secondary" type="button" data-ir="resumen">Cancelar</button>
+                    <div class="ficha-acciones-der">
+                        <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
+                        <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Guardar cambios</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- DAR DE BAJA -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-baja" aria-labelledby="tab-baja" hidden>
+        <div class="rd-panel-heading">
+            <h2>{% if radio.activo %}Dar de baja{% else %}Radio dado de baja{% endif %}</h2>
+            <p>El radio conserva su historial, pero no se podrá entregar ni generará alertas.</p>
+        </div>
+        <div class="rd-panel-body">
+            {% if not radio.activo %}
+            <p>Dado de baja el <strong>{{ radio.fecha_baja|date:"d/m/Y" }}</strong>. {{ radio.motivo_baja }}</p>
+            <form method="post" action="{% url 'inventario:radio_reactivar' radio.pk %}" class="rd-inline-form">
+                {% csrf_token %}
+                {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                <button class="rd-btn" type="submit">Volver a activar</button>
+            </form>
+            {% elif asignacion_activa %}
+            <div class="rd-empty">Registra primero la devolución de la entrega activa.</div>
+            {% else %}
+            <form method="post" action="{% url 'inventario:radio_dar_baja' radio.pk %}" class="rd-baja-form">
+                {% csrf_token %}
+                {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+                <label for="{{ formulario_baja.motivo_baja.id_for_label }}">{{ formulario_baja.motivo_baja.label }}</label>
+                {{ formulario_baja.motivo_baja }}
+                <button class="rd-btn rd-btn-danger" type="submit" onclick="return confirm('¿Dar de baja este radio?');">Dar de baja</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<script>
+(function () {
+    document.querySelectorAll("[data-abrir-devolucion]").forEach(function (boton) {
+        var dialogo = document.getElementById(boton.getAttribute("data-abrir-devolucion"));
+        if (!dialogo) return;
+        boton.addEventListener("click", function () {
+            if (document.body.classList.contains("ficha-embed") && window.frameElement) {
+                var marcoTop = window.frameElement.getBoundingClientRect().top + window.parent.scrollY;
+                window.parent.scrollTo(0, marcoTop);
+            }
+            dialogo.showModal();
+        });
+        dialogo.querySelectorAll("[data-cerrar-devolucion]").forEach(function (cerrar) {
+            cerrar.addEventListener("click", function () { dialogo.close(); });
+        });
+        dialogo.addEventListener("click", function (evento) {
+            if (evento.target === dialogo) dialogo.close();
+        });
+    });
+})();
+</script>
+
+<script>
+(function () {
+    var raiz = document.getElementById("ficha-radio");
+    var tabs = Array.prototype.slice.call(raiz.querySelectorAll(".rd-tab"));
+    var paneles = raiz.querySelectorAll(".rd-tabpanel");
+    var visorHoja = document.getElementById("visor-hoja");
+
+    var embebido = document.body.classList.contains("ficha-embed");
+
+    // Dentro de la ficha: cada visor ocupa exactamente el alto que queda (si el acta no cabe,
+    // se desplaza solo ella). Fuera de la ficha: el visor crece con su contenido.
+    function ajustar(iframe) {
+        if (!iframe) return;
+        if (embebido) {
+            if (!iframe.offsetParent) return;
+            var alto = window.innerHeight - iframe.getBoundingClientRect().top - 14;
+            iframe.style.height = Math.max(alto, 220) + "px";
+            return;
+        }
+        try {
+            var doc = iframe.contentDocument;
+            if (doc && doc.body) {
+                iframe.style.height = Math.max(doc.documentElement.offsetHeight, 200) + "px";
+            }
+        } catch (e) { /* mismo origen: no debería fallar */ }
+    }
+
+    function acomodar() {
+        var visibles = [visorHoja].filter(function (f) { return f && f.offsetParent; });
+        if (embebido) document.documentElement.classList.toggle("fill-activo", visibles.length > 0);
+        visibles.forEach(ajustar);
+    }
+
+    [visorHoja].forEach(function (f) {
+        if (!f) return;
+        f.addEventListener("load", function () {
+            ajustar(f);
+            if (embebido) return;
+            // Fuera de la ficha, reajusta si el contenido cambia (firma, fuentes, tamaño)
+            try {
+                if (window.ResizeObserver) {
+                    new ResizeObserver(function () { ajustar(f); }).observe(f.contentDocument.body);
+                }
+            } catch (e) { /* ignorar */ }
+        });
+    });
+    window.addEventListener("resize", acomodar);
+
+    var visorVacio = document.getElementById("visor-vacio");
+
+    function mostrarActa(id) {
+        raiz.querySelectorAll(".rd-acta").forEach(function (a) { a.hidden = (a.id !== id); });
+        if (visorVacio) visorVacio.hidden = !!id;
+    }
+
+    // Clic en una entrega: abre su acta. Clic otra vez en la misma: la cierra.
+    function elegirEntrega(boton) {
+        var yaActiva = boton.classList.contains("is-activa");
+        raiz.querySelectorAll(".rd-entrega").forEach(function (b) {
+            b.classList.toggle("is-activa", b === boton && !yaActiva);
+        });
+        mostrarActa(yaActiva ? null : boton.dataset.acta);
+        if (boton.scrollIntoView) boton.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    raiz.querySelectorAll(".rd-entrega").forEach(function (b) {
+        b.addEventListener("click", function () { elegirEntrega(b); });
+    });
+
+    function activar(nombre, actualizarUrl) {
+        if (!document.getElementById("panel-" + nombre)) nombre = "resumen";
+        tabs.forEach(function (t) {
+            var on = t.dataset.tab === nombre || (nombre === "entregar" && t.dataset.tab === "entregas");
+            t.classList.toggle("is-activa", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+            t.tabIndex = on ? 0 : -1;
+        });
+        paneles.forEach(function (p) { p.hidden = (p.id !== "panel-" + nombre); });
+        if (actualizarUrl) history.replaceState(null, "", "#" + nombre);
+
+        if (nombre === "hoja-de-vida" && visorHoja && !visorHoja.getAttribute("src")) {
+            visorHoja.setAttribute("src", visorHoja.dataset.src);
+        }
+        acomodar();
+    }
+
+    tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { activar(t.dataset.tab, true); });
+        t.addEventListener("keydown", function (e) {
+            var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!d) return;
+            var sig = tabs[(i + d + tabs.length) % tabs.length];
+            sig.focus();
+            activar(sig.dataset.tab, true);
+            e.preventDefault();
+        });
+    });
+    raiz.querySelectorAll("[data-ir]").forEach(function (b) {
+        b.addEventListener("click", function () { activar(b.dataset.ir, true); });
+    });
+
+    var inicial = raiz.dataset.inicial || "resumen";
+    var hash = location.hash.replace("#", "");
+    activar(inicial !== "resumen" ? inicial : (hash || "resumen"), false);
+    window.addEventListener("hashchange", function () {
+        activar(location.hash.replace("#", "") || "resumen", false);
+    });
+})();
+function iniciarPasos(form) {
+    // Formulario por pasos: no se avanza hasta completar el paso actual; se guarda solo en el último.
+    if (!form) return;
+    var pasos = Array.prototype.slice.call(form.querySelectorAll(".ficha-paso"));
+    var barra = form.querySelector(".ficha-progreso-barra");
+    var lista = form.querySelector("[data-p-lista]");
+    var aviso = form.querySelector("[data-p-aviso]");
+    var btnAnt = form.querySelector("[data-p-anterior]");
+    var btnSig = form.querySelector("[data-p-siguiente]");
+    var btnGuardar = form.querySelector("[data-p-guardar]");
+    var total = pasos.length;
+    var actual = 0;
+    var alcanzado = 0; // paso más lejano que ya se desbloqueó
+
+    var botones = pasos.map(function (p, i) {
+        var li = document.createElement("li");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "ficha-progreso-paso";
+        b.innerHTML = "<b>" + (i + 1) + "</b><span></span>";
+        b.lastChild.textContent = p.dataset.titulo;
+        b.addEventListener("click", function () { if (i <= alcanzado) ir(i); });
+        li.appendChild(b);
+        lista.appendChild(li);
+        return b;
+    });
+    form.querySelector("[data-p-total]").textContent = total;
+
+    function mostrarAviso(texto) {
+        aviso.textContent = texto || "";
+        aviso.hidden = !texto;
+    }
+
+    function camposDe(paso) {
+        return Array.prototype.slice.call(paso.querySelectorAll("input, select, textarea"));
+    }
+
+    // Reglas del paso: campos obligatorios y, en el último, el motivo si requiere revisión.
+    function validar(i) {
+        var campos = camposDe(pasos[i]);
+        var primero = null;
+        campos.forEach(function (c) {
+            var mal = !c.checkValidity();
+            if (c.name === "motivo_revision") {
+                var req = form.querySelector('[name="requiere_revision"]');
+                if (req && req.checked && !c.value.trim()) mal = true;
+            }
+            c.classList.toggle("is-invalido", mal);
+            if (mal && !primero) primero = c;
+        });
+        if (primero) {
+            primero.focus();
+            mostrarAviso("Completa los campos marcados para continuar.");
+            return false;
+        }
+        mostrarAviso("");
+        return true;
+    }
+
+    function pintar() {
+        var pct = Math.round((actual / total) * 100);
+        // Al llegar al último paso la barra marca el avance hecho; 100 % solo al guardar.
+        form.querySelector("[data-p-actual]").textContent = actual + 1;
+        form.querySelector("[data-p-titulo]").textContent = pasos[actual].dataset.titulo;
+        form.querySelector("[data-p-porcentaje]").textContent = pct + "%";
+        barra.setAttribute("aria-valuenow", pct);
+        barra.firstElementChild.style.width = pct + "%";
+        pasos.forEach(function (p, i) { p.hidden = (i !== actual); });
+        botones.forEach(function (b, i) {
+            b.disabled = i > alcanzado;
+            b.classList.toggle("is-actual", i === actual);
+            b.classList.toggle("is-hecho", i < actual);
+            if (i === actual) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+        });
+        btnAnt.hidden = actual === 0;
+        btnSig.hidden = actual === total - 1;
+        btnGuardar.hidden = actual !== total - 1;
+    }
+
+    function ir(i) {
+        actual = i;
+        if (i > alcanzado) alcanzado = i;
+        pintar();
+        mostrarAviso("");
+        var primero = camposDe(pasos[i])[0];
+        if (primero && form.offsetParent) primero.focus({ preventScroll: true });
+        var cab = form.querySelector(".ficha-progreso");
+        if (cab && cab.scrollIntoView) cab.scrollIntoView({ block: "nearest" });
+    }
+
+    btnSig.addEventListener("click", function () { if (validar(actual)) ir(actual + 1); });
+    btnAnt.addEventListener("click", function () { ir(actual - 1); });
+
+    // Enter dentro de un campo avanza de paso en vez de guardar a medias.
+    form.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" || e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") return;
+        e.preventDefault();
+        if (actual < total - 1) { if (validar(actual)) ir(actual + 1); }
+        else if (validar(actual)) form.requestSubmit();
+    });
+
+    // Se revisan todos los pasos antes de enviar.
+    form.addEventListener("submit", function (e) {
+        for (var i = 0; i < total; i++) {
+            if (!validar(i)) { e.preventDefault(); ir(i); validar(i); return; }
+        }
+    });
+
+    form.addEventListener("input", function (e) { e.target.classList.remove("is-invalido"); });
+
+    // Si el servidor devolvió errores, se abre el primer paso con error.
+    if (form.dataset.conErrores) {
+        var conError = pasos.findIndex(function (p) { return p.querySelector(".ficha-field-error"); });
+        alcanzado = total - 1;
+        actual = conError >= 0 ? conError : 0;
+    }
+    pintar();
+}
+iniciarPasos(document.getElementById("form-editar-radio"));
+iniciarPasos(document.getElementById("form-entregar-radio"));
+
+function agregarBuscador(select, textoVacio) {
+    // Convierte una lista larga en un campo donde se escribe y se sugieren opciones.
+    if (!select) return;
+    var opciones = Array.prototype.slice.call(select.options).filter(function (o) { return o.value; });
+    var lista = document.createElement("datalist");
+    lista.id = select.id + "-sugerencias";
+    opciones.forEach(function (o) {
+        var op = document.createElement("option");
+        op.value = o.textContent.trim();
+        lista.appendChild(op);
+    });
+    var campo = document.createElement("input");
+    campo.type = "text";
+    campo.setAttribute("list", lista.id);
+    campo.placeholder = textoVacio;
+    campo.autocomplete = "off";
+    var elegida = select.options[select.selectedIndex];
+    campo.value = select.value && elegida ? elegida.textContent.trim() : "";
+
+    select.style.display = "none";
+    select.parentNode.insertBefore(campo, select);
+    select.parentNode.insertBefore(lista, select);
+    // La validación y los avisos del formulario apuntan al campo visible.
+    select.focus = function () { campo.focus(); };
+    new MutationObserver(function () {
+        campo.classList.toggle("is-invalido", select.classList.contains("is-invalido"));
+    }).observe(select, { attributes: true, attributeFilter: ["class"] });
+
+    function aplicar() {
+        var texto = campo.value.trim();
+        var hallada = opciones.filter(function (o) { return o.textContent.trim() === texto; })[0];
+        var nuevo = hallada ? hallada.value : "";
+        if (select.value !== nuevo) {
+            select.value = nuevo;
+            select.dispatchEvent(new Event("change"));
+        }
+    }
+    campo.addEventListener("input", aplicar);
+    campo.addEventListener("change", aplicar);
+}
+agregarBuscador(document.getElementById("{{ formulario_entrega.vigilante.auto_id }}"), "Escribe la cédula o el nombre");
+agregarBuscador(document.getElementById("{{ formulario_entrega.cliente.auto_id }}"), "Escribe el nombre del cliente");
+
+(function () {
+    // Puestos del cliente elegido en el registro de entrega.
+    var cliente = document.getElementById("{{ formulario_entrega.cliente.auto_id }}");
+    var puesto = document.getElementById("{{ formulario_entrega.puesto.auto_id }}");
+    if (!cliente || !puesto) return;
+    var url = "{% url 'inventario:puestos_json' %}";
+    var elegido = puesto.value;
+
+    function cargar() {
+        puesto.innerHTML = "";
+        var vacio = document.createElement("option");
+        vacio.value = "";
+        vacio.textContent = cliente.value ? "Seleccione el puesto" : "Seleccione primero el cliente";
+        puesto.appendChild(vacio);
+        if (!cliente.value) return;
+        fetch(url + "?cliente=" + encodeURIComponent(cliente.value), {credentials: "same-origin"})
+            .then(function (r) { return r.json(); })
+            .then(function (datos) {
+                datos.puestos.forEach(function (p) {
+                    var op = document.createElement("option");
+                    op.value = p.id;
+                    op.textContent = p.texto;
+                    if (String(p.id) === elegido) op.selected = true;
+                    puesto.appendChild(op);
+                });
+            });
+    }
+    cliente.addEventListener("change", function () { elegido = ""; cargar(); });
+    cargar();
+})();
+{% if embed %}
+(function () {
+    // Dentro del panel de la lista: los enlaces que salen de la ficha abren en la página completa.
+    document.querySelectorAll(".radio-detalle a[href]").forEach(function (a) {
+        if (!a.target) a.target = "_top";
+    });
+    {% if guardado %}
+    // Tras guardar, se refresca la lista para que muestre los datos nuevos.
+    if (window.parent !== window) {
+        setTimeout(function () { window.parent.location.reload(); }, 1400);
+    }
+    {% endif %}
+})();
+{% endif %}
+(function () {
+    var acordeones = document.querySelectorAll("details.rd-maintenance");
+    acordeones.forEach(function (d) {
+        d.addEventListener("toggle", function () {
+            if (!d.open) return;
+            acordeones.forEach(function (o) { if (o !== d) o.open = false; });
+        });
+    });
+})();
+</script>
+<script>
+(function () {
+    // "Resaltar solo lo pendiente": atenúa lo completo del Resumen sin quitar nada.
+    var caja = document.querySelector("[data-rd-solo]");
+    var panel = document.getElementById("panel-resumen");
+    if (!caja || !panel) return;
+    caja.addEventListener("change", function () {
+        panel.classList.toggle("rd-solo-pendiente", caja.checked);
+    });
+})();
+</script>
+<script>
+(function () {
+    // "Registrar mantenimiento" abre su formulario en una ventana aquí mismo (no sale de la ficha).
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest("a[data-mant-modal]")) return;
+        if (document.body.classList.contains("ficha-embed") && window.frameElement) {
+            var marco = window.frameElement.getBoundingClientRect().top + window.parent.scrollY;
+            window.parent.scrollTo(0, marco);
+        }
+    }, true);
+})();
+</script>
+{% include "inventario/_mant_ventana.html" %}
+{% endblock %}

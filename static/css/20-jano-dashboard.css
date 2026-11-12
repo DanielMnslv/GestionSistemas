@@ -1,0 +1,533 @@
+﻿/* ==========================================================
+   JANO INVENTARIO — DASHBOARD SAAS
+   Rediseño visual. Se conserva la estructura funcional.
+   ========================================================== */
+
+.jano-content .pn {
+    --paper: #FFFFFF;
+    --surface: #FFFFFF;
+    --soft: #F0F7F6;
+    --background: #F5F8FA;
+    --line: #E5EBEF;
+    --ink: #172B3A;
+    --text: #172B3A;
+    --mut: #718096;
+    --muted: #718096;
+    --blue: #0F766E;
+    --primary: #0F766E;
+    --lime: #0F766E;
+    --accent: #0F766E;
+    --on-lime: #FFFFFF;
+    --s-ok: #0F766E;
+    --s-reg: #D99A24;
+    --s-mal: #DC6262;
+    --s-sin: #AAB7C4;
+    --at-bg: #FFFFFF;
+    --at-ink: #172B3A;
+    --at-mut: #718096;
+    --at-line: #E5EBEF;
+    --at-acc: #0F766E;
+
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    gap: 24px;
+    margin: 0;
+    padding: 4px 0 32px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Desplazamiento general */
+html:has(body.panel-page) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body.panel-page {
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+}
+
+.panel-page .shell,
+.panel-page .main-panel,
+.panel-page .dashboard-container {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.panel-page .shell {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+}
+
+.panel-page .main-panel {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.panel-page .dashboard-container {
+    display: block !important;
+    flex: 1 0 auto !important;
+}
+
+/* Evitar herencia de antiguas cuadrículas */
+.jano-content .pn > *,
+.jano-content .pn-main,
+.jano-content .pn-two,
+.jano-content .pn-head,
+.jano-content .pn-band,
+.jano-content .pn-mapa,
+.jano-content .pn-at,
+.jano-content .pn-sec {
+    grid-area: auto !important;
+}
+
+/* Encabezado */
+.jano-content .pn-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    margin: 0;
+}
+
+.jano-content .pn-head h1 {
+    color: #172B3A;
+    font-size: clamp(26px, 2.2vw, 34px);
+    font-weight: 750;
+    letter-spacing: -1px;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.jano-content .pn-sub {
+    color: #718096;
+    font-size: 13px;
+    margin-top: 7px;
+}
+
+.jano-content .pn-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.jano-content .pn-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 17px;
+    border: 1px solid #DCE5E9;
+    border-radius: 9px;
+    background: #FFFFFF;
+    color: #243746;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.jano-content .pn-btn:hover {
+    border-color: #0F766E;
+    background: #F0F7F6;
+    color: #0F766E;
+    transform: translateY(-1px);
+}
+
+.jano-content .pn-btn-p {
+    background: #0F766E;
+    border-color: #0F766E;
+    color: #FFFFFF;
+}
+
+.jano-content .pn-btn-p:hover {
+    background: #115E59;
+    border-color: #115E59;
+    color: #FFFFFF;
+}
+
+/* Indicadores principales */
+.jano-content .pn-band {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    width: 100%;
+    min-width: 0;
+    background: #FFFFFF;
+    border: 1px solid #E5EBEF;
+    border-radius: 13px;
+    overflow: hidden;
+    box-shadow: 0 3px 12px rgba(24, 45, 58, .035);
+}
+
+.jano-content .pn-bn {
+    min-width: 0;
+    padding: 20px;
+    border-color: #E5EBEF;
+    transition: background .18s ease;
+}
+
+.jano-content .pn-bn:hover {
+    background: #F8FBFB;
+}
+
+.jano-content .pn-bn small {
+    color: #718096;
+    font-size: 12px;
+    font-weight: 550;
+}
+
+.jano-content .pn-bn b {
+    display: inline-block;
+    margin-top: 8px;
+    color: #172B3A;
+    font-size: clamp(26px, 2.3vw, 34px);
+    font-weight: 750;
+    letter-spacing: -1px;
+}
+
+.jano-content .pn-comp {
+    height: 8px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+/* Distribución: mapa y alertas */
+.jano-content .pn-main {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(290px, .85fr) !important;
+    align-items: stretch !important;
+    gap: 20px !important;
+    width: 100% !important;
+    min-width: 0;
+    height: auto !important;
+}
+
+.jano-content .pn-mapa,
+.jano-content .pn-at,
+.jano-content .pn-sec {
+    position: relative !important;
+    inset: auto !important;
+    float: none !important;
+    width: auto !important;
+    min-width: 0;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    border: 1px solid #E5EBEF;
+    border-radius: 13px;
+    box-shadow: 0 3px 12px rgba(24, 45, 58, .035);
+}
+
+.jano-content .pn-mapa {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 20px;
+    background: #FFFFFF;
+}
+
+.jano-content .pn-sh {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.jano-content .pn-sh h2,
+.jano-content .pn-at h2 {
+    color: #172B3A;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.2px;
+}
+
+.jano-content #pn-map {
+    display: block;
+    width: 100% !important;
+    height: 410px !important;
+    min-height: 300px;
+    flex: none !important;
+    border: 1px solid #E5EBEF;
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.jano-content .pn-mp {
+    color: #718096;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.jano-content .pn-lugares {
+    max-height: 220px;
+}
+
+/* Panel de atención: superficie clara */
+.jano-content .pn-at {
+    display: flex !important;
+    flex-direction: column !important;
+    align-self: stretch !important;
+    overflow: visible !important;
+    padding: 22px;
+    background: #FFFFFF;
+    color: #172B3A;
+    border-top: 3px solid #0F766E;
+}
+
+.jano-content .pn-at h2 {
+    margin-bottom: 10px;
+    color: #172B3A;
+}
+
+.jano-content .pn-at h3 {
+    margin: 20px 0 8px;
+    color: #526777;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.jano-content .pn-at-l a {
+    padding: 13px 0;
+    border-color: #E8EEF1;
+    color: #405565;
+    text-decoration: none;
+}
+
+.jano-content .pn-at-l a:hover {
+    color: #0F766E;
+}
+
+.jano-content .pn-at-l b {
+    color: #172B3A;
+    font-size: 27px;
+    font-weight: 750;
+}
+
+.jano-content .pn-prox {
+    flex: initial !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.jano-content .pn-prox li,
+.jano-content .pn-prox small,
+.jano-content .pn-sh .pn-mut {
+    display: revert !important;
+}
+
+.jano-content .pn-at-mas {
+    margin-top: 12px;
+    color: #0F766E;
+    font-weight: 650;
+}
+
+/* Secciones inferiores */
+.jano-content .pn-two {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch;
+    gap: 20px !important;
+    width: 100% !important;
+    min-width: 0;
+    height: auto !important;
+}
+
+.jano-content .pn-sec {
+    display: block !important;
+    overflow: visible !important;
+    padding: 22px;
+    background: #FFFFFF;
+}
+
+.jano-content .pn-leg {
+    margin: 0 0 12px;
+}
+
+.jano-content .pn-tipo {
+    grid-template-columns: minmax(75px, 112px) 42px minmax(0,1fr) 42px;
+    gap: 12px;
+    padding: 12px 0;
+    font-size: 13px;
+    border-color: #E8EEF1;
+}
+
+.jano-content .pn-tipo:hover {
+    background: #F0F7F6;
+}
+
+.jano-content .pn-stats {
+    gap: 30px;
+    margin-bottom: 18px;
+}
+
+.jano-content .pn-stats b {
+    color: #0F766E;
+    font-size: 28px;
+    font-weight: 750;
+}
+
+.jano-content .pn-heat {
+    min-height: 100px;
+}
+
+/* Adaptación a portátiles y tabletas */
+@media (max-width: 1100px) {
+    .jano-content .pn-main {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .jano-content .pn-at {
+        position: relative !important;
+    }
+
+    .jano-content .pn-two {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+@media (max-width: 800px) {
+    .jano-content .pn-band {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .jano-content .pn-bn {
+        border-left: 0;
+        border-top: 1px solid #E5EBEF;
+    }
+
+    .jano-content .pn-bn:nth-child(-n+2) {
+        border-top: 0;
+    }
+
+    .jano-content .pn-bn:nth-child(even) {
+        border-left: 1px solid #E5EBEF;
+    }
+
+    .jano-content #pn-map {
+        height: 340px !important;
+    }
+}
+
+/* Móviles */
+@media (max-width: 560px) {
+    .jano-content .pn {
+        gap: 16px;
+    }
+
+    .jano-content .pn-head {
+        align-items: flex-start;
+    }
+
+    .jano-content .pn-acts {
+        width: 100%;
+    }
+
+    .jano-content .pn-btn {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    .jano-content .pn-bn {
+        padding: 14px 11px;
+    }
+
+    .jano-content .pn-bn b {
+        font-size: 26px;
+    }
+
+    .jano-content .pn-mapa,
+    .jano-content .pn-sec,
+    .jano-content .pn-at {
+        padding: 15px;
+        border-radius: 11px;
+    }
+
+    .jano-content #pn-map {
+        height: 290px !important;
+        min-height: 260px;
+    }
+
+    .jano-content .pn-tipo {
+        grid-template-columns: 75px 32px minmax(0,1fr) 35px;
+        gap: 7px;
+        font-size: 12px;
+    }
+
+    .jano-content .pn-stats {
+        gap: 18px;
+    }
+}
+
+/* Modo oscuro */
+html[data-tema="dark"] .jano-content .pn {
+    --surface: #192B35;
+    --paper: #192B35;
+    --background: #10232D;
+    --text: #EAF2F4;
+    --ink: #EAF2F4;
+    --muted: #A7BBC2;
+    --mut: #A7BBC2;
+    --line: #304751;
+    --soft: #233D47;
+    --at-bg: #192B35;
+}
+
+html[data-tema="dark"] .jano-content .pn-mapa,
+html[data-tema="dark"] .jano-content .pn-sec,
+html[data-tema="dark"] .jano-content .pn-at {
+    background: #192B35;
+    border-color: #304751;
+    color: #EAF2F4;
+}
+
+html[data-tema="dark"] .jano-content .pn-bn b,
+html[data-tema="dark"] .jano-content .pn-sh h2,
+html[data-tema="dark"] .jano-content .pn-at h2,
+html[data-tema="dark"] .jano-content .pn-at-l b {
+    color: #EAF2F4;
+}
+
+html[data-tema="dark"] .jano-content .pn-head h1 {
+    color: #EAF2F4;
+}
+
+html[data-tema="dark"] .jano-content .pn-btn {
+    background: #233D47;
+    border-color: #304751;
+    color: #EAF2F4;
+}
+
+html[data-tema="dark"] .jano-content .pn-btn-p {
+    background: #0F766E;
+    border-color: #0F766E;
+    color: #FFFFFF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jano-content .pn *,
+    .jano-content .pn *::before,
+    .jano-content .pn *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}

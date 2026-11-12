@@ -1,0 +1,73 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }} | JANO Inventario{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/mantenimiento-form.css' %}?v=20261029c">
+{% endblock %}
+
+{% block content %}
+<section class="maintenance-form-page">
+
+    <div class="maintenance-form-heading">
+        <div>
+            <span class="maintenance-form-eyebrow">GESTIÓN TÉCNICA</span>
+            <h1>{{ titulo }}</h1>
+            <p>Completa la información y revisa los datos antes de guardar.</p>
+        </div>
+
+        {% if "Programar" in titulo %}
+            <a href="{% url 'inventario:mantenimientos_programados_lista' %}"
+               class="maintenance-form-button maintenance-form-button-secondary">
+                Volver a programados
+            </a>
+        {% else %}
+            <a href="{% url 'inventario:mantenimientos_lista' %}"
+               class="maintenance-form-button maintenance-form-button-secondary">
+                Ver historial
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="maintenance-form-panel">
+
+        <div class="maintenance-form-panel-heading">
+            <h2>Información del mantenimiento</h2>
+            <p>
+                Los campos y las validaciones dependen del tipo de registro.
+                Los campos obligatorios están marcados con asterisco.
+            </p>
+        </div>
+
+        <div class="maintenance-form-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% include "inventario/_mant_form_campos.html" %}
+
+                <div class="maintenance-form-actions">
+                    <button type="submit" class="maintenance-form-button">
+                        Guardar registro
+                    </button>
+
+                    {% if "Programar" in titulo %}
+                        <a href="{% url 'inventario:mantenimientos_programados_lista' %}"
+                           class="maintenance-form-button maintenance-form-button-secondary">
+                            Cancelar
+                        </a>
+                    {% else %}
+                        <a href="{% url 'inventario:mantenimientos_lista' %}"
+                           class="maintenance-form-button maintenance-form-button-secondary">
+                            Cancelar
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% include "inventario/_buscador_equipo.html" %}
+{% endblock %}

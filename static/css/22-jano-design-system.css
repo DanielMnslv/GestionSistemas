@@ -1,0 +1,418 @@
+﻿/* ==========================================================
+   JANO INVENTARIO — DESIGN SYSTEM 2026
+   Nueva identidad visual SaaS empresarial
+   Capa exclusivamente visual
+   ========================================================== */
+
+:root {
+    --jano-brand: #0F766E;
+    --jano-brand-hover: #115E59;
+    --jano-brand-soft: #CCFBF1;
+
+    --jano-sidebar: #142B36;
+    --jano-sidebar-hover: #203F4B;
+    --jano-sidebar-active: #0F766E;
+
+    --jano-page: #F4F7FA;
+    --jano-surface: #FFFFFF;
+    --jano-text: #172B3A;
+    --jano-muted: #718096;
+    --jano-border: #E2E8F0;
+
+    --jano-radius: 14px;
+    --jano-shadow: 0 4px 18px rgba(20, 43, 54, .055);
+    --jano-shadow-hover: 0 10px 28px rgba(20, 43, 54, .09);
+}
+
+/* Base */
+html, body {
+    min-height: 100%;
+}
+
+body.dashboard-body {
+    background: var(--jano-page);
+    color: var(--jano-text);
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Estructura principal */
+.jano-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    grid-template-columns: 258px minmax(0, 1fr);
+    gap: 0;
+    background: var(--jano-page);
+}
+
+/* Navegación lateral */
+.jano-sidebar {
+    background: var(--jano-sidebar);
+    color: #E8F0F3;
+    border: 0;
+    border-radius: 0;
+    box-shadow: 4px 0 22px rgba(15, 35, 45, .08);
+    padding: 24px 16px;
+}
+
+.jano-brand {
+    padding: 8px 10px 26px;
+    border-bottom: 1px solid rgba(255,255,255,.10);
+    margin-bottom: 22px;
+}
+
+.jano-brand img {
+    object-fit: contain;
+}
+
+.jano-brand-copy small {
+    color: #91B6B9;
+    letter-spacing: .16em;
+    font-size: 9px;
+}
+
+.jano-brand-copy strong {
+    color: #FFFFFF;
+    letter-spacing: .04em;
+}
+
+.jano-brand-copy span {
+    color: #A9BEC5;
+}
+
+.jano-nav {
+    gap: 5px;
+}
+
+.jano-nav-label {
+    color: #8EA6AE;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .11em;
+    padding: 18px 11px 8px;
+}
+
+.jano-sidebar .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    color: #C4D3D8;
+    font-size: 13px;
+    font-weight: 550;
+    transition: background .18s ease, color .18s ease;
+}
+
+.jano-sidebar .sidebar-nav a svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.jano-sidebar .sidebar-nav a:hover {
+    color: #FFFFFF;
+    background: var(--jano-sidebar-hover);
+}
+
+.jano-sidebar .sidebar-nav a.activo {
+    color: #FFFFFF;
+    background: var(--jano-sidebar-active);
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+
+.jano-sidebar-bottom {
+    border-top: 1px solid rgba(255,255,255,.10);
+    padding-top: 16px;
+    margin-top: 24px;
+}
+
+.jano-sidebar .tema-boton {
+    width: 100%;
+    color: #C4D3D8;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 9px;
+    padding: 10px 12px;
+}
+
+.jano-sidebar .tema-boton:hover {
+    color: #FFFFFF;
+    background: var(--jano-sidebar-hover);
+}
+
+.jano-user {
+    color: #E8F0F3;
+    padding-top: 16px;
+}
+
+.jano-user .sidebar-avatar {
+    background: #0F766E;
+    color: #FFFFFF;
+    border-radius: 10px;
+}
+
+/* Área de trabajo */
+.jano-main {
+    min-width: 0;
+    background: var(--jano-page);
+    border: 0;
+    box-shadow: none;
+}
+
+.jano-topbar {
+    min-height: 76px;
+    padding: 16px 32px;
+    background: rgba(255,255,255,.94);
+    border-bottom: 1px solid var(--jano-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.jano-topbar-kicker {
+    color: var(--jano-muted);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .12em;
+}
+
+.jano-topbar-context strong {
+    display: block;
+    color: var(--jano-text);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.jano-topbar-meta {
+    color: var(--jano-muted);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.jano-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16A36A;
+    box-shadow: 0 0 0 3px #DDF7EA;
+}
+
+.jano-content {
+    width: 100%;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 30px 32px;
+    color: var(--jano-text);
+}
+
+.jano-footer {
+    color: #8795A3;
+    border-top: 1px solid var(--jano-border);
+    padding: 18px 32px;
+    font-size: 10px;
+    letter-spacing: .08em;
+}
+
+/* Tipografía */
+.jano-content h1,
+.jano-content h2,
+.jano-content h3 {
+    color: var(--jano-text);
+    letter-spacing: -.025em;
+}
+
+.jano-content h1 {
+    font-size: clamp(23px, 2vw, 30px);
+    font-weight: 750;
+}
+
+.jano-content h2 {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.jano-content p {
+    line-height: 1.6;
+}
+
+/* Superficies */
+.jano-content .dashboard-card,
+.jano-content .panel,
+.jano-content .stat-card,
+.jano-content .maintenance-panel,
+.jano-content .ficha-form-card {
+    background: var(--jano-surface);
+    border: 1px solid var(--jano-border);
+    border-radius: var(--jano-radius);
+    box-shadow: var(--jano-shadow);
+}
+
+/* Formularios */
+.jano-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.jano-content select,
+.jano-content textarea {
+    min-height: 42px;
+    border: 1px solid #D7E0E7;
+    border-radius: 9px;
+    background: #FFFFFF;
+    color: var(--jano-text);
+    padding: 9px 12px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.jano-content input:focus,
+.jano-content select:focus,
+.jano-content textarea:focus {
+    border-color: var(--jano-brand);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+}
+
+/* Botones principales */
+.jano-content .btn-primary,
+.jano-content button.btn-primary,
+.jano-content .btn-success,
+.jano-content button[type="submit"].btn {
+    background: var(--jano-brand);
+    border-color: var(--jano-brand);
+    color: #FFFFFF;
+    border-radius: 9px;
+    font-weight: 650;
+}
+
+.jano-content .btn-primary:hover,
+.jano-content .btn-success:hover {
+    background: var(--jano-brand-hover);
+    border-color: var(--jano-brand-hover);
+}
+
+/* Tablas */
+.jano-content table {
+    border-color: var(--jano-border);
+}
+
+.jano-content thead th {
+    background: #F5F8FA;
+    color: #536575;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.jano-content tbody tr:hover {
+    background: #F5FAF9;
+}
+
+/* Mensajes */
+.jano-content .alert {
+    border-radius: 10px;
+    border: 1px solid var(--jano-border);
+    padding: 13px 16px;
+    margin-bottom: 18px;
+}
+
+/* Modo oscuro */
+html[data-tema="dark"] {
+    --jano-page: #101B25;
+    --jano-surface: #192936;
+    --jano-text: #E7EEF3;
+    --jano-muted: #9BAFBC;
+    --jano-border: #2B3D4B;
+    --jano-shadow: 0 4px 18px rgba(0,0,0,.16);
+}
+
+html[data-tema="dark"] .jano-main,
+html[data-tema="dark"] body.dashboard-body {
+    background: var(--jano-page);
+    color: var(--jano-text);
+}
+
+html[data-tema="dark"] .jano-topbar {
+    background: #172733;
+    border-color: var(--jano-border);
+}
+
+html[data-tema="dark"] .jano-topbar-context strong,
+html[data-tema="dark"] .jano-content h1,
+html[data-tema="dark"] .jano-content h2,
+html[data-tema="dark"] .jano-content h3 {
+    color: var(--jano-text);
+}
+
+html[data-tema="dark"] .jano-content input:not([type="checkbox"]):not([type="radio"]),
+html[data-tema="dark"] .jano-content select,
+html[data-tema="dark"] .jano-content textarea {
+    background: #142430;
+    color: var(--jano-text);
+    border-color: var(--jano-border);
+}
+
+html[data-tema="dark"] .jano-content thead th {
+    background: #203441;
+    color: #D5E1E8;
+}
+
+html[data-tema="dark"] .jano-content tbody tr:hover {
+    background: #203441;
+}
+
+/* Adaptación */
+@media (max-width: 1050px) {
+    .jano-shell {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+
+    .jano-content {
+        padding: 24px 20px;
+    }
+
+    .jano-topbar {
+        padding-inline: 20px;
+    }
+}
+
+@media (max-width: 760px) {
+    .jano-shell {
+        display: block;
+    }
+
+    .jano-sidebar {
+        width: 100%;
+        max-width: 100%;
+        min-height: auto;
+        border-radius: 0;
+    }
+
+    .jano-content {
+        padding: 20px 14px;
+    }
+
+    .jano-topbar {
+        min-height: 64px;
+        padding: 12px 15px;
+    }
+
+    .jano-footer {
+        padding: 15px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jano-shell *,
+    .jano-shell *::before,
+    .jano-shell *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}

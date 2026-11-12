@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Informes | JANO Inventario{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/paginas/informes.css' %}?v=20261105a">{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page informes-page">
+    <div class="page-heading">
+        <div>
+            <h1>Informes</h1>
+            <p>{{ total_informes }} informes disponibles. Elige uno, aplica los filtros que necesites y descárgalo en PDF o Excel.</p>
+        </div>
+    </div>
+
+    {% for categoria, informes in categorias %}
+    <section class="panel informes-categoria">
+        <div class="panel-heading">
+            <div>
+                <h2>{{ categoria }}</h2>
+                <p>{{ informes|length }} informe{{ informes|length|pluralize }}</p>
+            </div>
+        </div>
+        <ul class="informes-lista">
+            {% for informe in informes %}
+            <li class="informe-tarjeta">
+                <a class="informe-enlace" href="{% url 'inventario:informe_detalle' informe.clave %}">
+                    <strong>{{ informe.titulo }}</strong>
+                    <span>{{ informe.descripcion }}</span>
+                </a>
+                <div class="informe-descargas">
+                    <a class="btn btn-light" href="{% url 'inventario:informe_pdf' informe.clave %}" title="Descargar PDF con los filtros iniciales">PDF</a>
+                    <a class="btn btn-light" href="{% url 'inventario:informe_excel' informe.clave %}" title="Descargar Excel con los filtros iniciales">Excel</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% empty %}
+    <section class="panel"><p class="mant-vacio">No tienes informes disponibles con tu rol.</p></section>
+    {% endfor %}
+</div>
+{% endblock %}

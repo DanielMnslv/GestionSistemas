@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar equipo | JANO Inventario{% endblock %}
+
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page elegir-tipo">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <span>Registrar equipo</span>
+    </nav>
+    <header class="ficha-form-heading">
+        <h1>¿Qué tipo de equipo vas a registrar?</h1>
+        <p>Elige una categoría para abrir el formulario correspondiente.</p>
+    </header>
+    <div class="tipo-grid">
+        {% for valor, etiqueta in tipos %}
+        <a class="tipo-card" href="?tipo={{ valor }}">
+            <span class="tipo-icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                {% if valor == "RADIO" %}<path d="M7 8h12a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2v-8a2 2 0 012-2zM9 8l7-5M9 14h4"/>
+                {% elif valor == "COMPUTADOR" %}<path d="M3 5h18v11H3zM8 20h8M12 16v4"/>
+                {% elif valor == "TABLETA" %}<path d="M6 3h12a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"/>
+                {% elif valor == "IMPRESORA" %}<path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/>
+                {% elif valor == "ESCANER" %}<path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16"/>
+                {% elif valor == "GPS" %}<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zM12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/>
+                {% elif valor == "ALARMA" %}<path d="M6 17V11a6 6 0 0112 0v6l2 2H4zM10 21h4"/>
+                {% elif valor == "UPS" %}<path d="M4 7h14a2 2 0 012 2v6a2 2 0 01-2 2H4zM20 11h1.5v2H20M10 9l-2 3h3l-2 3"/>
+                {% else %}<path d="M4 8l8-4 8 4-8 4zM4 8v8l8 4 8-4V8"/>{% endif %}
+                </svg>
+            </span>
+            <span class="tipo-nombre">{{ etiqueta }}</span>
+            <svg class="tipo-flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

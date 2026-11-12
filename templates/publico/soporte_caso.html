@@ -1,0 +1,70 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Caso {{ ticket.numero }}{% endblock %}
+
+{% block content %}
+<div class="radio-detalle">
+    <div class="rd-heading">
+        <div>
+            <h1>Caso {{ ticket.numero }}</h1>
+            <p>Estado: <strong>{{ ticket.get_estado_display }}</strong></p>
+        </div>
+    </div>
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Tu solicitud</h2></div>
+        <div class="rd-panel-body">
+            <div class="rd-observations">{{ ticket.descripcion|linebreaksbr }}</div>
+            <div class="rd-grid" style="margin-top:16px">
+                <div class="rd-item"><span class="rd-label">Recibida</span><span class="rd-value">{{ ticket.creado_en|date:"d/m/Y H:i" }}</span></div>
+                {% if ticket.equipo %}<div class="rd-item"><span class="rd-label">Equipo</span><span class="rd-value">{{ ticket.equipo.placa }} · {{ ticket.equipo.get_tipo_display }}</span></div>{% endif %}
+                <div class="rd-item"><span class="rd-label">Técnico</span><span class="rd-value">{% if ticket.tecnico %}{{ ticket.tecnico.get_full_name|default:ticket.tecnico.username }}{% else %}Por asignar{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Visita</span><span class="rd-value">{{ ticket.fecha_programada|date:"d/m/Y"|default:"Por programar" }} {{ ticket.get_franja_display }}</span></div>
+            </div>
+        </div>
+    </section>
+
+    {% if ticket.solucion %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Solución</h2></div>
+        <div class="rd-panel-body"><div class="rd-observations">{{ ticket.solucion|linebreaksbr }}</div></div>
+    </section>
+    {% endif %}
+
+    {% if ticket.estado == "RESUELTO" %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading">
+            <h2>¿Quedó resuelto?</h2>
+            <p>Si no respondes, el caso se cerrará solo en {{ dias_cierre }} días.</p>
+        </div>
+        <div class="rd-panel-body">
+            <form method="post" class="rd-inline-form" style="margin:0 0 16px">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="confirmar">
+                <button class="rd-btn" type="submit">Sí, quedó resuelto</button>
+            </form>
+            <form method="post" class="rd-baja-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="reabrir">
+                <label for="{{ reabrir.motivo.id_for_label }}">{{ reabrir.motivo.label }}</label>
+                {{ reabrir.motivo }}
+                {% for error in reabrir.motivo.errors %}<p class="ficha-field-error">{{ error }}</p>{% endfor %}
+                <button class="rd-btn rd-btn-secondary" type="submit">No, sigue fallando</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Seguimiento</h2></div>
+        <div class="rd-panel-body">
+            <ol class="ticket-bitacora">
+                {% for e in eventos %}
+                <li><strong>{{ e.get_tipo_display }}</strong> <span class="subtext">{{ e.fecha|date:"d/m/Y H:i" }}</span>{% if e.texto and e.tipo != "CREADO" %}<p>{{ e.texto|linebreaksbr }}</p>{% endif %}</li>
+                {% endfor %}
+            </ol>
+            <p class="rd-note">Guarda este enlace para consultar tu caso. <a href="{% url 'soporte' %}">Pedir otro soporte</a></p>
+        </div>
+    </section>
+</div>
+{% endblock %}

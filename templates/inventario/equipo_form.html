@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        {% if equipo.pk %}
+            <span aria-hidden="true">/</span>
+            <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        {% endif %}
+        <span aria-hidden="true">/</span>
+        <span>{{ titulo }}</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">{{ equipo.get_tipo_display|upper }}</span>
+        <h1>{{ titulo }}</h1>
+        <p>La placa y el serial no pueden repetirse entre equipos.</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+
+            {% if formulario.errors or detalle.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario.non_field_errors }}
+                    {{ detalle.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Datos generales
+            </h3>
+            <div class="ficha-form-grid">
+                {% for field in formulario %}
+                    {% if field.widget_type == "textarea" %}
+                        {% include "inventario/_campo.html" with ancho_completo=True %}
+                    {% else %}
+                        {% include "inventario/_campo.html" %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if detalle %}
+            <hr class="ficha-divider">
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Características del {{ equipo.get_tipo_display|lower }}
+            </h3>
+            <div class="ficha-form-grid">
+                {% for field in detalle %}
+                    {% if field.widget_type == "textarea" %}
+                        {% include "inventario/_campo.html" with ancho_completo=True %}
+                    {% else %}
+                        {% include "inventario/_campo.html" %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
+                {% if not permisos.licencias %}
+                <p class="ficha-field-help">Las claves de licencia solo las ven y editan el técnico y el administrador.</p>
+                {% endif %}
+            {% endif %}
+            {% endif %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% if equipo.pk %}{% url 'inventario:equipo_detalle' equipo.placa %}{% else %}{% url 'inventario:equipos_lista' %}{% endif %}">
+                    Cancelar
+                </a>
+                <button class="ficha-form-button" type="submit">Guardar equipo</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

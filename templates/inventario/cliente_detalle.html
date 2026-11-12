@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cliente.nombre }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<div class="radio-detalle">
+    <div class="rd-heading">
+        <div>
+            <h1>{{ cliente.nombre }}</h1>
+            <p>NIT {{ cliente.nit|default:"sin dato" }} · {% if cliente.activo %}Activo{% else %}Inactivo{% endif %}</p>
+        </div>
+        <div class="rd-actions">
+            {% if permisos.entregas %}
+            <form method="post" action="{% url 'inventario:cliente_cambiar_estado' cliente.pk %}" class="rd-inline-form">
+                {% csrf_token %}
+                <button class="rd-btn rd-btn-secondary" type="submit">{% if cliente.activo %}Inactivar cliente{% else %}Activar cliente{% endif %}</button>
+            </form>
+            {% endif %}
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:clientes_lista' %}">Volver a clientes</a>
+        </div>
+    </div>
+
+    {% if permisos.entregas %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Agregar puesto</h2></div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:puesto_crear' cliente.pk %}" class="ficha-form-grid">
+                {% csrf_token %}
+                {% include "inventario/_campo.html" with field=formulario.sede %}
+                {% include "inventario/_campo.html" with field=formulario.nombre %}
+                <div class="ficha-field"><button class="rd-btn" type="submit">Agregar puesto</button></div>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Puestos ({{ puestos|length }})</h2></div>
+        <div class="rd-panel-body">
+            <div class="rd-table-wrap">
+                <table class="rd-table">
+                    <thead><tr><th>Sede</th><th>Puesto</th><th>Estado</th><th></th></tr></thead>
+                    <tbody>
+                        {% for p in puestos %}
+                        <tr>
+                            <td>{{ p.sede|default:"—" }}</td>
+                            <td>{{ p.nombre }}</td>
+                            <td>{% if p.activo %}<span class="rd-badge rd-green">Activo</span>{% else %}<span class="rd-badge rd-gray">Inactivo</span>{% endif %}</td>
+                            <td>{% if permisos.entregas %}<form method="post" action="{% url 'inventario:puesto_cambiar_estado' p.pk %}">{% csrf_token %}<button class="rd-btn rd-btn-secondary" type="submit">{% if p.activo %}Inactivar{% else %}Activar{% endif %}</button></form>{% endif %}</td>
+                        </tr>
+                        {% empty %}<tr><td colspan="4">Este cliente no tiene puestos.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

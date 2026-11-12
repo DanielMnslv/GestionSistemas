@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Cambio de GPS {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Cambio de vehículo o línea</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">GPS</span>
+        <h1>Cambio de vehículo o línea</h1>
+        <p>El cambio queda en el historial del GPS y actualiza sus datos actuales.</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            <div class="ficha-form-grid">
+                {% for field in formulario %}
+                    {% if field.widget_type == "textarea" %}
+                        {% include "inventario/_campo.html" with ancho_completo=True %}
+                    {% else %}
+                        {% include "inventario/_campo.html" %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% url 'inventario:equipo_detalle' equipo.placa %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Registrar cambio</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

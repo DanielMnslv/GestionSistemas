@@ -1,0 +1,457 @@
+/* ======================================================================
+   13-panel-mantenimientos.css - Estado de mantenimientos: pestañas (Resumen por tipo / Equipos), semáforo y vista de tarjetas
+   en el celular.
+   ====================================================================== */
+.mant-page {
+    --mant-vencido: #B42318;       --mant-vencido-bg: #FEF3F2;
+    --mant-proximo: #B54708;       --mant-proximo-bg: #FFFAEB;
+    --mant-vigente: #067647;       --mant-vigente-bg: #ECFDF3;
+    --mant-sin_mantenimiento: #475467; --mant-sin_mantenimiento-bg: #F2F4F7;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mant-page .page-heading { margin: 0; }
+.mant-page .panel { margin: 0; }
+.mant-heading-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Pestañas */
+.mant-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid var(--jano-border, #E0E5ED);
+}
+
+.mant-tab {
+    margin-bottom: -1px;
+    padding: 10px 18px;
+    border-bottom: 3px solid transparent;
+    color: var(--jano-gray, #647084);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.mant-tab:hover, .mant-tab:focus-visible { color: var(--jano-blue, #080D79); }
+.mant-tab.activa { border-bottom-color: var(--jano-lime, #C8D32B); color: var(--jano-blue, #080D79); }
+
+.mant-tab-n {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: #EEF0FB;
+    font-size: 12px;
+}
+
+/* Resumen por tipo */
+.mant-tipos table { width: 100%; }
+.mant-tipos .semaforo th,
+.mant-tipos .semaforo td { padding: 12px 16px; }
+.mant-tipos .semaforo th { text-transform: uppercase; }
+.mant-tipos tbody tr:hover { background: #F8FAFC; }
+.mant-tipos tfoot td { border-top: 2px solid var(--jano-border, #E0E5ED); }
+.mant-tipos .subtext { color: #C0C6D2; }
+
+.mant-num, .mant-num-total {
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.mant-num.mant-vencido { color: var(--mant-vencido); }
+.mant-num.mant-proximo { color: var(--mant-proximo); }
+.mant-num.mant-vigente { color: var(--mant-vigente); }
+.mant-num.mant-sin_mantenimiento { color: var(--mant-sin_mantenimiento); }
+.mant-num:hover, .mant-num-total:hover { text-decoration: underline; }
+
+.mant-minibarra-celda { width: 28%; min-width: 160px; }
+
+.mant-minibarra {
+    display: flex;
+    width: 100%;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #EAECF0;
+}
+
+.mant-tramo.mant-vencido { background: var(--mant-vencido); }
+.mant-tramo.mant-proximo { background: #F79009; }
+.mant-tramo.mant-vigente { background: #12B76A; }
+.mant-tramo.mant-sin_mantenimiento { background: #98A2B3; }
+
+.mant-pct { font-weight: 700; color: var(--mant-vigente); }
+
+/* Filtros: una sola franja baja, sin etiquetas visibles (van en el placeholder) */
+.mant-page .mant-filtros { padding: 8px 12px; }
+.mant-filtros input, .mant-filtros select { height: 36px; }
+.mant-filtros .btn { min-height: 36px; padding: 6px 14px; }
+
+.mant-page .filters.filters-mant {
+    grid-template-columns: minmax(200px, 2fr) repeat(2, minmax(130px, 1fr)) repeat(2, minmax(130px, 1fr)) auto;
+    gap: 10px;
+}
+
+/* Historial e intervenciones programadas */
+.mant-page .filters.filters-hist {
+    grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr)) auto;
+    gap: 10px;
+}
+
+/* Clientes y vigilantes */
+.mant-page .filters.filters-cli { grid-template-columns: minmax(220px, 2fr) minmax(130px, 1fr) auto; gap: 10px; }
+.mant-page .filters.filters-vig { grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(130px, 1fr)) auto; gap: 10px; }
+
+/* Intervenciones: el filtro (estado + Buscar/Limpiar) va pegado a la derecha */
+.mant-page .filters.filters-prog { grid-template-columns: minmax(200px, 320px) auto; justify-content: end; gap: 10px; }
+
+.mant-mas { margin-top: 8px; }
+.mant-mas > summary { width: max-content; color: var(--jano-blue, #080D79); font-size: 12px; font-weight: 700; cursor: pointer; }
+.mant-page .filters.filters-hist-mas { grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; margin-top: 8px; }
+.mant-filtros .filters-hist-mas .field label { font-size: 11px; }
+
+.mant-lista .mant-trabajo { min-width: 220px; max-width: 420px; }
+.mant-atraso { color: var(--mant-vencido); font-weight: 700; }
+.mant-acciones form { margin: 0; }
+.mant-cancelar { border: 0; background: none; color: var(--mant-vencido); cursor: pointer; font-family: inherit; }
+
+/* Lista de equipos */
+.mant-page .mant-resultado-cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 20px;
+}
+
+.mant-page .mant-resultado-cabeza h2 { margin: 0 0 2px; }
+
+.mant-vacio { padding: 24px; text-align: center; color: var(--jano-gray, #647084); }
+.mant-sin-dato { color: #98A2B3; }
+
+.mant-etiqueta {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.mant-etiqueta.mant-vencido { background: var(--mant-vencido-bg); color: var(--mant-vencido); }
+.mant-etiqueta.mant-proximo { background: var(--mant-proximo-bg); color: var(--mant-proximo); }
+.mant-etiqueta.mant-vigente { background: var(--mant-vigente-bg); color: var(--mant-vigente); }
+.mant-etiqueta.mant-solucionado { background: var(--mant-vigente-bg); color: var(--mant-vigente); }
+.mant-etiqueta.mant-parcial { background: var(--mant-proximo-bg); color: var(--mant-proximo); }
+.mant-etiqueta.mant-pendiente { background: var(--mant-vencido-bg); color: var(--mant-vencido); }
+.mant-etiqueta.mant-info { background: #EEF0FB; color: var(--jano-blue, #080D79); }
+.mant-etiqueta.mant-sin_mantenimiento { background: var(--mant-sin_mantenimiento-bg); color: var(--mant-sin_mantenimiento); }
+
+.mant-lista { width: 100%; white-space: normal; }
+.mant-lista td, .mant-lista th { padding: 9px 14px; text-align: left; vertical-align: middle; }
+.mant-lista th:last-child { text-align: right; }
+.mant-lista .equipo-tipo { display: none; }
+.mant-lista td .subtext { display: block; margin-top: 2px; font-size: 11px; }
+.mant-lista td:nth-child(3) { min-width: 200px; }
+.mant-lista td:nth-child(3) .subtext { margin-top: 4px; }
+.mant-lista td:nth-child(4), .mant-lista td:nth-child(5) { white-space: nowrap; }
+.mant-hist td:nth-child(4), .mant-hist td:nth-child(5), .mant-prog td:nth-child(4), .mant-prog td:nth-child(5) { white-space: normal; }
+.mant-hist td:nth-child(2), .mant-prog td:nth-child(2) { white-space: nowrap; }
+.mant-lista .mant-acciones-celda { width: 1%; white-space: nowrap; }
+
+.mant-acciones { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 10px; }
+.mant-acciones .btn { min-height: 30px; padding: 4px 12px; font-size: 12px; }
+
+.mant-enlace-accion {
+    padding: 4px 2px;
+    color: var(--jano-blue, #080D79);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+}
+.mant-enlace-accion:hover, .mant-enlace-accion:focus-visible { text-decoration: underline; }
+
+.mant-programado {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--mant-vigente-bg);
+    color: var(--mant-vigente);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mant-programado.atrasado { background: var(--mant-proximo-bg); color: var(--mant-proximo); }
+
+.mant-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.mant-pie .eq-pag { padding: 0; border-top: 0; }
+.mant-rango { color: var(--jano-gray, #647084); font-size: 12px; }
+
+/* Escritorio: la página no se desplaza (usa la clase lista-fija-page, igual que Equipos);
+   solo la lista de equipos tiene scroll propio. */
+@media (min-width: 901px) and (min-height: 560px) {
+    .lista-fija-page .mant-page { gap: 10px; }
+    .lista-fija-page .mant-tipos { min-height: 0; overflow: auto; }
+    .lista-fija-page .mant-resultados { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+    .lista-fija-page .mant-resultados .table-wrap { flex: 1; min-height: 0; overflow: hidden; }
+    .lista-fija-page .mant-resultados thead th { position: sticky; top: 0; z-index: 1; background: #F8FAFC; }
+    .lista-fija-page .mant-resultados .table-footer { flex: none; padding: 6px 16px; }
+}
+
+@media (max-width: 1200px) {
+    .mant-page .filters.filters-mant,
+    .mant-page .filters.filters-hist,
+    .mant-page .filters.filters-hist-mas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mant-page .filters-mant .actions,
+    .mant-page .filters-hist .actions { grid-column: 1 / -1; }
+}
+
+/* Celular: las tablas pasan a tarjetas, una por fila */
+@media (max-width: 760px) {
+    .mant-page .filters.filters-mant,
+    .mant-page .filters.filters-hist,
+    .mant-page .filters.filters-hist-mas,
+    .mant-page .filters.filters-prog { grid-template-columns: 1fr; }
+    .mant-page .mant-filtros { padding: 14px; }
+
+    .mant-page .tabla-tarjetas { white-space: normal; }
+    .mant-page .tabla-tarjetas thead { display: none; }
+    .mant-page .tabla-tarjetas,
+    .mant-page .tabla-tarjetas tbody,
+    .mant-page .tabla-tarjetas tfoot,
+    .mant-page .tabla-tarjetas tr { display: block; }
+
+    .mant-page .tabla-tarjetas tr {
+        margin: 0 0 12px;
+        padding: 8px 14px;
+        border: 1px solid var(--jano-border, #E0E5ED);
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .mant-page .tabla-tarjetas td,
+    .mant-page .semaforo td:first-child {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: auto;
+        padding: 8px 0;
+        border: 0;
+        border-bottom: 1px solid #F2F4F7;
+        text-align: right;
+        white-space: normal;
+    }
+
+    .mant-page .tabla-tarjetas td:last-child { border-bottom: 0; }
+
+    .mant-page .tabla-tarjetas td[data-label]::before {
+        content: attr(data-label);
+        flex: none;
+        color: var(--jano-gray, #647084);
+        font-size: 12px;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .mant-page .tabla-tarjetas td.tarjeta-titulo {
+        justify-content: flex-start;
+        font-size: 15px;
+        text-align: left;
+    }
+
+    .mant-page .mant-lista td .subtext { display: inline; margin-left: 6px; }
+    .mant-page .mant-acciones { flex-wrap: wrap; justify-content: flex-end; width: 100%; }
+    .mant-page .mant-acciones .btn { flex: 1; }
+    .mant-page .mant-acciones .mant-programado { flex-basis: 100%; text-align: center; }
+    .mant-page .mant-pie { justify-content: center; }
+    .mant-page .mant-heading-actions { width: 100%; }
+    .mant-page .mant-heading-actions .btn { flex: 1; }
+    .mant-page .mant-minibarra-celda { min-width: 0; }
+}
+
+
+/* Ventana emergente "Registrar intervención" (se abre desde el botón Registrar de la pestaña Equipos).
+   Diseño compacto de 6 columnas para que quepa sin desplazarse en una pantalla de escritorio. */
+.mant-modal {
+    width: min(920px, calc(100vw - 32px));
+    max-height: 92vh;
+    /* Anclada arriba: si crece un campo, la ventana no se vuelve a centrar ni "salta". */
+    margin: 4vh auto auto;
+    padding: 0;
+    border: 1px solid #E0E5ED;
+    border-radius: 15px;
+    background: #fff;
+    color: #182230;
+    box-shadow: 0 24px 60px rgba(5, 8, 70, .28);
+    overflow: hidden;
+}
+
+.mant-modal[open] { display: flex; flex-direction: column; }
+.mant-modal::backdrop { background: rgba(5, 8, 70, .45); }
+
+.mant-modal-carga { padding: 48px 24px; text-align: center; color: #647084; font-size: 14px; }
+.mant-modal-carga[hidden] { display: none; }
+
+.mant-modal [data-contenido],
+.mant-modal-contenido,
+.mant-modal-contenido form { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+
+.mant-modal-cabeza {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 22px 12px;
+    border-bottom: 1px solid #E0E5ED;
+    background: #fafbfe;
+}
+
+.mant-modal-cabeza h2 { margin: 4px 0 0; color: #050846; font-size: 21px; line-height: 1.2; }
+
+.mant-modal-equipo {
+    display: inline-block;
+    margin: 8px 0 0;
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: #eaecfb;
+    color: #080D79;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.mant-modal-cerrar {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #647084;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mant-modal-cerrar:hover { background: #eef1f7; color: #050846; }
+
+.mant-modal-cuerpo { flex: 1; min-height: 0; padding: 16px 22px; overflow-y: auto; }
+
+/* Rejilla de 6 columnas: fecha / tipo / técnico en tres; textos en parejas; trabajo y observaciones a lo ancho. */
+.mant-modal .maintenance-form-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px 14px; }
+.mant-modal .maintenance-form-field { gap: 5px; grid-column: span 2; }
+.mant-modal .maintenance-form-field label { font-size: 12.5px; }
+.mant-modal .maintenance-form-field input,
+.mant-modal .maintenance-form-field select { min-height: 38px; padding: 8px 11px; }
+/* Sin esquina de arrastre: los campos crecen solos con el texto (ver el script del panel). */
+.mant-modal .maintenance-form-field textarea { min-height: 0; padding: 8px 11px; resize: none; overflow-y: auto; }
+
+.mant-modal .mant-campo-equipo,
+.mant-modal .maintenance-form-field-wide { grid-column: 1 / -1; }
+.mant-modal .mant-campo-motivo,
+.mant-modal .mant-campo-diagnostico { grid-column: span 3; }
+.mant-modal .mant-campo-motivo textarea,
+.mant-modal .mant-campo-diagnostico textarea { height: 68px; }
+.mant-modal .mant-campo-trabajo_realizado textarea { height: 78px; }
+.mant-modal .mant-campo-repuestos_utilizados textarea { height: 38px; }
+.mant-modal .mant-campo-observaciones textarea { height: 52px; }
+
+/* Programar: fecha y tipo en dos mitades; descripción y observaciones a lo ancho. */
+.mant-modal .mant-modal-programar .mant-campo-fecha_programada,
+.mant-modal .mant-modal-programar .mant-campo-tipo { grid-column: span 3; }
+.mant-modal .mant-modal-programar .mant-campo-descripcion textarea { height: 96px; }
+.mant-modal .mant-modal-programar .mant-campo-observaciones textarea { height: 72px; }
+
+.mant-modal .maintenance-form-errors { margin: 0 0 12px; padding: 9px 12px; }
+.mant-modal .maintenance-form-field .maintenance-form-errors { margin: 0; padding: 0; border: 0; background: none; font-size: 12px; }
+
+.mant-modal .mant-modal-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0;
+    padding: 12px 22px;
+    background: #fff;
+}
+
+.mant-modal-ayuda { color: #647084; font-size: 12px; }
+.mant-modal-botones { display: flex; gap: 10px; }
+
+@media (max-width: 760px) {
+    .mant-modal { width: 100vw; max-height: 100vh; margin: 0; border-radius: 0; }
+    .mant-modal .maintenance-form-grid { grid-template-columns: minmax(0, 1fr); }
+    .mant-modal .maintenance-form-field,
+    .mant-modal .mant-campo-motivo,
+    .mant-modal .mant-campo-diagnostico,
+    .mant-modal .mant-modal-programar .mant-campo-fecha_programada,
+    .mant-modal .mant-modal-programar .mant-campo-tipo { grid-column: auto; }
+    .mant-modal-cabeza, .mant-modal-cuerpo, .mant-modal .mant-modal-pie { padding-left: 16px; padding-right: 16px; }
+    .mant-modal .mant-modal-pie { flex-direction: column; align-items: stretch; }
+    .mant-modal-ayuda { display: none; }
+    .mant-modal-botones .maintenance-form-button { flex: 1; }
+}
+
+/* Ventana para crear un cliente */
+.cliente-nuevo {
+    width: min(440px, calc(100vw - 32px));
+    padding: 22px;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 18px 50px rgba(8, 13, 121, .25);
+}
+.cliente-nuevo::backdrop { background: rgba(24, 32, 51, .45); }
+.cliente-nuevo h2 { margin: 0 0 14px; color: var(--jano-blue, #080D79); font-size: 18px; }
+.cliente-nuevo .ficha-form-grid { grid-template-columns: 1fr; }
+.cliente-nuevo-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* =====================================================================
+   Ventana "Registrar intervención" dentro de la ficha (marco más bajo que
+   una pantalla completa): encabezado en una sola franja, menos espacio
+   vertical y campos más bajos para que el formulario quepa sin desplazarse.
+   ===================================================================== */
+.ficha-embed .mant-modal {
+    width: min(920px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
+    margin: 8px auto;
+    border-radius: 14px;
+}
+
+.ficha-embed .mant-modal-cabeza { align-items: center; padding: 9px 16px 9px 20px; }
+
+.ficha-embed .mant-modal-cabeza > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1px 14px;
+}
+
+.ficha-embed .mant-modal-cabeza .maintenance-form-eyebrow { flex: 0 0 100%; font-size: 10.5px; line-height: 1.2; }
+
+.ficha-embed .mant-modal-cabeza h2 { margin: 0; font-size: 19px; }
+
+.ficha-embed .mant-modal-equipo { margin: 0; padding: 3px 11px; font-size: 12.5px; }
+
+.ficha-embed .mant-modal-cerrar { width: 32px; height: 32px; }
+
+.ficha-embed .mant-modal-cuerpo { padding: 12px 20px; }
+
+.ficha-embed .mant-modal .maintenance-form-grid { gap: 9px 14px; }
+
+.ficha-embed .mant-modal .maintenance-form-field { gap: 4px; }
+
+.ficha-embed .mant-modal .maintenance-form-field label { font-size: 12px; }
+
+.ficha-embed .mant-modal .maintenance-form-field input,
+.ficha-embed .mant-modal .maintenance-form-field select { min-height: 36px; padding: 6px 10px; }
+
+.ficha-embed .mant-modal .mant-campo-motivo textarea,
+.ficha-embed .mant-modal .mant-campo-diagnostico textarea { height: 56px; }
+
+.ficha-embed .mant-modal .mant-campo-trabajo_realizado textarea { height: 58px; }
+.ficha-embed .mant-modal .mant-campo-repuestos_utilizados textarea { height: 36px; }
+.ficha-embed .mant-modal .mant-campo-observaciones textarea { height: 44px; }
+
+.ficha-embed .mant-modal .mant-modal-pie { padding: 9px 20px; }
+
+.ficha-embed .mant-modal-ayuda { font-size: 11.5px; }

@@ -1,0 +1,37 @@
+/* Pantalla de informes: lista de informes y vista previa */
+.informes-page { width: 100%; }
+.informe-migas { margin: 0 0 6px; color: var(--jano-gray, #5B6076); font-size: 13px; }
+.informe-migas a { color: var(--jano-blue, #080D79); text-decoration: none; font-weight: 600; }
+.informe-migas a:hover { text-decoration: underline; }
+.informes-categoria { margin-bottom: 20px; }
+.informes-lista {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px; margin: 0; padding: 0 20px 20px; list-style: none;
+}
+.informe-tarjeta {
+    display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border: 1px solid var(--jano-border, #D7DBE8);
+    border-radius: 12px; background: var(--lv-card, #fff);
+}
+.informe-tarjeta:hover { border-color: var(--jano-blue, #080D79); }
+.informe-enlace { display: flex; flex-direction: column; gap: 5px; color: inherit; text-decoration: none; }
+.informe-enlace strong { color: var(--jano-blue, #080D79); font-size: 15px; line-height: 1.3; }
+.informe-enlace span { color: var(--jano-gray, #5B6076); font-size: 13px; line-height: 1.5; }
+.informe-descargas { display: flex; gap: 8px; }
+.informe-descargas .btn { padding: 6px 14px; font-size: 13px; }
+.informe-filtros { align-items: end; }
+.informe-filtros .field-check { align-self: center; }
+.informe-filtros .field-check label { display: flex; align-items: center; gap: 8px; }
+.informe-aviso { margin-bottom: 16px; }
+.informe-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.informe-cifra {
+    display: flex; flex-direction: column; gap: 2px; padding: 12px 14px;
+    border: 1px solid var(--jano-border, #D7DBE8); border-radius: 12px; background: var(--lv-card, #fff);
+}
+.informe-cifra strong { color: var(--jano-blue, #080D79); font-size: 24px; line-height: 1.1; }
+.informe-cifra span { color: var(--jano-gray, #5B6076); font-size: 12.5px; }
+.informe-tabla th.num, .informe-tabla td.num { text-align: right; }
+.informe-tabla th.centro, .informe-tabla td.centro { text-align: center; }
+.informe-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px 16px; }
+.informe-por-pagina { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.informe-por-pagina select { width: auto; }

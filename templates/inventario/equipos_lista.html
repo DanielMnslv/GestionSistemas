@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}Equipos de TI | JANO Inventario{% endblock %}
+
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page lista-items">
+    <form method="get" class="barra-items" id="eq-form">
+        <div class="busca-items">
+            <h1>Buscar equipos</h1>
+            <p>Escribe placa, serial, marca o responsable.</p>
+        </div>
+        <div class="filtros-pildora">
+            {% if permisos.equipos %}
+            <a class="btn btn-primary" href="{% url 'inventario:equipo_crear' %}">Registrar equipo +</a>
+            {% endif %}
+        </div>
+    </form>
+
+
+    <div class="eq-split">
+        <div class="eq-izq">
+        <section class="eq-lista-card" aria-label="Equipos">
+            <div class="eq-lista-cab">
+                <strong>Equipos</strong>
+                <span class="eq-result-count">{{ total_resultados }} resultado{{ total_resultados|pluralize }}</span>
+            </div>
+            <div class="eq-buscar">
+                <div class="eq-busca-fila">
+                    <label class="caja-busqueda">
+                        <span class="solo-lector">Buscar equipos por placa, serial, marca, responsable o vehículo</span>
+                        <input id="q" form="eq-form" type="search" name="q" value="{{ busqueda }}" placeholder="Placa, serial, marca, responsable, vehículo…">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>
+                    </label>
+                    <button type="button" class="eq-filtro-btn" id="eq-filtro-btn" aria-expanded="false" aria-controls="eq-filtros" title="Filtros">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                        <span class="solo-lector">Filtros</span>
+                        {% if n_filtros %}<span class="eq-filtro-n">{{ n_filtros }}</span>{% endif %}
+                    </button>
+                </div>
+                <div class="eq-filtros" id="eq-filtros" hidden>
+                    <label class="eq-filtro">Tipo
+                        <select form="eq-form" id="tipo" name="tipo">
+                            <option value="">Todos</option>
+                            {% for valor, etiqueta, total in tipos %}
+                            <option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Inventario
+                        <select form="eq-form" id="estado" name="estado">
+                            <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
+                            <option value="baja" {% if estado_seleccionado == "baja" %}selected{% endif %}>Dados de baja</option>
+                            <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Asignación
+                        <select form="eq-form" name="asignacion">
+                            <option value="">Todos</option>
+                            <option value="asignado" {% if asignacion_seleccionada == "asignado" %}selected{% endif %}>Con responsable</option>
+                            <option value="sin_asignar" {% if asignacion_seleccionada == "sin_asignar" %}selected{% endif %}>Sin asignar</option>
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Ubicación física
+                        <select form="eq-form" name="disponibilidad">
+                            <option value="">Todos</option>
+                            <option value="en_inventario" {% if disponibilidad_seleccionada == "en_inventario" %}selected{% endif %}>Guardado en inventario</option>
+                            <option value="entregado" {% if disponibilidad_seleccionada == "entregado" %}selected{% endif %}>Fuera del inventario (en uso)</option>
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Datos
+                        <select form="eq-form" name="datos">
+                            <option value="">Todos</option>
+                            <option value="completos" {% if datos_seleccionados == "completos" %}selected{% endif %}>Completos</option>
+                            <option value="pendientes" {% if datos_seleccionados == "pendientes" %}selected{% endif %}>Con datos pendientes</option>
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Accesorios (radios)
+                        <select form="eq-form" name="accesorios">
+                            <option value="">Todos</option>
+                            <option value="completos" {% if accesorios_seleccionados == "completos" %}selected{% endif %}>Completos (8 de 8)</option>
+                            <option value="incompletos" {% if accesorios_seleccionados == "incompletos" %}selected{% endif %}>Incompletos</option>
+                        </select>
+                    </label>
+                    <label class="eq-filtro">Revisión
+                        <select form="eq-form" name="revision">
+                            <option value="">Todos</option>
+                            <option value="si" {% if revision_seleccionada == "si" %}selected{% endif %}>Requiere revisión</option>
+                            <option value="no" {% if revision_seleccionada == "no" %}selected{% endif %}>Sin revisión pendiente</option>
+                        </select>
+                    </label>
+                    <div class="eq-filtros-acc">
+                        <a class="btn btn-light" href="{% url 'inventario:equipos_lista' %}">Limpiar</a>
+                        <button class="btn btn-primary" type="submit" form="eq-form">Buscar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="eq-lista eq-tabla-wrap">
+                <table class="eq-tabla" aria-label="Lista de equipos. Elige una fila para ver su ficha">
+                    <thead>
+                        <tr>
+                            <th scope="col">Placa</th>
+                            <th scope="col">Equipo</th>
+                            <th scope="col" class="col-extra">Responsable</th>
+                            <th scope="col" class="col-extra">Cliente · Puesto</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col" class="col-extra">Datos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipo in equipos %}
+                        <tr class="eq-fila" tabindex="0" aria-selected="false" data-ficha="ficha-{{ equipo.pk }}">
+                            <td class="eq-c-placa"><strong class="eq-placa">{{ equipo.placa }}</strong></td>
+                            <td class="eq-c-equipo">{% if equipo.marca or equipo.modelo %}{{ equipo.marca }} {{ equipo.modelo }}{% else %}-{% endif %}</td>
+                            <td class="col-extra">{% if equipo.ficha.responsable %}{{ equipo.ficha.responsable }}{% else %}<span class="eq-sin">Sin asignar</span>{% endif %}</td>
+                            <td class="col-extra">{{ equipo.ficha.cliente_puesto|default:"-" }}</td>
+                            <td class="eq-c-estado">
+                                {% if not equipo.activo %}<span class="badge badge-gray">De baja</span>
+                                {% elif equipo.estado_texto %}<span class="eq-estado eq-estado-{{ equipo.estado_tono }}">{{ equipo.estado_texto }}</span>
+                                {% else %}<span class="badge badge-gray">-</span>{% endif %}
+                                {% if equipo.requiere_revision %}<span class="badge badge-amber">Revisar</span>{% endif %}
+                            </td>
+                            <td class="col-extra">{% if equipo.ficha.faltantes %}<span class="eq-datos eq-datos-falta">{{ equipo.ficha.faltantes }} falta{{ equipo.ficha.faltantes|pluralize:"n" }}</span>{% else %}<span class="eq-datos eq-datos-ok">Completo</span>{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="empty">No hay equipos que coincidan con la búsqueda.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="eq-pag" aria-label="Paginación">
+                {% if page_obj.has_previous %}
+                <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page=1" title="Primera página" aria-label="Primera página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6l-6 6 6 6M7 6v12"/></svg></a>
+                <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.previous_page_number }}" title="Anterior" aria-label="Página anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+                {% else %}
+                <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 6l-6 6 6 6M7 6v12"/></svg></span>
+                <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></span>
+                {% endif %}
+                <label class="eq-pag-ir">
+                    <input type="number" id="eq-pag-input" min="1" max="{{ page_obj.paginator.num_pages }}" value="{{ page_obj.number }}" aria-label="Ir a la página">
+                    <span>de {{ page_obj.paginator.num_pages }}</span>
+                </label>
+                {% if page_obj.has_next %}
+                <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.next_page_number }}" title="Siguiente" aria-label="Página siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+                <a href="?{{ parametros }}{% if parametros %}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" title="Última página" aria-label="Última página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6l6 6-6 6M17 6v12"/></svg></a>
+                {% else %}
+                <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+                <span class="off" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 6l6 6-6 6M17 6v12"/></svg></span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </section>
+        </div>
+
+        <div class="eq-panel" id="eq-panel" aria-live="polite">
+            {% for equipo in equipos %}
+            <article class="pf" id="ficha-{{ equipo.pk }}" hidden aria-labelledby="ficha-titulo-{{ equipo.pk }}">
+                <header class="pf-cab">
+                    <h2 id="ficha-titulo-{{ equipo.pk }}">{{ equipo.placa }}</h2>
+                    <div class="pf-modelo">
+                        <span class="pf-tipo">{{ equipo.get_tipo_display }}</span>
+                        <strong>{% if equipo.marca or equipo.modelo %}{{ equipo.marca }} {{ equipo.modelo }}{% else %}<span class="mf-vacio">-</span>{% endif %}</strong>
+                    </div>
+                    <div class="pf-estado">
+                        {% if not equipo.activo %}<span class="badge badge-gray">De baja</span>
+                        {% elif equipo.estado_texto %}<span class="badge badge-{{ equipo.estado_tono }}">{{ equipo.estado_texto }}</span>
+                        {% else %}<span class="badge badge-gray">-</span>{% endif %}
+                        {% if equipo.requiere_revision %}<span class="badge badge-amber">Revisar</span>{% endif %}
+                        {% if equipo.ficha.faltantes %}<span class="badge badge-amber">⚠ {{ equipo.ficha.faltantes }} dato{{ equipo.ficha.faltantes|pluralize }} sin completar</span>{% else %}<span class="badge badge-green">Ficha completa</span>{% endif %}
+                    </div>
+                    {% url 'inventario:equipo_pestanas' equipo.placa as ficha_url %}
+                    <button type="button" class="pf-cerrar" data-cerrar-ficha aria-label="Cerrar la ficha de {{ equipo.placa }}" title="Cerrar ficha (Esc)">✕</button>
+                </header>
+
+                <div class="pf-tabs" role="tablist" aria-label="Secciones de la ficha de {{ equipo.placa }}">
+                    <button type="button" class="pf-tab is-activa" role="tab" id="pf-tab-{{ equipo.pk }}-resumen" aria-selected="true" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="0" data-pf-tab="resumen">Resumen</button>
+                    {% if equipo.tipo == "RADIO" and equipo.radio %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#entregas">Entregas y actas <span class="rd-tab-count">{{ equipo.entregas_radio_count }}</span></button>
+                    {% else %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1#entregas">Entregas y actas</button>
+                    {% endif %}
+                    {% if equipo.tipo == "RADIO" and equipo.radio %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-mantenimientos" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="mantenimientos" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#mantenimientos">Mantenimientos <span class="rd-tab-count">{{ equipo.mantenimientos_radio_count }}</span></button>
+                    {% else %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-mantenimientos" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="mantenimientos" data-src="{{ ficha_url }}?embed=1#mantenimientos">Mantenimientos</button>
+                    {% endif %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-hoja-de-vida" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="hoja-de-vida" data-src="{% url 'inventario:equipo_hoja_vida' equipo.placa %}?embed=1">Hoja de vida</button>
+                    {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-politica" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="politica" data-src="{{ ficha_url }}?embed=1#politica">Política de seguridad</button>
+                    {% endif %}
+                    {% if equipo.tipo == "RADIO" and equipo.radio %}
+                    {% if permisos.radios %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-editar" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="editar" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#editar">Editar</button>
+                    <button type="button" class="pf-tab pf-tab-baja" role="tab" id="pf-tab-{{ equipo.pk }}-baja" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="baja" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#baja">{% if equipo.activo %}Dar de baja{% else %}Baja{% endif %}</button>
+                    {% endif %}
+                    {% elif permisos.equipos %}
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-editar" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="editar" data-src="{{ ficha_url }}?embed=1#editar">Editar</button>
+                    <button type="button" class="pf-tab pf-tab-baja" role="tab" id="pf-tab-{{ equipo.pk }}-baja" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="baja" data-src="{{ ficha_url }}?embed=1#baja">{% if equipo.activo %}Dar de baja{% else %}Baja{% endif %}</button>
+                    {% endif %}
+                </div>
+                <div class="pf-pane-externo" id="pf-panel-{{ equipo.pk }}" role="tabpanel" hidden>
+                    <p class="pf-cargando" role="status">Cargando…</p>
+                    <iframe class="pf-marco" title="Detalle de {{ equipo.placa }}"></iframe>
+                </div>
+
+                <div class="pf-pane-resumen"{% if equipo.tipo != "RADIO" or not equipo.radio %} role="tabpanel" aria-labelledby="pf-tab-{{ equipo.pk }}-resumen"{% endif %}>
+
+                {% for tono, titulo, texto in equipo.ficha.avisos %}
+                <div class="pf-aviso pf-aviso-{{ tono }}"><strong>{{ titulo }}</strong>{% if texto %} · {{ texto }}{% endif %}</div>
+                {% endfor %}
+
+                {% if equipo.ficha.destacados %}
+                <div class="pf-destacados">
+                    {% for etiqueta, valor in equipo.ficha.destacados %}
+                    <div class="pf-dato pf-dato-{{ forloop.counter }}{% if not valor and valor != 0 %} pf-vacio-dato{% endif %}"><span>{{ etiqueta }}</span><strong>{% if valor.year %}{{ valor|date:"d/m/Y" }}{% elif valor or valor == 0 %}{{ valor|linebreaksbr }}{% else %}<span class="pf-sin">-</span>{% endif %}</strong></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if equipo.entregas is not None %}
+                <section class="pf-card pf-c2 pf-ent" id="entregas-{{ equipo.pk }}" hidden>
+                    <div class="pf-ent-cab">
+                        <h3>Entregas y actas</h3>
+                        <button type="button" class="pf-ent-cerrar" data-cerrar-entregas>Cerrar ✕</button>
+                    </div>
+                    {% if equipo.entregas %}
+                    <ul class="rd-entregas">
+                        {% for e in equipo.entregas %}
+                        <li>
+                            <button type="button" class="rd-entrega" data-acta="{{ e.acta }}" data-titulo="{{ equipo.placa }} · {{ e.fecha|date:'d/m/Y' }}">
+                                <span class="rd-entrega-top">
+                                    <strong>{{ e.fecha|date:"d/m/Y H:i" }}</strong>
+                                    {% if e.activa %}
+                                    <span class="badge-green">Asignado</span>
+                                    {% else %}
+                                    <span class="badge-gray">Devuelto</span>
+                                    {% endif %}
+                                </span>
+                                <span class="rd-entrega-linea">{{ e.recibe|default:"-" }}</span>
+                                {% if e.cedula %}
+                                <span class="rd-entrega-linea rd-muted">C.C. {{ e.cedula }}</span>
+                                {% endif %}
+                                {% if e.detalle %}
+                                <span class="rd-entrega-linea rd-muted">{{ e.detalle }}</span>
+                                {% endif %}
+                                {% if e.devolucion %}
+                                <span class="rd-entrega-linea rd-muted">Devuelto el {{ e.devolucion|date:"d/m/Y H:i" }}</span>
+                                {% endif %}
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="pf-ent-vacio">Este equipo no tiene entregas registradas.</p>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                {% if equipo.ficha.componentes %}
+                <section class="pf-card pf-verde pf-comp">
+                    <h3>Componentes · {{ equipo.ficha.componentes_con }} de {{ equipo.ficha.componentes|length }}</h3>
+                    <ul class="pf-chips">
+                        {% for c in equipo.ficha.componentes %}
+                        <li class="pf-chip pf-chip-{{ c.clase }}" title="{{ c.nombre }}: {{ c.texto }}"><span class="pf-chip-nom">{{ c.nombre }}</span>{% if c.estado and c.estado.0 != "No aplica" %}<small class="pf-chip-est pf-chip-est-{{ c.estado.1 }}">{% if c.estado.0 == "Sin dato" %}-{% else %}{{ c.estado.0 }}{% endif %}</small>{% elif c.clase == "q" %}<small class="pf-chip-est pf-chip-est-amber">-</small>{% endif %}</li>
+                        {% endfor %}
+                    </ul>
+                    {% if equipo.ficha.notas_componentes %}
+                    <div class="pf-notas">
+                        <div class="pf-notas-tit">⚠ Revisar ({{ equipo.ficha.notas_componentes|length }})</div>
+                        <ul>
+                            {% for nota in equipo.ficha.notas_componentes %}<li>{{ nota }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% if permisos.radios and equipo.radio.activo and equipo.radios_destino_transferencia %}
+                    <button class="rd-transferencia-trigger" type="button"
+                            data-abrir-transferencia="modal-transferencia-radio-{{ equipo.radio.pk }}">
+                        Transferir componentes
+                    </button>
+                    <dialog class="rd-devolucion-modal rd-transferencia-modal"
+                            id="modal-transferencia-radio-{{ equipo.radio.pk }}"
+                            aria-labelledby="modal-transferencia-radio-titulo-{{ equipo.radio.pk }}">
+                        <div class="rd-devolucion-caja">
+                            <header class="rd-devolucion-cab">
+                                <div>
+                                    <h2 id="modal-transferencia-radio-titulo-{{ equipo.radio.pk }}">Transferir componentes · {{ equipo.radio.etiqueta }}</h2>
+                                    <p>Solo se moverán los componentes que el radio destino todavía no tenga. Los demás permanecerán en este radio.</p>
+                                </div>
+                                <button class="rd-devolucion-cerrar" type="button" data-cerrar-transferencia aria-label="Cerrar">Cerrar</button>
+                            </header>
+                            <form method="post" action="{% url 'inventario:radio_transferir_componentes' equipo.radio.pk %}" class="rd-baja-form">
+                                {% csrf_token %}
+                                <label for="radio-destino-componentes-{{ equipo.radio.pk }}">Radio destino</label>
+                                <select id="radio-destino-componentes-{{ equipo.radio.pk }}" name="radio_destino" required data-radio-destino>
+                                    <option value="">Selecciona un radio</option>
+                                    {% for destino in equipo.radios_destino_transferencia %}
+                                    <option value="{{ destino.radio.pk }}" data-componentes="{{ destino.componentes_json }}">
+                                        {{ destino.radio.etiqueta }} · {{ destino.radio.marca }} {{ destino.radio.modelo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="rd-transferencia-previa" data-transferencia-previa aria-live="polite">
+                                    <strong>Componentes que se moverán</strong>
+                                    <p>Selecciona un radio destino para ver los componentes faltantes.</p>
+                                    <ul data-transferencia-lista hidden></ul>
+                                </div>
+                                <div class="rd-devolucion-acciones">
+                                    <button class="rd-devolucion-cancelar" type="button" data-cerrar-transferencia>Cancelar</button>
+                                    <button class="rd-btn" type="submit" data-transferencia-confirmar disabled>Confirmar transferencia</button>
+                                </div>
+                            </form>
+                        </div>
+                    </dialog>
+                    {% endif %}
+                </section>
+                {% endif %}
+
+                <div class="pf-secciones">
+                    {% for titulo, filas in equipo.ficha.secciones %}
+                    <section class="pf-card {% cycle 'pf-c1' 'pf-c2' 'pf-c3' 'pf-c4' 'pf-c5' 'pf-c6' %}">
+                        <h3>{{ titulo }}</h3>
+                        <dl>
+                            {% for etiqueta, valor in filas %}
+                            {% if valor.year or valor or valor == 0 %}
+                            <div><dt>{{ etiqueta }}</dt><dd>{% if valor.year %}{{ valor|date:"d/m/Y" }}{% else %}{{ valor|linebreaksbr }}{% endif %}</dd></div>
+                            {% elif equipo.activo and etiqueta in equipo.ficha.datos_de_baja %}
+                            <div class="pf-fila-na"><dt>{{ etiqueta }}</dt><dd><span class="pf-na">-</span><small>No aplica si está activo</small></dd></div>
+                            {% else %}
+                            <div class="pf-fila-vacia"><dt>{{ etiqueta }}</dt><dd><span class="pf-sin">-</span></dd></div>
+                            {% endif %}
+                            {% endfor %}
+                        </dl>
+                    </section>
+                    {% endfor %}
+                    <section class="pf-card pf-ambar">
+                        <h3>Observaciones</h3>
+                        {% if equipo.ficha.observaciones %}<p>{{ equipo.ficha.observaciones|linebreaksbr }}</p>{% else %}<p class="pf-fila-vacia pf-obs-vacia"><span class="pf-sin">-</span></p>{% endif %}
+                    </section>
+                </div>
+                </div>
+            </article>
+            {% empty %}
+            <p class="pf-vacio">Sin equipos para mostrar.</p>
+            {% endfor %}
+            <p class="pf-vacio" id="pf-ayuda" hidden>Selecciona un equipo de la lista para ver su ficha.</p>
+        </div>
+    </div>
+</div>
+<div class="acta-modal" id="acta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="acta-modal-tit">
+    <div class="acta-modal-caja">
+        <div class="acta-modal-cab">
+            <strong id="acta-modal-tit">Acta de entrega</strong>
+            <button type="button" id="acta-modal-cerrar">Cerrar ✕</button>
+        </div>
+        <iframe id="acta-modal-marco" title="Acta de entrega"></iframe>
+    </div>
+</div>
+<script>
+(function () {
+    var modal = document.getElementById("acta-modal");
+    var marco = document.getElementById("acta-modal-marco");
+    var titulo = document.getElementById("acta-modal-tit");
+    function cerrarActa() { modal.hidden = true; marco.removeAttribute("src"); document.body.style.overflow = ""; }
+    document.addEventListener("click", function (e) {
+        var ver = e.target.closest("[data-entregas]");
+        if (ver) {
+            var sec = document.getElementById(ver.getAttribute("data-entregas"));
+            var menu = ver.closest(".pf-menu");
+            if (menu) menu.removeAttribute("open");
+            if (sec) {
+                sec.hidden = false;
+                sec.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+            return;
+        }
+        var cerrar = e.target.closest("[data-cerrar-entregas]");
+        if (cerrar) { cerrar.closest(".pf-ent").hidden = true; return; }
+        var acta = e.target.closest("[data-acta]");
+        if (acta) {
+            titulo.textContent = "Acta de entrega · " + (acta.getAttribute("data-titulo") || "");
+            marco.src = acta.getAttribute("data-acta") + "?embed=1";
+            modal.hidden = false;
+            document.body.style.overflow = "hidden";
+            return;
+        }
+        if (e.target === modal || e.target.id === "acta-modal-cerrar") cerrarActa();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !modal.hidden) cerrarActa(); });
+})();
+</script>
+<script>
+(function () {
+    // Estado 1: la tabla usa todo el ancho. Estado 2: al elegir una fila, la ficha
+    // se abre a la derecha y la tabla se reduce a placa, equipo y estado.
+    var lista = document.querySelector(".eq-lista");
+    var panel = document.getElementById("eq-panel");
+    var split = document.querySelector(".eq-split");
+    if (!lista || !panel || !split) return;
+    function getFilas() { return Array.prototype.slice.call(lista.querySelectorAll(".eq-fila")); }
+    document.addEventListener("click", function (e) {
+        document.querySelectorAll(".pf-menu[open]").forEach(function (m) { if (!m.contains(e.target)) m.removeAttribute("open"); });
+    });
+    var movil = window.matchMedia("(max-width: 900px)");
+
+    function seleccionar(fila, enfocar) {
+        if (!fila) return;
+        getFilas().forEach(function (f) {
+            var activa = f === fila;
+            f.classList.toggle("sel", activa);
+            f.setAttribute("aria-selected", activa ? "true" : "false");
+        });
+        panel.querySelectorAll(".pf").forEach(function (p) {
+            p.hidden = p.id !== fila.getAttribute("data-ficha");
+        });
+        split.classList.add("has-ficha");
+        panel.scrollTop = 0;
+        if (enfocar === true) fila.focus({ preventScroll: true });
+        fila.scrollIntoView({ block: "nearest" });
+        try { sessionStorage.setItem("equipoSel", fila.getAttribute("data-ficha")); } catch (e) {}
+        if (movil.matches && enfocar !== "auto") panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function cerrar() {
+        var activa = lista.querySelector(".eq-fila.sel");
+        getFilas().forEach(function (f) { f.classList.remove("sel"); f.setAttribute("aria-selected", "false"); });
+        panel.querySelectorAll(".pf").forEach(function (p) { p.hidden = true; });
+        split.classList.remove("has-ficha");
+        try { sessionStorage.removeItem("equipoSel"); } catch (e) {}
+        if (activa) activa.focus({ preventScroll: true });
+    }
+
+    lista.addEventListener("click", function (e) {
+        var fila = e.target.closest(".eq-fila");
+        if (fila) seleccionar(fila, false);
+    });
+    lista.addEventListener("keydown", function (e) {
+        var fila = e.target.closest(".eq-fila");
+        if (!fila) return;
+        var filas = getFilas();
+        var i = filas.indexOf(fila);
+        var abierta = split.classList.contains("has-ficha");
+        if (e.key === "ArrowDown" && filas[i + 1]) { e.preventDefault(); filas[i + 1].focus(); if (abierta) seleccionar(filas[i + 1], true); }
+        else if (e.key === "ArrowUp" && filas[i - 1]) { e.preventDefault(); filas[i - 1].focus(); if (abierta) seleccionar(filas[i - 1], true); }
+        else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); seleccionar(fila, false); }
+    });
+    panel.addEventListener("click", function (e) {
+        if (e.target.closest("[data-cerrar-ficha]")) cerrar();
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape") return;
+        document.querySelectorAll(".pf-menu[open]").forEach(function (m) { m.removeAttribute("open"); });
+        var modal = document.getElementById("acta-modal");
+        if (modal && !modal.hidden) return;
+        if (split.classList.contains("has-ficha")) cerrar();
+    });
+
+    try { sessionStorage.removeItem("pfSoloPendiente"); } catch (e) {}
+    // Si la página se recarga con una ficha abierta, se reabre.
+    var guardada = null;
+    try { guardada = sessionStorage.getItem("equipoSel"); } catch (e) {}
+    var previa = guardada && getFilas().filter(function (f) { return f.getAttribute("data-ficha") === guardada; })[0];
+    if (previa) seleccionar(previa, "auto");
+})();
+</script>
+<script>
+(function () {
+    // Pestañas de la ficha de radios: Resumen vive en la lista; el resto se carga al abrirlo.
+    var panel = document.getElementById("eq-panel");
+    if (!panel) return;
+
+    function guardarPestana(ficha, nombre) {
+        try { sessionStorage.setItem("pfTab:" + ficha.id, nombre); } catch (e) {}
+    }
+
+    function activar(ficha, boton, enfocar) {
+        var nombre = boton.getAttribute("data-pf-tab");
+        ficha.querySelectorAll(".pf-tab").forEach(function (t) {
+            var on = t === boton;
+            t.classList.toggle("is-activa", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+            t.tabIndex = on ? 0 : -1;
+        });
+        if (enfocar) boton.focus();
+        // En pantallas angostas la barra se desplaza: la pestaña activa siempre queda a la vista.
+        if (boton.scrollIntoView) boton.scrollIntoView({ block: "nearest", inline: "nearest" });
+        guardarPestana(ficha, nombre);
+
+        var resumen = ficha.querySelector(".pf-pane-resumen");
+        var externo = ficha.querySelector(".pf-pane-externo");
+        if (nombre === "resumen") {
+            resumen.hidden = false;
+            externo.hidden = true;
+            return;
+        }
+        resumen.hidden = true;
+        externo.hidden = false;
+        externo.setAttribute("aria-labelledby", boton.id);
+        var marco = externo.querySelector(".pf-marco");
+        var destino = boton.getAttribute("data-src");
+        var partes = destino.split("#");
+        if (marco.getAttribute("data-base") === partes[0] && marco.contentWindow) {
+            marco.contentWindow.location.hash = partes[1] || "";
+        } else {
+            externo.classList.add("is-cargando");
+            marco.addEventListener("load", function listo() {
+                externo.classList.remove("is-cargando");
+                marco.removeEventListener("load", listo);
+            });
+            marco.setAttribute("data-base", partes[0]);
+            marco.src = destino;
+        }
+    }
+
+    panel.addEventListener("click", function (e) {
+        var boton = e.target.closest(".pf-tab");
+        if (boton) activar(boton.closest(".pf"), boton, false);
+    });
+
+    // Teclado: flechas, Inicio y Fin recorren las pestañas (patrón WAI-ARIA).
+    panel.addEventListener("keydown", function (e) {
+        var boton = e.target.closest(".pf-tab");
+        if (!boton) return;
+        var tabs = Array.prototype.slice.call(boton.parentNode.querySelectorAll(".pf-tab"));
+        var i = tabs.indexOf(boton);
+        var j = e.key === "ArrowRight" ? (i + 1) % tabs.length
+              : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length
+              : e.key === "Home" ? 0
+              : e.key === "End" ? tabs.length - 1 : -1;
+        if (j < 0) return;
+        e.preventDefault();
+        activar(boton.closest(".pf"), tabs[j], true);
+    });
+
+    // La página se recarga (al guardar, o al ajustar las filas a la pantalla): se vuelve a la pestaña
+    // de consulta en que estaba la persona. Editar y Dar de baja no se restauran a propósito.
+    var visible = panel.querySelector(".pf:not([hidden])");
+    if (visible) {
+        var guardada = null;
+        try { guardada = sessionStorage.getItem("pfTab:" + visible.id); } catch (e) {}
+        var destinoTab = guardada && ["entregas", "mantenimientos", "hoja-de-vida"].indexOf(guardada) >= 0 &&
+            visible.querySelector('.pf-tab[data-pf-tab="' + guardada + '"]');
+        if (destinoTab) activar(visible, destinoTab, false);
+    }
+})();
+</script>
+<script>
+(function () {
+    // Calcula cuántas filas caben en pantalla y recarga una vez con ?pp=N.
+    if (!window.matchMedia("(min-width: 901px) and (min-height: 560px)").matches) return;
+    function ajustar() {
+        var caja = document.querySelector(".eq-lista");
+        var filas = caja && caja.querySelectorAll(".eq-fila");
+        if (!filas || !filas.length) return;
+        // Se mide la fila más alta y el encabezado de la tabla (que no es una fila).
+        var alto = 0;
+        Array.prototype.forEach.call(filas, function (f) { alto = Math.max(alto, f.offsetHeight); });
+        var cab = caja.querySelector("thead");
+        var libre = caja.clientHeight - (cab ? cab.offsetHeight : 0) - 8;
+        var n = Math.max(3, Math.min(50, Math.floor(libre / alto)));
+        var url = new URL(window.location.href);
+        var actual = parseInt(url.searchParams.get("pp") || "8", 10);
+        var clave = "equiposPpIntento";
+        if (n === actual) { sessionStorage.removeItem(clave); return; }
+        if (sessionStorage.getItem(clave) === String(n)) return;
+        sessionStorage.setItem(clave, String(n));
+        // Se conserva la posición: la página nueva empieza en el mismo equipo que se veía.
+        var pagina = parseInt(url.searchParams.get("page") || "1", 10) || 1;
+        var nueva = Math.floor(((pagina - 1) * actual) / n) + 1;
+        url.searchParams.set("pp", n);
+        if (nueva > 1) url.searchParams.set("page", nueva); else url.searchParams.delete("page");
+        window.location.replace(url.toString());
+    }
+    // Se espera a que carguen las fuentes: cambian la altura de las filas.
+    var listo = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    listo.then(function () { window.requestAnimationFrame(ajustar); });
+})();
+</script>
+<script>
+(function () {
+    function ir(entrada) {
+        var n = parseInt(entrada.value, 10);
+        var max = parseInt(entrada.max, 10);
+        if (isNaN(n)) return;
+        n = Math.max(1, Math.min(max, n));
+        var url = new URL(window.location.href);
+        url.searchParams.set("page", n);
+        if (window.eqCargar) window.eqCargar(url.toString()); else window.location.href = url.toString();
+    }
+    document.addEventListener("keydown", function (e) {
+        if (e.target.id === "eq-pag-input" && e.key === "Enter") { e.preventDefault(); ir(e.target); }
+    });
+    document.addEventListener("change", function (e) { if (e.target.id === "eq-pag-input") ir(e.target); });
+    document.addEventListener("focusin", function (e) { if (e.target.id === "eq-pag-input") e.target.select(); });
+})();
+</script>
+<script>
+(function () {
+    // Filtros desplegables dentro de la barra de búsqueda.
+    var btn = document.getElementById("eq-filtro-btn");
+    var caja = document.getElementById("eq-filtros");
+    if (!btn || !caja) return;
+    function abrir(si) {
+        caja.hidden = !si;
+        btn.setAttribute("aria-expanded", si ? "true" : "false");
+    }
+    btn.addEventListener("click", function () { abrir(caja.hidden); });
+    document.addEventListener("click", function (e) {
+        if (!caja.hidden && !caja.contains(e.target) && !btn.contains(e.target)) abrir(false);
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !caja.hidden) { abrir(false); btn.focus(); e.stopPropagation(); }
+    }, true);
+})();
+</script>
+<script>
+(function () {
+    // Filtrar sin recargar: se pide la página filtrada y solo se reemplaza lo que cambia
+    // (tabla, contador, paginación y fichas). El panel de filtros queda abierto.
+    var form = document.getElementById("eq-form");
+    if (!form) return;
+    var ultima = 0;
+
+    function urlDesdeFormulario() {
+        var url = new URL(window.location.href);
+        var pp = url.searchParams.get("pp");
+        var datos = new FormData(form);
+        var params = new URLSearchParams();
+        datos.forEach(function (v, k) { if (v !== "" || k === "estado") params.append(k, v); });
+        // Los selectores con form="eq-form" también entran en FormData; "page" se reinicia.
+        if (pp) params.set("pp", pp);
+        url.search = params.toString();
+        return url.toString();
+    }
+
+    function cambiar(sel, doc) {
+        var a = document.querySelector(sel), b = doc.querySelector(sel);
+        if (a && b) a.innerHTML = b.innerHTML;
+    }
+
+    window.eqCargar = function (destino, sinHistorial) {
+        var id = ++ultima;
+        var tabla = document.querySelector(".eq-lista");
+        var temporizador = setTimeout(function () { if (tabla) tabla.style.opacity = "0.6"; }, 250);
+        fetch(destino, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+            .then(function (r) {
+                if (!r.ok) throw new Error(r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                if (id !== ultima) return; // llegó una respuesta más nueva
+                var doc = new DOMParser().parseFromString(html, "text/html");
+                cambiar(".eq-lista tbody", doc);
+                cambiar(".eq-result-count", doc);
+                cambiar("#eq-panel", doc);
+                // Paginación: puede aparecer o desaparecer según el resultado
+                var pagNueva = doc.querySelector(".eq-pag"), pagVieja = document.querySelector(".eq-pag");
+                if (pagVieja && pagNueva) pagVieja.innerHTML = pagNueva.innerHTML;
+                else if (pagVieja) pagVieja.remove();
+                else if (pagNueva) document.querySelector(".eq-lista-card").appendChild(pagNueva);
+                // Contador de filtros activos sobre el botón
+                var btn = document.getElementById("eq-filtro-btn");
+                var nVieja = btn.querySelector(".eq-filtro-n"), nNueva = doc.querySelector("#eq-filtro-btn .eq-filtro-n");
+                if (nVieja) nVieja.remove();
+                if (nNueva) btn.appendChild(nNueva);
+                // Si había una ficha abierta, el diseño no cambia: se abre la ficha de la primera
+                // fila de la nueva lista. Si no hay filas, se cierra.
+                var split = document.querySelector(".eq-split");
+                var habiaFicha = split && split.classList.contains("has-ficha");
+                var cuerpo = document.querySelector(".eq-lista");
+                if (cuerpo) cuerpo.scrollTop = 0;
+                var primera = document.querySelector(".eq-lista .eq-fila");
+                if (habiaFicha && primera) {
+                    primera.click();
+                } else {
+                    if (split) split.classList.remove("has-ficha");
+                    try { sessionStorage.removeItem("equipoSel"); } catch (e) {}
+                }
+                if (!sinHistorial) history.pushState({ eq: 1 }, "", destino);
+            })
+            .catch(function () { window.location.href = destino; }) // si algo falla, recarga normal
+            .then(function () { clearTimeout(temporizador); if (tabla) tabla.style.opacity = ""; });
+    };
+
+    // Cualquier filtro (select) dispara la carga; la búsqueda por texto, con Enter o "Buscar".
+    form.addEventListener("submit", function (e) { e.preventDefault(); window.eqCargar(urlDesdeFormulario()); });
+    document.addEventListener("change", function (e) {
+        var t = e.target;
+        if (t.tagName === "SELECT" && t.getAttribute("form") === "eq-form") window.eqCargar(urlDesdeFormulario());
+    });
+    var botonBuscar = document.querySelector('#eq-filtros button[type="submit"]');
+    if (botonBuscar) botonBuscar.addEventListener("click", function (e) { e.preventDefault(); window.eqCargar(urlDesdeFormulario()); });
+    var q = document.getElementById("q");
+    if (q) q.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); window.eqCargar(urlDesdeFormulario()); } });
+
+    // Paginación sin recarga
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest(".eq-pag a");
+        if (!a) return;
+        e.preventDefault();
+        window.eqCargar(a.href);
+    });
+    // Botón Limpiar
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest(".eq-filtros-acc a");
+        if (!a) return;
+        e.preventDefault();
+        var qq = document.getElementById("q"); if (qq) qq.value = "";
+        document.querySelectorAll('select[form="eq-form"]').forEach(function (s) { s.selectedIndex = 0; });
+        window.eqCargar(a.href);
+    });
+    window.addEventListener("popstate", function () { window.location.reload(); });
+})();
+</script>
+{% endblock %}

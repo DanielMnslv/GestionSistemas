@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        {% if radio %}
+            <span aria-hidden="true">/</span>
+            <a href="{% url 'inventario:equipo_detalle' radio.equipo.placa %}">
+                {{ radio.placa|default:"Sin placa" }}
+            </a>
+        {% endif %}
+        <span aria-hidden="true">/</span>
+        <span>{{ titulo }}</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">INVENTARIO DE RADIOS</span>
+        <h1>{{ titulo }}</h1>
+        <p>
+            Registra la identificación del equipo, su estado y sus accesorios.
+            La placa y el serial no pueden repetirse entre radios.
+        </p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+
+            {% if formulario.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {% include "inventario/_radio_campos.html" %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% if radio %}{% url 'inventario:equipo_detalle' radio.equipo.placa %}{% else %}{% url 'inventario:equipos_lista' %}?tipo=RADIO{% endif %}">
+                    Cancelar
+                </a>
+                <button class="ficha-form-button" type="submit">Guardar radio</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

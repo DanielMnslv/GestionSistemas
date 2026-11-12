@@ -1,0 +1,23 @@
+JANO INVENTARIO - VISTA LOCAL CON DATOS REALES COPIADOS
+
+1. Descomprime toda la carpeta en una ubicacion local.
+2. Ejecuta INICIAR_JANO_DATOS_REALES.bat.
+3. Abre http://127.0.0.1:8080 en tu navegador.
+4. Inicia sesion con un usuario que ya exista en la copia de la base de datos.
+5. Para detener el servidor, vuelve a la ventana negra y presiona CTRL+C.
+
+SEGURIDAD Y AISLAMIENTO
+- Esta carpeta contiene una COPIA de la base de datos que compartiste.
+- La copia inicial db_origen_copia_inicial.sqlite3 no se usa directamente para operar.
+- En el primer inicio se crea db_trabajo_local.sqlite3, que es la base de trabajo.
+- La base de datos original de tu computador no se toca.
+- La integracion con Gestion TIC y el envio real de correos estan desactivados.
+- El servidor escucha solo en 127.0.0.1; no queda publicado en internet ni en la red.
+- No ejecutes esta vista local en un servidor de produccion.
+
+IMPORTANTE
+- No se ejecutan migraciones al iniciar.
+- Si Django informa que faltan migraciones, detente y consulta antes de aplicar alguna.
+- Los archivos adjuntos/fotografias almacenados fuera de la base de datos no se incluyen; algunos enlaces a evidencias pueden no mostrar el archivo.
+- Usa las credenciales de los usuarios que ya existen en la base de datos copiada. No se cambia ninguna contrasena.
+- Si no recuerdas una contrasena, no alteres la base original; podemos preparar un procedimiento controlado sobre la copia de trabajo.

@@ -1,0 +1,314 @@
+/* ======================================================================
+   03-listas.css - Lista de inventario (radios y equipos)
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* Lista de inventario (radios y equipos) */
+.radios-page {
+    --radio-blue: var(--jano-blue, #080D79);
+    --radio-lime: var(--jano-lime, #C8D32B);
+    --radio-bg: var(--jano-background, #F4F6FA);
+    --radio-border: var(--jano-border, #E0E5ED);
+    color: var(--jano-black, #172033);
+}
+
+.radios-page .page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.radios-page .page-heading h1 {
+    margin: 0 0 7px;
+    font-size: 27px;
+}
+
+.radios-page .page-heading p {
+    margin: 0;
+    color: var(--jano-gray, #647084);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.radios-page .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.radios-page .stat-card {
+    min-width: 0;
+}
+
+.radios-page .panel {
+    min-width: 0;
+}
+
+.radios-page .stat-card { padding: 20px; }
+
+.radios-page .stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.radios-page .stat-label {
+    color: var(--jano-gray, #647084);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.radios-page .stat-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.radios-page .icon-green {
+    background: #eff5d2;
+    color: #425000;
+}
+
+.radios-page .icon-amber {
+    background: #fff2cf;
+    color: #875900;
+}
+
+.radios-page .icon-red {
+    background: #fee8e7;
+    color: #b42318;
+}
+
+.radios-page .stat-number {
+    display: block;
+    margin-top: 14px;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.radios-page .stat-caption {
+    margin-top: 6px;
+    color: var(--jano-gray, #647084);
+    font-size: 12px;
+}
+
+.radios-page .panel {
+    margin-bottom: 22px;
+    overflow: hidden;
+}
+
+.radios-page .panel-heading {
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--radio-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.radios-page .panel-heading h2 {
+    margin: 0 0 5px;
+    font-size: 17px;
+}
+
+.radios-page .panel-heading p {
+    margin: 0;
+    color: var(--jano-gray, #647084);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.radios-page .filter-body { padding: 22px; }
+
+.radios-page .filters {
+    display: grid;
+    grid-template-columns: minmax(200px, 2fr) minmax(140px, 1fr)
+        minmax(140px, 1fr) minmax(140px, 1fr) auto;
+    align-items: end;
+    gap: 14px;
+}
+
+.radios-page .field label {
+    display: block;
+    margin-bottom: 8px;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.radios-page input {
+    width: 100%;
+    min-width: 0;
+    height: 43px;
+    padding: 0 12px;
+    border: 1px solid #d8e0eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    font-size: 13px;
+}
+
+.radios-page select {
+    width: 100%;
+    min-width: 0;
+    height: 43px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 13px;
+}
+
+.radios-page .actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.radios-page .btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 41px;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.radios-page .btn-light {
+    border-color: #e0e5ed;
+}
+
+.radios-page .result-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.radios-page .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.radios-page table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+}
+
+.radios-page th {
+    padding: 14px 16px;
+    text-align: left;
+    letter-spacing: .45px;
+    font-size: 10px;
+    font-weight: 750;
+}
+
+.radios-page td {
+    padding: 15px 16px;
+    border-top: 1px solid #edf0f5;
+    font-size: 12px;
+}
+
+.radios-page .radio-link {
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.radios-page .subtext {
+    display: block;
+    margin-top: 4px;
+    color: var(--jano-gray, #647084);
+    font-size: 11px;
+    white-space: normal;
+}
+
+.radios-page .badge {
+    display: inline-block;
+    padding: 6px 9px;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.radio-detalle .rd-amber {
+    background: #fff2cf;
+    color: #875900;
+}
+
+.radios-page .empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--jano-gray, #647084);
+    white-space: normal;
+}
+
+.radios-page .table-footer {
+    padding: 17px 22px;
+    border-top: 1px solid var(--radio-border);
+    color: var(--jano-gray, #647084);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.radios-page .pagination {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.radios-page .page-number {
+    padding: 8px 10px;
+    font-weight: 650;
+    color: var(--radio-blue);
+}
+
+@media (max-width: 1200px) {
+    .radios-page .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .radios-page .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+    .radios-page .page-heading h1 { font-size: 23px; }
+
+    .radios-page .stats { gap: 10px; }
+
+    .radios-page .stat-card { padding: 14px; }
+
+    .radios-page .stat-number { font-size: 25px; }
+
+    .radios-page .filter-body { padding: 15px; }
+
+    .radios-page .filters { grid-template-columns: 1fr; }
+
+    .radios-page .actions { flex-wrap: wrap; }
+
+    .radios-page .actions .btn { flex: 1; }
+
+    .radios-page .panel-heading { padding: 17px; }
+
+    .radios-page .table-footer { padding: 15px; }
+}
+
+@media (max-width: 380px) {
+    .radios-page .stats { grid-template-columns: 1fr; }
+}

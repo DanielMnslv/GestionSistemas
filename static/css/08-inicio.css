@@ -1,0 +1,112 @@
+/* ======================================================================
+   08-inicio.css - Panel de inicio
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* ---------- Panel de inicio: todas las tarjetas visibles sin scroll ---------- */
+@media (min-width: 901px) and (min-height: 620px) {
+    html:has(body.inicio-page) {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body.inicio-page {
+        height: 100vh;
+        height: 100dvh;
+        margin: 0;
+        padding: 16px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .inicio-page .shell {
+        height: 100%;
+        min-height: 0;
+        margin: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .inicio-page .sidebar {
+        height: 100%;
+        top: 0;
+    }
+
+    .inicio-page .main-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: clamp(14px, 2.6vh, 28px) 28px 10px;
+    }
+
+    .inicio-page .dashboard-container {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .inicio-page .welcome-heading h1 {
+        margin: 6px 0 4px;
+        font-size: clamp(22px, 3.6vh, 32px);
+    }
+
+    .inicio-page .welcome-heading p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .inicio-page .dashboard-grid {
+        flex: 1;
+        min-height: 0;
+        margin-top: clamp(12px, 2.4vh, 24px);
+        gap: clamp(10px, 1.8vh, 16px);
+        grid-template-rows: repeat(3, minmax(0, 1fr));
+    }
+
+    .inicio-page .dashboard-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        column-gap: 12px;
+        align-items: center;
+        min-height: 0;
+        padding: clamp(10px, 1.8vh, 18px) 18px;
+        overflow: hidden;
+    }
+
+    .inicio-page .card-icon {
+        grid-row: 1;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        font-size: 13px;
+    }
+
+    .inicio-page .dashboard-card h2 {
+        grid-column: 2;
+        grid-row: 1;
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .inicio-page .dashboard-card p {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        align-self: start;
+        min-height: 0;
+        margin: 8px 0 0;
+        overflow: hidden;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .inicio-page .dashboard-card > a:last-child {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        margin-top: 6px;
+        font-size: 13px;
+    }
+
+    .inicio-page .dashboard-footer { padding: 8px 10px 0; }
+}

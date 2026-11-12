@@ -1,0 +1,221 @@
+﻿/* ==========================================================
+   JANO INVENTARIO — CAPA VISUAL UNIFICADA
+   Versión 1.0 | Solo presentación, sin alterar funcionalidades
+   ========================================================== */
+
+:root {
+    --jano-primary: #2E3092;
+    --jano-primary-hover: #252779;
+    --jano-accent: #A6CE38;
+    --jano-bg: #F3F5FA;
+    --jano-surface: #FFFFFF;
+    --jano-text: #252938;
+    --jano-muted: #737B8C;
+    --jano-border: #E5E8F0;
+    --jano-radius: 18px;
+    --jano-shadow: 0 8px 28px rgba(28, 37, 80, .055);
+}
+
+/* Fondo y tipografía */
+body {
+    background: var(--jano-bg);
+    color: var(--jano-text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+/* Estructura principal */
+.jano-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: transparent;
+    gap: 0;
+}
+
+/* Barra lateral */
+.jano-sidebar {
+    background: linear-gradient(180deg, #171C56 0%, #20266F 55%, #2E3092 100%);
+    color: #FFFFFF;
+    border: 0;
+    box-shadow: 5px 0 24px rgba(20, 28, 80, .10);
+}
+
+.jano-sidebar .sidebar-brand,
+.jano-sidebar .sidebar-user {
+    color: #FFFFFF;
+}
+
+.jano-sidebar .sidebar-nav a {
+    border-radius: 12px;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+
+.jano-sidebar .sidebar-nav a:hover {
+    background: rgba(255, 255, 255, .13);
+    color: #FFFFFF;
+}
+
+.jano-sidebar .sidebar-nav a.activo {
+    background: var(--jano-accent);
+    color: #20243B;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
+
+/* Panel de trabajo */
+.jano-main {
+    min-width: 0;
+    background: var(--jano-bg);
+    border: 0;
+    box-shadow: none;
+}
+
+.jano-content {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    color: var(--jano-text);
+}
+
+/* Encabezados */
+.jano-content h1 {
+    color: var(--jano-text);
+    font-weight: 800;
+    letter-spacing: -.45px;
+}
+
+.jano-content h2,
+.jano-content h3 {
+    color: var(--jano-text);
+    font-weight: 750;
+}
+
+/* Superficies y tarjetas comunes */
+.jano-content .dashboard-card,
+.jano-content .panel,
+.jano-content .stat-card,
+.jano-content .maintenance-panel,
+.jano-content .ficha-form-card {
+    border: 1px solid var(--jano-border);
+    border-radius: var(--jano-radius);
+    background: var(--jano-surface);
+    box-shadow: var(--jano-shadow);
+}
+
+/* Campos */
+.jano-content input:not([type="checkbox"]):not([type="radio"]),
+.jano-content select,
+.jano-content textarea {
+    border-color: var(--jano-border);
+    border-radius: 10px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.jano-content input:focus,
+.jano-content select:focus,
+.jano-content textarea:focus {
+    border-color: var(--jano-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(46, 48, 146, .12);
+}
+
+/* Tablas */
+.jano-content table {
+    border-color: var(--jano-border);
+}
+
+.jano-content thead th {
+    color: #525B70;
+    background: #F6F7FB;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.jano-content tbody tr {
+    transition: background .15s ease;
+}
+
+.jano-content tbody tr:hover {
+    background: #F8F9FD;
+}
+
+/* Botones: no modificar botones de peligro ni estados */
+.jano-content button:not(.btn-danger):not(.btn-eliminar),
+.jano-content .btn:not(.btn-danger):not(.btn-eliminar) {
+    transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.jano-content button:not(:disabled):hover,
+.jano-content .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+
+/* Tema oscuro */
+html[data-tema="dark"] {
+    --jano-bg: #171A25;
+    --jano-surface: #202536;
+    --jano-text: #EEF0F7;
+    --jano-muted: #AAB1C2;
+    --jano-border: #343B4E;
+    --jano-shadow: 0 8px 28px rgba(0, 0, 0, .16);
+}
+
+html[data-tema="dark"] body,
+html[data-tema="dark"] .jano-main {
+    background: var(--jano-bg);
+    color: var(--jano-text);
+}
+
+html[data-tema="dark"] .jano-content h1,
+html[data-tema="dark"] .jano-content h2,
+html[data-tema="dark"] .jano-content h3 {
+    color: var(--jano-text);
+}
+
+html[data-tema="dark"] .jano-content .dashboard-card,
+html[data-tema="dark"] .jano-content .panel,
+html[data-tema="dark"] .jano-content .stat-card,
+html[data-tema="dark"] .jano-content .maintenance-panel,
+html[data-tema="dark"] .jano-content .ficha-form-card {
+    background: var(--jano-surface);
+    border-color: var(--jano-border);
+}
+
+html[data-tema="dark"] .jano-content thead th {
+    background: #282F42;
+    color: #D9DEEB;
+}
+
+html[data-tema="dark"] .jano-content tbody tr:hover {
+    background: #252D40;
+}
+
+/* Adaptación a móviles */
+@media (max-width: 900px) {
+    .jano-shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .jano-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .jano-main {
+        min-width: 0;
+        padding-inline: 12px;
+    }
+
+    .jano-content {
+        padding-inline: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jano-shell *,
+    .jano-shell *::before,
+    .jano-shell *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}

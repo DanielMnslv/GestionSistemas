@@ -1,0 +1,44 @@
+{% comment %}Campos del formulario de intervención. Lo usan la página completa y la ventana emergente.
+Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va oculto y se muestra en el encabezado.{% endcomment %}
+{% if formulario.non_field_errors %}
+    <div class="maintenance-form-errors" role="alert">
+        <strong>Revisa la información ingresada:</strong>
+        {{ formulario.non_field_errors }}
+    </div>
+{% endif %}
+
+<div class="maintenance-form-grid">
+    {% for field in formulario %}
+        {% if equipo_fijo and field.name == "equipo" %}
+            {{ field.as_hidden }}
+            {% for error in field.errors %}
+                <div class="maintenance-form-errors maintenance-form-field-wide" role="alert">{{ error }}</div>
+            {% endfor %}
+        {% else %}
+        <div data-mant-field="{{ field.name }}" class="maintenance-form-field mant-campo-{{ field.name }}
+            {% if field.name == 'trabajo_realizado' or field.name == 'descripcion' or field.name == 'observaciones' or field.name == 'causa_dano' or field.name == 'actividades_preventivas' or field.name == 'estados_entrega' %}maintenance-form-field-wide{% endif %}">
+
+            <label for="{{ field.id_for_label }}">
+                {{ field.label }}
+                {% if field.field.required %}
+                    <span class="maintenance-form-required" aria-hidden="true">*</span>
+                {% endif %}
+            </label>
+
+            {{ field }}
+
+            {% if field.help_text %}
+                <span class="maintenance-form-help">
+                    {{ field.help_text }}
+                </span>
+            {% endif %}
+
+            {% for error in field.errors %}
+                <span class="maintenance-form-errors" role="alert">
+                    {{ error }}
+                </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endfor %}
+</div>

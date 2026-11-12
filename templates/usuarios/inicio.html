@@ -1,0 +1,97 @@
+﻿{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel principal | JANO Inventario{% endblock %}
+
+{% block body_class %}panel-page{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="{% static 'css/17-panel-inicio.css' %}?v=20261105b">
+<link rel="stylesheet" href="{% static 'css/20-jano-dashboard.css' %}?v=20261112d">{% endblock %}
+
+{% block content %}
+<div class="pn">
+    <header class="pn-head">
+        <div>
+            <h1>Inventario de equipos</h1>
+            {% now "l j \d\e F \d\e Y" as fecha_hoy %}
+            <p class="pn-sub">{{ fecha_hoy|lower|capfirst }}. {{ programados_mes }} mantenimiento{{ programados_mes|pluralize }} programado{{ programados_mes|pluralize }} este mes.</p>
+        </div>
+        <div class="pn-acts">
+            <a class="pn-btn" href="{% url 'inventario:equipos_lista' %}">Ver todos los equipos</a>
+            <a class="pn-btn pn-btn-p" href="{% url 'inventario:equipo_crear' %}">Registrar equipo</a>
+        </div>
+    </header>
+
+    <section class="pn-band" aria-label="Estado del inventario">
+        <div class="pn-bn"><small>Equipos activos</small><b>{{ total }}</b></div>
+        <div class="pn-bn"><small><i class="d o"></i>Operativos</small><b>{{ n_ok }}</b><em>{{ pct_ok }}%</em></div>
+        <div class="pn-bn"><small><i class="d r"></i>Regulares</small><b>{{ n_reg }}</b></div>
+        <div class="pn-bn"><small><i class="d m"></i>Con falla</small><b>{{ n_mal }}</b></div>
+        <div class="pn-bn"><small><i class="d s"></i>Sin estado</small><b>{{ n_sin }}</b></div>
+        <div class="pn-comp" role="img" aria-label="Composición del inventario por estado">
+            <i class="o" style="width:{{ w_ok }}%"></i><i class="r" style="width:{{ w_reg }}%"></i><i class="m" style="width:{{ w_mal }}%"></i><i class="s" style="width:{{ w_sin }}%"></i>
+        </div>
+    </section>
+
+    <div class="pn-main">
+        <section class="pn-mapa" aria-labelledby="pn-t-mapa">
+            <div class="pn-sh"><h2 id="pn-t-mapa">Dónde están los radios</h2></div>
+            <div id="pn-map" role="region" aria-label="Mapa con la ubicación de los radios"></div>
+            <p class="pn-mp" id="pn-mp"></p>
+            <ol class="pn-lugares" id="pn-lugares" aria-label="Lugares con radios"></ol>
+        </section>
+
+        <aside class="pn-at" aria-labelledby="pn-t-at">
+            <h2 id="pn-t-at">Requiere atención</h2>
+            <ul class="pn-at-l">
+                <li><a href="{% url 'inventario:equipos_lista' %}?tipo=RADIO"><b{% if radios_danados %} class="hot"{% endif %}>{{ radios_danados }}</b><span>Radios dañados</span></a></li>
+                <li><a href="{% url 'inventario:equipos_lista' %}?revision=si"><b{% if en_revision %} class="hot"{% endif %}>{{ en_revision }}</b><span>Equipos marcados para revisión</span></a></li>
+                <li><a href="{% url 'inventario:mantenimientos_programados_lista' %}"><b{% if vencidos %} class="hot"{% endif %}>{{ vencidos }}</b><span>Mantenimientos vencidos</span></a></li>
+                <li><a href="{% url 'inventario:equipos_lista' %}?tipo=RADIO&amp;disponibilidad=en_inventario"><b>{{ bodega }}</b><span>Radios en bodega sin asignar</span></a></li>
+            </ul>
+            <h3>Próximos mantenimientos</h3>
+            <ul class="pn-prox">
+                {% for p in proximos %}
+                <li><a href="{{ p.url }}"><span>{{ p.placa }}<small>{{ p.tipo }}</small></span><time>{{ p.fecha }}</time></a></li>
+                {% empty %}
+                <li class="pn-vacio">No hay mantenimientos programados.</li>
+                {% endfor %}
+            </ul>
+            <a class="pn-at-mas" href="{% url 'inventario:mantenimientos_programados_lista' %}">Ver toda la programación</a>
+        </aside>
+    </div>
+
+    <div class="pn-two">
+        <section class="pn-sec" aria-labelledby="pn-t-tipos">
+            <div class="pn-sh"><h2 id="pn-t-tipos">Equipos por tipo</h2><span class="pn-mut">Toque un tipo para ver su lista</span></div>
+            <ul class="pn-leg" aria-hidden="true"><li><i class="d o"></i>Operativo</li><li><i class="d r"></i>Regular</li><li><i class="d m"></i>Con falla</li><li><i class="d s"></i>Sin estado</li></ul>
+            <div class="pn-tipos">
+                {% for t in tipos %}
+                <a class="pn-tipo" href="{% url 'inventario:equipos_lista' %}?tipo={{ t.tipo }}">
+                    <span class="pn-nm">{{ t.nombre }}</span><span class="pn-ct">{{ t.total }}</span>
+                    <span class="pn-seg" title="{{ t.ok }} operativos, {{ t.reg }} regulares, {{ t.mal }} con falla, {{ t.sin }} sin estado"><i class="o" style="width:{{ t.w_ok }}%"></i><i class="r" style="width:{{ t.w_reg }}%"></i><i class="m" style="width:{{ t.w_mal }}%"></i><i class="s" style="width:{{ t.w_sin }}%"></i></span>
+                    <span class="pn-pc">{{ t.pct_ok }}%</span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="pn-sec" aria-labelledby="pn-t-calor">
+            <div class="pn-sh"><h2 id="pn-t-calor">Mantenimientos por tipo</h2><span class="pn-mut">Últimas 18 semanas</span></div>
+            <div class="pn-stats"><div><b id="pn-min">0</b><small>Mínimo por semana</small></div><div><b id="pn-avg">0</b><small>Promedio</small></div><div><b id="pn-max">0</b><small>Máximo</small></div></div>
+            <div class="pn-heat" id="pn-heat" role="img" aria-label="Mantenimientos por tipo de equipo y semana"></div>
+        </section>
+    </div>
+</div>
+{{ grafico|json_script:"pn-datos" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
+<script src="{% static 'js/panel-inicio.js' %}?v=20261105b" defer></script>
+{% endblock %}
+
+
+
+
+

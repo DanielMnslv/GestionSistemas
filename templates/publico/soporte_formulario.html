@@ -1,0 +1,40 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Pedir soporte{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <header class="ficha-form-heading">
+        <span class="eyebrow">MESA DE AYUDA</span>
+        <h1>Pedir soporte técnico</h1>
+        <p>Reporta daños en computadores, impresoras, radios, GPS o alarmas, o problemas con el correo, Novasoft, SEIF, el servidor o internet. Te enviaremos un número de caso a tu correo.</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            {% if formulario.errors %}
+            <div class="ficha-form-errors" role="alert">
+                <strong>Revisa los campos marcados.</strong>
+                {{ formulario.non_field_errors }}
+            </div>
+            {% endif %}
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.cedula %}
+                {% include "inventario/_campo.html" with field=formulario.correo %}
+                {% include "inventario/_campo.html" with field=formulario.telefono %}
+                {% include "inventario/_campo.html" with field=formulario.ubicacion %}
+                {% include "inventario/_campo.html" with field=formulario.categoria %}
+                {% include "inventario/_campo.html" with field=formulario.placa %}
+                {% include "inventario/_campo.html" with field=formulario.descripcion ancho_completo=True %}
+            </div>
+            <div class="campo-trampa" aria-hidden="true">
+                {{ formulario.sitio_web.label_tag }} {{ formulario.sitio_web }}
+            </div>
+            <div class="ficha-form-actions">
+                <button class="ficha-form-button" type="submit">Enviar solicitud</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

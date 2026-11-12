@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}JANO Inventario{% endblock %} · Seguridad JANO</title>
+{% include "_estilos.html" %}{% block extra_css %}{% endblock %}
+</head><body class="dashboard-body {% block body_class %}{% endblock %}">
+{% with n=request.resolver_match.url_name|default:'' %}
+<div class="shell jano-shell">
+<aside class="sidebar jano-sidebar">
+<a class="sidebar-brand jano-brand" href="{% url 'inicio' %}"><img src="{% static 'img/logo-jano.png' %}" alt="JANO"><div class="jano-brand-copy"><small>SEGURIDAD</small><strong>JANO</strong><span>Inventario y activos</span></div></a>
+<nav class="sidebar-nav jano-nav" aria-label="Navegación principal">
+<div class="jano-nav-label">PRINCIPAL</div>
+<a href="{% url 'inicio' %}"{% if n == 'inicio' %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg><span>Dashboard</span></a>
+<div class="jano-nav-label">GESTIÓN DE ACTIVOS</div>
+<a href="{% url 'inventario:equipos_lista' %}"{% if 'equipo' in n or 'radio' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M3 5h18v11H3zM8 20h8M12 16v4"/></svg><span>Inventario general</span></a>
+<a href="{% url 'inventario:clientes_lista' %}"{% if 'cliente' in n or 'vigilante' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M4 20V8l8-4 8 4v12M9 20v-5h6v5"/></svg><span>Clientes y ubicaciones</span></a>
+<div class="jano-nav-label">GESTIÓN TÉCNICA</div>
+<a href="{% url 'inventario:panel_mantenimientos' %}"{% if 'mantenimiento' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M14 6a4 4 0 00-5 5l-6 6 3 3 6-6a4 4 0 005-5l-3 3-2-2z"/></svg><span>Mantenimiento</span></a>
+<a href="{% url 'inventario:politica_lista' %}"{% if 'politica' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4"/></svg><span>Políticas de seguridad</span></a>
+<div class="jano-nav-label">INFORMACIÓN Y CONTROL</div>
+<a href="{% url 'inventario:informes_inicio' %}"{% if 'informe' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7M9 9h2"/></svg><span>Informes y reportes</span></a>
+{% if request.user.is_superuser %}<div class="jano-nav-label">ADMINISTRACIÓN</div>
+<a href="{% url 'usuarios_lista' %}"{% if 'usuario' in n %} class="activo" aria-current="page"{% endif %}><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6zM19 12l2-1-2-4-2 .5-1.5-1L15 4h-4l-.5 2.5-1.5 1L7 7l-2 4 2 1v2l-2 1 2 4 2-.5 1.5 1L11 20h4l.5-2.5 1.5-1 2 .5 2-4-2-1z"/></svg><span>Usuarios y permisos</span></a>{% endif %}
+</nav>
+<div class="jano-sidebar-bottom">
+<button type="button" class="tema-boton" data-tema-toggle title="Cambiar tema" aria-label="Cambiar tema" aria-pressed="false"><svg class="icono-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/></svg><svg class="icono-luna" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg><span>Cambiar apariencia</span></button>
+<div class="sidebar-user jano-user"><div class="sidebar-avatar">{{ request.user.username|slice:":1"|upper }}</div><span title="{{ request.user.username }}">{{ request.user.get_full_name|default:request.user.username }}</span><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="logout-button" title="Cerrar sesión" aria-label="Cerrar sesión"><svg viewBox="0 0 24 24"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/></svg></button></form></div>
+</div></aside>
+<div class="main-panel jano-main">
+<header class="jano-topbar"><div class="jano-topbar-context"><span class="jano-topbar-kicker">PLATAFORMA DE GESTIÓN</span><strong>{% block page_heading %}JANO Inventario{% endblock %}</strong></div><div class="jano-topbar-meta"><span class="jano-status-dot"></span><span>Sesión activa</span></div></header>
+<main class="dashboard-container jano-content">{% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}{% block content %}{% endblock %}</main>
+<footer class="dashboard-footer jano-footer">SEGURIDAD JANO · GESTIÓN INTEGRAL DE ACTIVOS</footer>
+</div></div>{% endwith %}
+<script>
+(function () {
+  function configurarFormularioMantenimiento(form) {
+    if (!form || form.dataset.mantReady === "1") return;
+    form.dataset.mantReady = "1";
+    const tipo = form.querySelector('[name="tipo"]');
+    if (!tipo) return;
+    const campos = (nombre) => form.querySelector(`[data-mant-field="${nombre}"]`);
+    const mostrar = (nombre, visible) => {
+      const nodo = campos(nombre);
+      if (nodo) nodo.hidden = !visible;
+    };
+    function actualizar() {
+      const valor = tipo.value;
+      const preventivo = valor === "PREVENTIVO";
+      const correctivo = valor === "CORRECTIVO";
+      mostrar("actividades_preventivas", preventivo);
+      mostrar("actividad_preventiva_otros", preventivo && !!form.querySelector('[name="actividades_preventivas"][value="otros"]:checked'));
+      mostrar("causa_dano", correctivo);
+      mostrar("trabajo_realizado", correctivo || !preventivo);
+      mostrar("diagnostico", correctivo || !preventivo);
+      mostrar("motivo", !preventivo && !correctivo);
+      mostrar("estados_entrega", true);
+      const actividadOtros = form.querySelector('[name="actividades_preventivas"][value="otros"]');
+      if (actividadOtros) actividadOtros.addEventListener("change", () => mostrar("actividad_preventiva_otros", preventivo && actividadOtros.checked));
+    }
+    tipo.addEventListener("change", actualizar);
+    actualizar();
+  }
+  document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("[data-mant-form]").forEach(configurarFormularioMantenimiento));
+  const observer = new MutationObserver(() => document.querySelectorAll("[data-mant-form]").forEach(configurarFormularioMantenimiento));
+  observer.observe(document.body, {childList: true, subtree: true});
+})();
+</script>
+</body></html>

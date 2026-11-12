@@ -1,0 +1,200 @@
+/* Estilos de la pantalla: mantenimiento-form (antes en <style> de la plantilla) */
+
+.maintenance-form-page {
+    --f-blue: #080D79;
+    --f-dark: #050846;
+    --f-lime: #C8D32B;
+    --f-text: #182230;
+    --f-muted: #647084;
+    --f-border: #E0E5ED;
+    color: var(--f-text);
+}
+
+.maintenance-form-page * { box-sizing: border-box; }
+
+.maintenance-form-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.maintenance-form-eyebrow {
+    color: var(--f-blue);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.maintenance-form-heading h1 {
+    margin: 8px 0;
+    color: var(--f-dark);
+    font-size: clamp(25px, 3vw, 34px);
+    line-height: 1.2;
+}
+
+.maintenance-form-heading p {
+    margin: 0;
+    color: var(--f-muted);
+    line-height: 1.6;
+}
+
+.maintenance-form-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 43px;
+    padding: 11px 17px;
+    border: 1px solid var(--f-blue);
+    border-radius: 9px;
+    background: var(--f-blue);
+    color: #fff !important;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+
+.maintenance-form-button:hover { background: var(--f-dark); }
+
+.maintenance-form-button-secondary {
+    border-color: var(--f-border);
+    background: #fff;
+    color: var(--f-blue) !important;
+}
+
+.maintenance-form-button-secondary:hover { background: #f3f5fa; }
+
+.maintenance-form-panel {
+    overflow: hidden;
+    border: 1px solid var(--f-border);
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 5px 22px rgba(8, 13, 121, .05);
+}
+
+.maintenance-form-panel-heading {
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--f-border);
+    background: #fafbfe;
+}
+
+.maintenance-form-panel-heading h2 {
+    margin: 0 0 6px;
+    color: var(--f-dark);
+    font-size: 18px;
+}
+
+.maintenance-form-panel-heading p {
+    margin: 0;
+    color: var(--f-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.maintenance-form-body { padding: 24px; }
+
+.maintenance-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.maintenance-form-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.maintenance-form-field label {
+    color: #30394b;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.maintenance-form-field input,
+.maintenance-form-field select,
+.maintenance-form-field textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 11px 12px;
+    border: 1px solid #d5dce7;
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    color: var(--f-text);
+    font: inherit;
+    font-size: 13px;
+}
+
+.maintenance-form-field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.maintenance-form-field input:focus,
+.maintenance-form-field select:focus,
+.maintenance-form-field textarea:focus {
+    border-color: var(--f-blue);
+    box-shadow: 0 0 0 3px rgba(8, 13, 121, .09);
+}
+
+.maintenance-form-field .help-text,
+.maintenance-form-help {
+    color: var(--f-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.maintenance-form-field-wide { grid-column: 1 / -1; }
+
+.maintenance-form-required { color: #b42318; }
+
+.maintenance-form-errors {
+    margin-bottom: 20px;
+    padding: 13px 15px;
+    border: 1px solid #f1b7b7;
+    border-radius: 9px;
+    background: #fff0f0;
+    color: #a12626;
+    font-size: 13px;
+}
+
+.maintenance-form-errors ul {
+    margin: 6px 0 0;
+    padding-left: 20px;
+}
+
+.maintenance-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 25px;
+    padding-top: 22px;
+    border-top: 1px solid var(--f-border);
+}
+
+@media (max-width: 650px) {
+    .maintenance-form-heading { align-items: stretch; }
+
+    .maintenance-form-heading .maintenance-form-button { width: 100%; }
+
+    .maintenance-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 17px;
+    }
+
+    .maintenance-form-field-wide { grid-column: auto; }
+
+    .maintenance-form-body { padding: 17px; }
+
+    .maintenance-form-panel-heading { padding: 18px; }
+
+    .maintenance-form-actions { flex-direction: column; }
+
+    .maintenance-form-actions .maintenance-form-button { width: 100%; }
+}

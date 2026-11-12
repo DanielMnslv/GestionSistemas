@@ -1,0 +1,17 @@
+{% comment %}
+Encabezado y pestañas de la Política de seguridad informática. Espera "pestana"
+(equipos o historial) y, opcional, "total_equipos".
+{% endcomment %}
+<div class="page-heading">
+    <div>
+        <h1>Política de seguridad informática</h1>
+        <p>{% if pestana == "historial" %}Verificaciones realizadas de los 15 puntos de la política.{% else %}Verificación anual de los 15 puntos en computadores y tabletas activos.{% endif %}</p>
+    </div>
+</div>
+
+<nav class="mant-tabs" aria-label="Vistas">
+    <a class="mant-tab{% if pestana == 'equipos' %} activa{% endif %}" href="{% url 'inventario:politica_lista' %}?vista=equipos"{% if pestana == 'equipos' %} aria-current="page"{% endif %}>Equipos{% if total_equipos %}<span class="mant-tab-n">{{ total_equipos }}</span>{% endif %}</a>
+    <a class="mant-tab{% if pestana == 'historial' %} activa{% endif %}" href="{% url 'inventario:politica_lista' %}?vista=historial"{% if pestana == 'historial' %} aria-current="page"{% endif %}>Historial de verificaciones</a>
+</nav>
+
+{% include "inventario/_politica_ventana.html" %}

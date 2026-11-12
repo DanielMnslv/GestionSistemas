@@ -1,0 +1,68 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Django y base de datos local
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Variables y credenciales
+.env
+.env.*
+!.env.example
+
+# Archivos del editor
+.vscode/
+.idea/
+
+# Archivos temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Datos internos de JANO: no subir al repositorio
+*.xlsx
+*.xls
+*.csv
+
+
+# Copias de seguridad locales de la base de datos
+db_*.sqlite3
+respaldo_*.sqlite3
+importaciones/*.sqlite3
+
+# Archivos temporales de revisión
+scripts/revisar_cambios.py
+
+
+# Copias locales de archivos anteriores
+inventario/views_antes_mantenimiento.py
+templates/inventario/radio_detalle_respaldo.html
+
+# Copias de archivos antes de editarlos
+*.bak
+
+# Archivos estáticos generados por collectstatic
+staticfiles/
+
+# Respaldos automáticos de la base (respaldar_bd)
+respaldos/
+
+# Respaldos sueltos de rediseños y bases locales (no van al repositorio)
+*.sqlite3
+*.sqlite3.*
+.env.*
+BACKUP_*
+backups/
+*.backup_*
+*.backup_redisenio_*
+.venv_demo/
+*.respaldo_*
+*.danado_respaldo

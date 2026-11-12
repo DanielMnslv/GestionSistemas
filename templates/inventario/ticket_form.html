@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo ticket | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:tickets_lista' %}">Tickets</a>
+        <span aria-hidden="true">/</span>
+        <span>Nuevo ticket</span>
+    </nav>
+    <header class="ficha-form-heading">
+        <span class="eyebrow">TICKETS</span>
+        <h1>Nuevo ticket</h1>
+        <p>Registra un daño, una solicitud de soporte o un trabajo programado.</p>
+    </header>
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            {% if formulario.errors %}
+            <div class="ficha-form-errors" role="alert"><strong>Revisa los campos marcados.</strong></div>
+            {% endif %}
+            <div class="ficha-form-grid">
+                {% for field in formulario %}
+                    {% if field.widget_type == "textarea" %}
+                        {% include "inventario/_campo.html" with ancho_completo=True %}
+                    {% else %}
+                        {% include "inventario/_campo.html" %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:tickets_lista' %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Crear ticket</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

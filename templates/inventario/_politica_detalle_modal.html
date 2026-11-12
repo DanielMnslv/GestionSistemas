@@ -1,0 +1,37 @@
+{% comment %}Contenido de la ventana de detalle de una verificación. Espera "verificacion" y "filas".{% endcomment %}
+<div class="maintenance-form-page mant-modal-contenido pol-detalle">
+    <header class="mant-modal-cabeza">
+        <div>
+            <span class="maintenance-form-eyebrow">POLÍTICA DE SEGURIDAD INFORMÁTICA</span>
+            <h2 id="pol-modal-titulo">Verificación · {{ verificacion.equipo.placa }}</h2>
+            <p class="mant-modal-equipo">{{ verificacion.fecha|date:"d/m/Y H:i" }} · {{ verificacion.especialista|default:"Especialista sin dato" }}</p>
+        </div>
+        <button type="button" class="mant-modal-cerrar" data-cerrar aria-label="Cerrar">&times;</button>
+    </header>
+
+    <div class="mant-modal-cuerpo">
+        <p class="pol-resp"><strong>Responsable:</strong> {{ verificacion.responsable|default:"-" }}
+            {% if verificacion.incumplimientos %}<span class="mant-etiqueta mant-pendiente">{{ verificacion.incumplimientos|length }} incumplimiento{{ verificacion.incumplimientos|length|pluralize }}</span>{% else %}<span class="mant-etiqueta mant-vigente">Cumple</span>{% endif %}
+        </p>
+        <table class="pol-tabla">
+            <tbody>
+                {% for texto, valor in filas %}
+                <tr>
+                    <td>{{ texto }}</td>
+                    <td>{% if valor == "CUMPLE" %}<span class="mant-etiqueta mant-vigente">Cumple</span>{% elif valor == "NO CUMPLE" %}<span class="mant-etiqueta mant-pendiente">No cumple</span>{% else %}<span class="mant-etiqueta mant-sin_mantenimiento">{% if valor == "NO APLICA" %}No aplica{% else %}{{ valor }}{% endif %}</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if verificacion.observaciones %}<p class="pol-nota"><strong>Observaciones:</strong> {{ verificacion.observaciones }}</p>{% endif %}
+        {% if verificacion.actualizacion %}<p class="pol-nota"><strong>Actualizaciones:</strong> {{ verificacion.actualizacion }}</p>{% endif %}
+    </div>
+
+    <div class="maintenance-form-actions mant-modal-pie">
+        <span></span>
+        <div class="mant-modal-botones">
+            <a class="maintenance-form-button maintenance-form-button-secondary" href="{% url 'inventario:equipo_detalle' verificacion.equipo.placa %}">Ver equipo</a>
+            <button type="button" class="maintenance-form-button" data-cerrar>Cerrar</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>{% block title %}Soporte TI{% endblock %} | Seguridad Jano</title>
+    {% include "_estilos.html" %}
+</head>
+<body class="dashboard-body">
+    <header class="topbar">
+        <div class="topbar-brand">
+            <img src="{% static 'img/logo-jano-simbolo-color.svg' %}" alt="JANO">
+            <div>
+                <strong>SOPORTE TI</strong>
+                <small>Seguridad Jano</small>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="dashboard-footer">SEGURIDAD JANO · ÁREA DE TECNOLOGÍA</footer>
+</body>
+</html>

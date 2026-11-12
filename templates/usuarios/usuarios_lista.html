@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de usuarios | JANO Inventario</title>
+    <script>
+        /* Tema claro/oscuro: se fija antes de pintar para evitar el parpadeo (el botón vive en static/js/tema.js). */
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("jano-tema"); } catch (e) {}
+            if (t !== "dark" && t !== "light") {
+                t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+            document.documentElement.setAttribute("data-tema", t);
+        })();
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: #f4f5f9;
+            color: #080808;
+        }
+
+        h1 {
+            color: #080D79;
+        }
+
+        .contenedor {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .tabla-contenedor {
+            overflow-x: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #080D79;
+            color: white;
+        }
+
+        .activo {
+            color: #247a36;
+            font-weight: bold;
+        }
+
+        .inactivo {
+            color: #b42318;
+            font-weight: bold;
+        }
+
+        a {
+            color: #080D79;
+        }
+
+        /* Modo oscuro (se activa con data-tema="dark", ver static/js/tema.js) */
+        html[data-tema="dark"] { color-scheme: dark; }
+        html[data-tema="dark"] body { background: #0c1020; color: #e6e9f5; }
+        html[data-tema="dark"] h1,
+        html[data-tema="dark"] a { color: #aab1ff; }
+        html[data-tema="dark"] main,
+        html[data-tema="dark"] .tabla-contenedor { background: #151a2c; }
+        html[data-tema="dark"] th,
+        html[data-tema="dark"] td { border-bottom-color: #2a3254; }
+        html[data-tema="dark"] th { background: #1a23b8; color: #fff; }
+        html[data-tema="dark"] input,
+        html[data-tema="dark"] select { background: #10142a; color: #e6e9f5; border-color: #2a3254; }
+        html[data-tema="dark"] .ayuda { color: #abb1bb; }
+        html[data-tema="dark"] .errorlist,
+        html[data-tema="dark"] .inactivo { color: #e19e9e; }
+        html[data-tema="dark"] .activo { color: #8fd69a; }
+        html[data-tema="dark"] button { background: #1a23b8; color: #fff; }
+    </style>
+    <link rel="stylesheet" href="{% static 'css/16-modo-oscuro.css' %}?v=20261104a">
+    <script src="{% static 'js/tema.js' %}?v=20261104a" defer></script>
+</head>
+<body>
+    <main class="contenedor">
+        <h1>Gestión de usuarios</h1>
+        <p>JANO Inventario | Seguridad JANO Ltda.</p>
+
+      <p>
+    <a href="{% url 'inicio' %}">Volver al inicio</a>
+    |
+    <a href="{% url 'usuario_crear' %}">Crear usuario nuevo</a>
+</p>
+
+{% if messages %}
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+{% endif %}
+
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Nombre</th>
+                        <th>Correo</th>
+                        <th>Tipo de acceso</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.username }}</td>
+                        <td>{{ usuario.get_full_name|default:"—" }}</td>
+                        <td>{{ usuario.email|default:"—" }}</td>
+                        <td>
+    {% if usuario.is_superuser %}
+        Administrador
+    {% elif usuario.groups.all %}
+        {% for grupo in usuario.groups.all %}
+            {{ grupo.name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            Usuario estándar
+        {% endfor %}
+    {% else %}
+        Usuario estándar
+    {% endif %}
+</td>
+                        <td>
+                            {% if usuario.is_active %}
+                                <span class="activo">Activo</span>
+                            {% else %}
+                                <span class="inactivo">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td><a href="{% url 'usuario_editar' usuario.pk %}">Editar</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No hay usuarios registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>

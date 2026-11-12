@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Entregar {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Entregar</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">ENTREGA DE EQUIPO</span>
+        <h1>Entregar {{ equipo.get_tipo_display|lower }} {{ equipo.placa }}</h1>
+        <p>{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.serial %} · Serial {{ equipo.serial }}{% endif %}</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+
+            {% if formulario.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Quién recibe
+            </h3>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.funcionario %}
+                {% include "inventario/_campo.html" with field=formulario.area %}
+                {% include "inventario/_campo.html" with field=formulario.accesorios ancho_completo=True %}
+                {% include "inventario/_campo.html" with field=formulario.observaciones_entrega ancho_completo=True %}
+            </div>
+
+            <hr class="ficha-divider">
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Cláusula y firma
+            </h3>
+            <p class="ficha-clausula">{{ clausula }}</p>
+            <div class="ficha-field">
+                <label class="ficha-check">
+                    {{ formulario.clausula_aceptada }}
+                    {{ formulario.clausula_aceptada.label }}
+                    <span class="ficha-required">*</span>
+                </label>
+                {% for error in formulario.clausula_aceptada.errors %}
+                    <p class="ficha-field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del funcionario" %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% url 'inventario:equipo_detalle' equipo.placa %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Registrar entrega →</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

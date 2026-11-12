@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Hoja de vida {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block body_class %}{% if request.GET.embed %}acta-embed{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/hoja-vida.css' %}?v=20261030a">
+{% endblock %}
+
+{% block content %}
+<div class="hoja-acciones">
+    <a class="ficha-form-button ficha-form-button-secondary acta-ver" href="{% url 'inventario:equipo_detalle' equipo.placa %}">Ver ficha</a>
+    <button class="ficha-form-button" type="button" onclick="window.print()">Imprimir o guardar PDF</button>
+</div>
+
+<article class="hoja">
+
+    {# ---------- Cabecera del documento ---------- #}
+    <header class="hoja-cabecera">
+        <img class="hoja-logo" src="{% static 'img/logo-jano-simbolo-color.svg' %}" alt="Seguridad Jano">
+        <div class="hoja-titulo">
+            <p class="hoja-eyebrow">Hoja de vida · {{ equipo.get_tipo_display }}</p>
+            <h1>{{ equipo.placa }}</h1>
+            <p class="hoja-modelo">
+                {% if equipo.marca or equipo.modelo %}{{ equipo.marca }} {{ equipo.modelo }}{% else %}<span class="hoja-vacio">-</span>{% endif %}
+                {% if equipo.serial %}<span class="hoja-punto" aria-hidden="true">·</span><span>Serial {{ equipo.serial }}</span>{% endif %}
+            </p>
+        </div>
+        <div class="hoja-meta">
+            {% if equipo.activo %}
+            <span class="hoja-estado hoja-estado-{{ equipo.estado_tono }}">{{ equipo.estado_texto|default:"Activo" }}</span>
+            {% else %}
+            <span class="hoja-estado hoja-estado-red">Dado de baja</span>
+            {% endif %}
+            <small>Seguridad Jano<br>Generada el {{ generado|date:"d/m/Y H:i" }}</small>
+        </div>
+    </header>
+
+    {% if not equipo.activo %}
+    <p class="hoja-aviso">Dado de baja el {{ equipo.fecha_baja|date:"d/m/Y" }}{% if equipo.motivo_baja %} · {{ equipo.motivo_baja }}{% endif %}</p>
+    {% endif %}
+
+    {# ---------- Resumen: quién lo tiene, dónde está y cuánto historial hay ---------- #}
+    <dl class="hoja-resumen">
+        <div>
+            <dt>Responsable</dt>
+            <dd>{% if equipo.responsable_nombre %}{{ equipo.responsable_nombre }}{% if equipo.responsable_cedula %}<small>C.C. {{ equipo.responsable_cedula }}</small>{% endif %}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd>
+        </div>
+        <div>
+            <dt>Ubicación</dt>
+            <dd>{% if equipo.ubicacion %}{{ equipo.ubicacion }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd>
+        </div>
+        <div>
+            <dt>Mantenimientos</dt>
+            <dd class="hoja-cifra">{{ mantenimientos|length }}{% if mantenimientos %}<small>Último: {{ mantenimientos.0.fecha_intervencion|date:"d/m/Y" }}</small>{% endif %}</dd>
+        </div>
+        <div>
+            <dt>Entregas</dt>
+            <dd class="hoja-cifra">{{ asignaciones|length }}{% if asignaciones %}<small>{% if asignaciones.0.fecha_devolucion %}Sin entrega vigente{% else %}Vigente desde {{ asignaciones.0.fecha_entrega|date:"d/m/Y" }}{% endif %}</small>{% endif %}</dd>
+        </div>
+    </dl>
+
+    {# ---------- Identificación ---------- #}
+    <section class="hoja-seccion">
+        <h2>Identificación</h2>
+        <dl class="hoja-datos">
+            <div><dt>Placa</dt><dd>{{ equipo.placa }}</dd></div>
+            <div><dt>Tipo</dt><dd>{{ equipo.get_tipo_display }}</dd></div>
+            <div><dt>Serial</dt><dd>{% if equipo.serial %}{{ equipo.serial }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd></div>
+            <div><dt>Marca y modelo</dt><dd>{% if equipo.marca or equipo.modelo %}{{ equipo.marca }} {{ equipo.modelo }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd></div>
+            <div><dt>Propiedad</dt><dd>{% if equipo.propiedad %}{{ equipo.propiedad }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd></div>
+            <div><dt>Fecha de compra</dt><dd>{% if equipo.fecha_compra %}{{ equipo.fecha_compra|date:"d/m/Y" }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd></div>
+            {% if radio %}
+            <div><dt>Código físico</dt><dd>{% if radio.codigo_fisico %}{{ radio.codigo_fisico }}{% else %}<span class="hoja-vacio">-</span>{% endif %}</dd></div>
+            {% endif %}
+        </dl>
+    </section>
+
+    {# ---------- Características agrupadas ---------- #}
+    {% for titulo, filas in secciones_detalle %}
+    <section class="hoja-seccion">
+        <h2>{{ titulo }}</h2>
+        <dl class="hoja-datos">
+            {% for etiqueta, valor in filas %}
+            {% with texto=valor|stringformat:"s" %}
+            <div{% if texto|length > 48 %} class="hoja-ancho"{% endif %}>
+                <dt>{{ etiqueta }}</dt>
+                <dd>{% if valor.year %}{{ valor|date:"d/m/Y" }}{% else %}{{ valor|linebreaksbr }}{% endif %}</dd>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </dl>
+    </section>
+    {% endfor %}
+
+    {# ---------- Mantenimientos ---------- #}
+    <section class="hoja-seccion">
+        <h2>Mantenimientos <span class="hoja-conteo">{{ mantenimientos|length }}</span></h2>
+        {% if mantenimientos %}
+        <table class="hoja-tabla">
+            <thead>
+                <tr><th class="col-fecha">Fecha</th><th>Intervención</th><th class="col-tecnico">Técnico</th><th class="col-estado">Estado final</th></tr>
+            </thead>
+            <tbody>
+                {% for m in mantenimientos %}
+                <tr>
+                    <td class="col-fecha">{{ m.fecha_intervencion|date:"d/m/Y" }}</td>
+                    <td>
+                        <strong class="hoja-tipo-mant">{{ m.get_tipo_display }}</strong>
+                        <span class="hoja-trabajo">{{ m.trabajo_realizado }}</span>
+                        {% if m.motivo %}<span class="hoja-nota"><b>Motivo:</b> {{ m.motivo }}</span>{% endif %}
+                        {% if m.repuestos_utilizados %}<span class="hoja-nota"><b>Repuestos:</b> {{ m.repuestos_utilizados }}</span>{% endif %}
+                    </td>
+                    <td class="col-tecnico">{{ m.tecnico_responsable }}</td>
+                    <td class="col-estado">{% if m.estado_final %}<span class="hoja-estado hoja-estado-{% if m.estado_final == 'OPERATIVO' %}green{% elif m.estado_final == 'NO_OPERATIVO' %}red{% else %}amber{% endif %}">{{ m.get_estado_final_display }}</span>{% else %}<span class="hoja-vacio">—</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="hoja-vacio-bloque">Sin mantenimientos registrados.</p>
+        {% endif %}
+    </section>
+
+    {# ---------- Entregas ---------- #}
+    {% if asignaciones %}
+    <section class="hoja-seccion">
+        <h2>Entregas <span class="hoja-conteo">{{ asignaciones|length }}</span></h2>
+        <table class="hoja-tabla">
+            <thead>
+                <tr><th class="col-fecha">Entrega</th><th>Recibe</th><th>Área</th><th class="col-estado">Devolución</th></tr>
+            </thead>
+            <tbody>
+                {% for a in asignaciones %}
+                <tr>
+                    <td class="col-fecha">{{ a.fecha_entrega|date:"d/m/Y" }}</td>
+                    <td>
+                        <strong>{{ a.nombre_recibe }}</strong>
+                        {% if a.cedula_recibe %}<span class="hoja-nota">C.C. {{ a.cedula_recibe }}</span>{% endif %}
+                        {% if a.accesorios %}<span class="hoja-nota"><b>Accesorios:</b> {{ a.accesorios }}</span>{% endif %}
+                    </td>
+                    <td>{{ a.area|default:"-" }}</td>
+                    <td class="col-estado">{% if a.fecha_devolucion %}{{ a.fecha_devolucion|date:"d/m/Y" }}{% else %}<span class="hoja-estado hoja-estado-green">Vigente</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    {# ---------- Cambios del GPS ---------- #}
+    {% if cambios_gps %}
+    <section class="hoja-seccion">
+        <h2>Cambios del GPS <span class="hoja-conteo">{{ cambios_gps|length }}</span></h2>
+        <table class="hoja-tabla">
+            <thead>
+                <tr><th class="col-fecha">Fecha</th><th>Cambio</th><th>Vehículo</th><th>Línea</th></tr>
+            </thead>
+            <tbody>
+                {% for c in cambios_gps %}
+                <tr>
+                    <td class="col-fecha">{{ c.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ c.dato_actualizado }}</td>
+                    <td>{{ c.placa_vehiculo }} {{ c.nombre_vehiculo }}</td>
+                    <td>{{ c.linea }} {{ c.operador }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    <footer class="hoja-pie">Seguridad Jano · Hoja de vida {{ equipo.placa }} · {{ generado|date:"d/m/Y H:i" }}</footer>
+</article>
+{% endblock %}

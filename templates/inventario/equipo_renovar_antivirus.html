@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Renovar antivirus {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Renovar antivirus</span>
+    </nav>
+    <header class="ficha-form-heading">
+        <span class="eyebrow">ANTIVIRUS</span>
+        <h1>Renovar antivirus de {{ equipo.placa }}</h1>
+        <p>Actualiza el antivirus del equipo y deja el registro en su historial. Se avisará de nuevo 30 días antes del nuevo vencimiento.</p>
+    </header>
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            <div class="ficha-form-grid">
+                {% for field in formulario %}{% include "inventario/_campo.html" %}{% endfor %}
+            </div>
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:equipo_detalle' equipo.placa %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Guardar renovación</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

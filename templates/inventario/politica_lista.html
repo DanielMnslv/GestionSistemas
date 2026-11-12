@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Política de seguridad | JANO Inventario{% endblock %}
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page">
+    {% include "inventario/_politica_cabecera.html" %}
+
+    {% if vista == "equipos" %}
+    <section class="panel mant-filtros">
+        <form method="get" class="filters filters-mant" data-lista-filtros>
+            <input type="hidden" name="vista" value="equipos">
+            <div class="field">
+                <label class="solo-lector" for="q">Equipo</label>
+                <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Equipo: placa, serial, marca o modelo">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="tipo">Tipo</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Todos los tipos</option>
+                    {% for valor, etiqueta in tipos_opciones %}<option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="estado">Estado</label>
+                <select id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="responsable">Responsable</label>
+                <input id="responsable" type="search" name="responsable" value="{{ responsable }}" placeholder="Responsable">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="ubicacion">Ubicación</label>
+                <input id="ubicacion" type="search" name="ubicacion" value="{{ ubicacion }}" placeholder="Puesto o área">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if hay_filtros %}<a class="btn btn-light" href="{% url 'inventario:politica_lista' %}?vista=equipos">Limpiar</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>{{ titulo_lista }}</h2>
+                <p>{{ total_seleccion }} equipo{{ total_seleccion|pluralize }} · los más urgentes primero</p>
+            </div>
+            {% if total_seleccion %}<a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}exportar=xlsx">Exportar a Excel</a>{% endif %}
+        </div>
+        {% if equipos %}
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista">
+                <thead>
+                    <tr><th>Equipo</th><th>Responsable / Ubicación</th><th>Estado</th><th>Última verificación</th><th>Vence</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for equipo in equipos %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" %}<span class="subtext">{{ equipo.get_tipo_display }}{% if equipo.marca %} · {{ equipo.marca }} {{ equipo.modelo }}{% endif %}</span></td>
+                        <td data-label="Responsable">{% if equipo.responsable_nombre %}{{ equipo.responsable_nombre }}{% else %}<span class="mant-sin-dato">Sin responsable</span>{% endif %}{% if equipo.ubicacion %}<span class="subtext">{{ equipo.ubicacion }}</span>{% endif %}</td>
+                        <td data-label="Estado"><span class="mant-etiqueta mant-{{ equipo.estado_clase }}">{% for valor, nombre in estados %}{% if valor == equipo.estado_politica %}{{ nombre }}{% endif %}{% endfor %}</span>{% if equipo.plazo_texto %}<span class="subtext">{{ equipo.plazo_texto }}</span>{% endif %}</td>
+                        <td data-label="Última">{% if equipo.ultima_fecha %}{{ equipo.ultima_fecha|date:"d/m/Y" }}{% else %}<span class="mant-sin-dato">Nunca</span>{% endif %}</td>
+                        <td data-label="Vence">{% if equipo.vence %}{{ equipo.vence|date:"d/m/Y" }}{% else %}<span class="mant-sin-dato">—</span>{% endif %}</td>
+                        <td class="mant-acciones-celda"><div class="mant-acciones">
+                            {% if equipo.verificacion_id %}<a class="mant-enlace-accion" data-pol-modal href="{% url 'inventario:politica_detalle' equipo.verificacion_id %}">Ver última</a>{% endif %}
+                            {% if permisos.mantenimientos %}<a class="btn btn-light" data-pol-modal href="{% url 'inventario:politica_registrar' equipo.placa %}">Verificar</a>{% endif %}
+                        </div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_seleccion %}
+        {% else %}
+        <p class="mant-vacio">No hay equipos con esos filtros.{% if hay_filtros %} <a href="{% url 'inventario:politica_lista' %}?vista=equipos">Quitar filtros</a>{% endif %}</p>
+        {% endif %}
+    </section>
+
+    {% else %}
+    <section class="panel mant-filtros">
+        <form method="get" class="filters filters-hist" data-lista-filtros>
+            <input type="hidden" name="vista" value="historial">
+            <div class="field">
+                <label class="solo-lector" for="busqueda">Buscar</label>
+                <input id="busqueda" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar: placa, serial, especialista o responsable">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="resultado">Resultado</label>
+                <select id="resultado" name="resultado">
+                    <option value="">Todos los resultados</option>
+                    <option value="cumple" {% if resultado_seleccionado == "cumple" %}selected{% endif %}>Cumple</option>
+                    <option value="incumple" {% if resultado_seleccionado == "incumple" %}selected{% endif %}>Con incumplimientos</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="tipo">Tipo de equipo</label>
+                <select id="tipo" name="tipo">
+                    <option value="" {% if not tipo_seleccionado %}selected{% endif %}>Todos los equipos</option>
+                    {% for valor, etiqueta in tipos_historial %}<option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="fecha_desde">Verificadas desde</label>
+                <input id="fecha_desde" type="date" name="fecha_desde" value="{{ fecha_desde }}">
+            </div>
+            <div class="field">
+                <label for="fecha_hasta">Verificadas hasta</label>
+                <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if hay_filtros %}<a class="btn btn-light" href="{% url 'inventario:politica_lista' %}?vista=historial">Limpiar</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>Verificaciones realizadas</h2>
+                <p>{{ total_resultados }} de {{ total_registros }} registro{{ total_registros|pluralize }} · las más recientes primero</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista mant-hist">
+                <thead>
+                    <tr><th>Equipo</th><th>Fecha</th><th>Especialista</th><th>Responsable</th><th>Resultado</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for v in verificaciones %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" with equipo=v.equipo %}<span class="subtext">{{ v.equipo.get_tipo_display }} · {{ v.equipo.serial|default:"Sin serial" }}</span></td>
+                        <td data-label="Fecha">{{ v.fecha|date:"d/m/Y" }}</td>
+                        <td data-label="Especialista">{{ v.especialista|default:"—" }}</td>
+                        <td data-label="Responsable">{{ v.responsable|default:"—" }}</td>
+                        <td data-label="Resultado">{% if v.incumplimientos %}<span class="mant-etiqueta mant-pendiente">{{ v.incumplimientos|length }} no cumple</span>{% else %}<span class="mant-etiqueta mant-vigente">Cumple</span>{% endif %}</td>
+                        <td class="mant-acciones-celda"><div class="mant-acciones"><a class="btn btn-light" data-pol-modal href="{% url 'inventario:politica_detalle' v.pk %}">Ver detalle</a></div></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="mant-vacio">No hay verificaciones que coincidan con los filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_resultados %}
+    </section>
+    {% endif %}
+</div>
+
+{% include "inventario/_mant_ajuste_filas.html" with defecto=defecto_filas clave="politicaPpIntento" %}
+{% endblock %}

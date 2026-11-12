@@ -1,0 +1,149 @@
+{% comment %}Ventana emergente de Verificar y Ver detalle. Se incluye desde _politica_cabecera.html. Cualquier enlace con data-pol-modal la abre.{% endcomment %}
+<dialog id="pol-modal" class="mant-modal pol-modal" aria-labelledby="pol-modal-titulo"{% if permisos.mantenimientos %} data-url-verificar="{% url 'inventario:politica_registrar' 'XPLACAX' %}"{% endif %} data-url-detalle="{% url 'inventario:politica_detalle' 0 %}">
+    <div class="mant-modal-carga" data-carga>Cargando…</div>
+    <div data-contenido></div>
+</dialog>
+
+<style>
+    .pol-modal { width: min(820px, calc(100vw - 32px)); }
+    .pol-modal .pol-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+    .pol-modal .pol-grid-1 { grid-template-columns: minmax(0, 1fr); margin-top: 14px; }
+    .pol-modal .maintenance-form-field { gap: 5px; }
+    .pol-modal .maintenance-form-field label { font-size: 12.5px; }
+    .pol-modal .maintenance-form-field input { min-height: 38px; padding: 8px 11px; }
+    .pol-modal .maintenance-form-field textarea { height: 52px; min-height: 0; padding: 8px 11px; resize: none; }
+    .pol-modal .pol-puntos { margin: 14px 0 0; padding-left: 22px; }
+    .pol-modal .pol-puntos li { padding: 7px 0; font-size: 13.5px; }
+    .pol-modal .pol-puntos li > span { margin-bottom: 4px; }
+    .pol-modal .politica-opciones { gap: 18px; }
+    .pol-modal .politica-opciones label { white-space: nowrap; }
+    .pol-modal .politica-opciones input[type="radio"] { flex: none; width: 16px !important; height: 16px !important; min-height: 0 !important; margin: 0; padding: 0 !important; }
+    .pol-modal .pol-resp { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 13.5px; }
+    .pol-modal .pol-tabla { width: 100%; border-collapse: collapse; }
+    .pol-modal .pol-tabla td { padding: 7px 4px; border-bottom: 1px solid #F2F4F7; font-size: 13.5px; }
+    .pol-modal .pol-tabla td:last-child { width: 1%; text-align: right; white-space: nowrap; }
+    .pol-modal .pol-nota { margin: 12px 0 0; font-size: 13px; color: #475467; }
+    @media (max-width: 760px) { .pol-modal .pol-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<script>
+(function () {
+    // "Verificar" y "Ver detalle" abren su contenido en esta ventana emergente.
+    var dialogo = document.getElementById("pol-modal");
+    if (!dialogo || typeof dialogo.showModal !== "function") return;
+    var contenido = dialogo.querySelector("[data-contenido]");
+    var carga = dialogo.querySelector("[data-carga]");
+    var origen = null;
+
+    function pedir(url, opciones) {
+        opciones = opciones || {};
+        opciones.headers = { "X-Requested-With": "XMLHttpRequest" };
+        opciones.credentials = "same-origin";
+        return fetch(url, opciones).then(function (r) {
+            if (r.redirected || !r.ok) throw new Error("fallback");
+            return r;
+        });
+    }
+
+    function mostrar(html) {
+        contenido.innerHTML = html;
+        carga.hidden = true;
+        var error = contenido.querySelector(".maintenance-form-errors");
+        if (error) error.scrollIntoView({ block: "center" });
+    }
+
+    function falloAlAbrir() {
+        carga.hidden = true;
+        contenido.innerHTML =
+            '<div class="mant-modal-carga">No se pudo abrir. Recarga la página (F5) e inténtalo de nuevo; ' +
+            'si tu sesión venció, vuelve a ingresar.' +
+            '<p><button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-cerrar>Cerrar</button></p></div>';
+    }
+
+    function abrir(href, foco) {
+        origen = foco;
+        contenido.innerHTML = "";
+        carga.hidden = false;
+        dialogo.showModal();
+        pedir(href).then(function (r) { return r.text().then(mostrar); }).catch(falloAlAbrir);
+    }
+
+    function limpiarDireccion() {
+        // Quita ?abrir=… de la dirección para que recargar la página no vuelva a abrir la ventana.
+        var p = new URLSearchParams(window.location.search);
+        if (!p.has("abrir")) return;
+        ["abrir", "equipo", "verificacion"].forEach(function (k) { p.delete(k); });
+        var resto = p.toString();
+        history.replaceState(null, "", window.location.pathname + (resto ? "?" + resto : ""));
+    }
+
+    document.addEventListener("click", function (e) {
+        var enlace = e.target.closest("a[data-pol-modal]");
+        if (!enlace || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+        e.preventDefault();
+        abrir(enlace.href, enlace);
+    });
+
+    dialogo.addEventListener("click", function (e) {
+        if (e.target === dialogo || e.target.closest("[data-cerrar]")) dialogo.close();
+    });
+
+    dialogo.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            var form = dialogo.querySelector("form[data-pol-form]");
+            if (form) { e.preventDefault(); form.requestSubmit(); }
+        }
+    });
+
+    dialogo.addEventListener("close", function () {
+        contenido.innerHTML = "";
+        limpiarDireccion();
+        if (origen) origen.focus();
+    });
+
+    dialogo.addEventListener("submit", function (e) {
+        var form = e.target.closest("form[data-pol-form]");
+        if (!form) return;
+        e.preventDefault();
+        var boton = form.querySelector("[type=submit]");
+        if (boton.disabled) return;
+        var texto = boton.textContent;
+        boton.disabled = true;
+        boton.textContent = "Guardando…";
+        pedir(form.action, { method: "POST", body: new FormData(form) })
+            .then(function (r) {
+                if ((r.headers.get("Content-Type") || "").indexOf("application/json") !== -1) {
+                    limpiarDireccion();
+                    window.location.reload();  // Guardado: la lista se actualiza y muestra el mensaje.
+                    return;
+                }
+                return r.text().then(mostrar);  // Con errores: vuelve a mostrar el formulario.
+            })
+            .catch(function () {
+                boton.disabled = false;
+                boton.textContent = texto;
+                contenido.insertAdjacentHTML("afterbegin",
+                    '<div class="maintenance-form-errors" role="alert">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.</div>');
+            });
+    });
+
+    // Enlaces directos (ficha del equipo, marcadores): ?abrir=verificar&equipo=PLACA o ?abrir=detalle&verificacion=ID.
+    // La lista puede recargarse una vez para ajustar sus filas a la pantalla, por eso la ventana
+    // se abre un instante después de cargar.
+    var parametros = new URLSearchParams(window.location.search);
+    var que = parametros.get("abrir");
+    var urlAbrir = null;
+    if (que === "verificar" && dialogo.dataset.urlVerificar && parametros.get("equipo")) {
+        urlAbrir = dialogo.dataset.urlVerificar.replace("XPLACAX", encodeURIComponent(parametros.get("equipo")));
+    } else if (que === "detalle" && /^\d+$/.test(parametros.get("verificacion") || "")) {
+        urlAbrir = dialogo.dataset.urlDetalle.replace("/0/", "/" + parametros.get("verificacion") + "/");
+    }
+    if (urlAbrir) {
+        var abrirSola = function () {
+            setTimeout(function () { abrir(urlAbrir, { focus: function () {} }); }, 600);
+        };
+        if (document.readyState === "complete") abrirSola();
+        else window.addEventListener("load", abrirSola);
+    }
+})();
+</script>

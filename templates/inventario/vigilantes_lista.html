@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Vigilantes | JANO Inventario{% endblock %}
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page">
+    {% include "inventario/_personas_cabecera.html" %}
+
+    <section class="panel mant-filtros">
+        <form method="get" class="filters filters-vig" data-lista-filtros>
+            <div class="field">
+                <label class="solo-lector" for="q">Cédula o nombre</label>
+                <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Cédula o nombre completo">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="hoja">Hoja de origen</label>
+                <select id="hoja" name="hoja">
+                    <option value="">Todas las hojas</option>
+                    {% for nombre_hoja in hojas_disponibles %}<option value="{{ nombre_hoja }}" {% if hoja_seleccionada == nombre_hoja %}selected{% endif %}>{{ nombre_hoja }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="estado">Estado</label>
+                <select id="estado" name="estado">
+                    <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
+                    <option value="inactivos" {% if estado_seleccionado == "inactivos" %}selected{% endif %}>Inactivos</option>
+                    <option value="todos" {% if estado_seleccionado == "todos" %}selected{% endif %}>Todos</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="fecha_desde">Actualizados desde</label>
+                <input id="fecha_desde" type="date" name="fecha_desde" value="{{ fecha_desde }}">
+            </div>
+            <div class="field">
+                <label for="fecha_hasta">Actualizados hasta</label>
+                <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if busqueda or hoja_seleccionada or estado_seleccionado != "activos" or fecha_desde or fecha_hasta %}<a class="btn btn-light" href="{% url 'inventario:vigilantes_lista' %}">Limpiar</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>Vigilantes</h2>
+                <p>{{ total_resultados }} registro{{ total_resultados|pluralize }} · {{ total_activos }} activos · {{ total_inactivos }} inactivos · por orden alfabético</p>
+            </div>
+        </div>
+        {% if vigilantes %}
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista">
+                <thead>
+                    <tr><th>Cédula</th><th>Apellidos y nombres</th><th>Hoja de origen</th><th>Fila original</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for vigilante in vigilantes %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo"><strong>{{ vigilante.cedula }}</strong></td>
+                        <td data-label="Nombre">{{ vigilante.nombre_completo }}</td>
+                        <td data-label="Hoja de origen">{{ vigilante.hoja_origen|default:"—" }}</td>
+                        <td data-label="Fila original">{{ vigilante.fila_origen|default:"—" }}</td>
+                        <td data-label="Estado">{% if vigilante.activo %}<span class="mant-etiqueta mant-vigente">Activo</span>{% else %}<span class="mant-etiqueta mant-sin_mantenimiento">Inactivo</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_resultados %}
+        {% else %}
+        <p class="mant-vacio">No se encontraron vigilantes con los filtros seleccionados.</p>
+        {% endif %}
+    </section>
+</div>
+
+{% include "inventario/_mant_ajuste_filas.html" with defecto=10 clave="vigilantesPp" %}
+{% endblock %}

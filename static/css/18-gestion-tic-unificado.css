@@ -1,0 +1,103 @@
+/* FASE 1 — Sistema visual unificado con Gestión TIC */
+:root{--jano-ui-primary:#2E3092;--jano-ui-accent:#A6CE38;--jano-ui-bg:#F4F6F9;--jano-ui-line:#E5E7EB;--jano-ui-text:#252938;--jano-ui-muted:#707789}
+html[data-tema="dark"]{--jano-ui-bg:#171a25;--jano-ui-line:#303548;--jano-ui-text:#eef0f7;--jano-ui-muted:#aab1c2}
+body.dashboard-body{background:var(--jano-ui-bg);color:var(--jano-ui-text)}
+.jano-shell{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
+.jano-sidebar{width:260px;height:100vh;position:sticky;top:0;z-index:30;background:#fff;border-right:1px solid var(--jano-ui-line);padding:0;box-shadow:none;overflow:hidden}
+html[data-tema="dark"] .jano-sidebar{background:#1d2230}
+.jano-brand{min-height:82px;padding:15px 18px;gap:12px;border-bottom:1px solid var(--jano-ui-line);text-decoration:none}
+.jano-brand img{width:43px;height:43px;object-fit:contain}
+.jano-brand-copy{display:flex;flex-direction:column;line-height:1.1}
+.jano-brand-copy small{color:var(--jano-ui-muted);font-size:9px;letter-spacing:1.7px;font-weight:800}
+.jano-brand-copy strong{color:var(--jano-ui-primary);font-size:22px;letter-spacing:1px}
+.jano-brand-copy span{color:var(--jano-ui-muted);font-size:10px;margin-top:4px}
+.jano-nav{padding:12px 10px;gap:2px}
+.jano-nav-label{padding:16px 11px 6px;color:#9299a8;font-size:9px;font-weight:800;letter-spacing:1.1px}
+.jano-nav a{display:flex;align-items:center;gap:12px;min-height:42px;padding:9px 11px;border-radius:7px;color:#555d6d;font-size:12px;font-weight:650;text-decoration:none;border-left:3px solid transparent}
+.jano-nav a svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.jano-nav a:hover{background:#f4f5fb;color:var(--jano-ui-primary)}
+.jano-nav a.activo{background:#eef0fb;color:var(--jano-ui-primary);border-left-color:var(--jano-ui-accent);font-weight:800}
+html[data-tema="dark"] .jano-nav a{color:#c0c6d4}
+html[data-tema="dark"] .jano-nav a:hover,html[data-tema="dark"] .jano-nav a.activo{background:#2a3044;color:#dce2ff}
+.jano-sidebar-bottom{border-top:1px solid var(--jano-ui-line);padding:10px 12px 12px}
+.jano-sidebar-bottom .tema-boton{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;padding:9px 10px;border:0;background:transparent;color:var(--jano-ui-muted);font:inherit;font-size:11px;cursor:pointer}
+.jano-sidebar-bottom .tema-boton svg{width:17px;height:17px}
+.jano-user{padding:10px 2px 0;border-radius:0;gap:9px}
+.jano-user .sidebar-avatar{width:32px;height:32px;place-items:center;background:#eef0fb;color:var(--jano-ui-primary);font-size:13px}
+.jano-user span{color:var(--jano-ui-text);font-size:11px}
+.jano-user .logout-button{padding:7px;background:transparent;color:var(--jano-ui-muted)}
+.jano-user .logout-button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}
+.jano-main{min-width:0;display:flex;flex-direction:column}
+.jano-topbar{min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:10px 28px;background:#fff;border-bottom:1px solid var(--jano-ui-line)}
+html[data-tema="dark"] .jano-topbar{background:#1d2230}
+.jano-topbar-context{display:flex;flex-direction:column;gap:3px}
+.jano-topbar-kicker{color:#9299a8;font-size:9px;letter-spacing:1.1px;font-weight:800}
+.jano-topbar-context strong{color:var(--jano-ui-text);font-size:13px;font-weight:750}
+.jano-topbar-meta{display:flex;align-items:center;gap:7px;color:var(--jano-ui-muted);font-size:10px}
+.jano-status-dot{width:7px;height:7px;border-radius:50%;background:#65a765}
+.jano-content{width:100%;max-width:none;margin:0;padding:26px 30px}
+.jano-footer{padding:12px 20px 16px;color:#9aa1af;font-size:9px;letter-spacing:1px}
+@media(max-width:900px){.jano-shell{grid-template-columns:1fr}.jano-sidebar{width:100%;height:auto;position:relative}.jano-brand{min-height:65px}.jano-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.jano-nav-label{grid-column:1/-1;padding-top:10px}.jano-sidebar-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px}.jano-sidebar-bottom .tema-boton{width:auto}.jano-content{padding:20px 16px}}
+@media(max-width:520px){.jano-nav{grid-template-columns:1fr}.jano-topbar{padding:10px 16px}.jano-topbar-meta{display:none}.jano-user span{max-width:145px}}
+
+
+/* JANO UI refresh — capa visual de presentación (sin cambios funcionales) */
+:root{
+ --jano-ui-primary:#18264b;--jano-ui-primary-2:#243b70;--jano-ui-accent:#a6ce39;
+ --jano-ui-bg:#f3f5f9;--jano-ui-surface:#fff;--jano-ui-line:#e4e8f0;
+ --jano-ui-text:#202a3b;--jano-ui-muted:#748096;--jano-ui-shadow:0 10px 30px rgba(25,42,76,.055)
+}
+html[data-tema="dark"]{
+ --jano-ui-primary:#dbe5ff;--jano-ui-primary-2:#aebff0;--jano-ui-bg:#111827;
+ --jano-ui-surface:#1b2535;--jano-ui-line:#303d52;--jano-ui-text:#edf2fb;
+ --jano-ui-muted:#a5b1c4;--jano-ui-shadow:0 12px 32px rgba(0,0,0,.16)
+}
+body.dashboard-body{background:var(--jano-ui-bg);color:var(--jano-ui-text)}
+.jano-sidebar{background:#14213d;border-right:1px solid rgba(255,255,255,.07);box-shadow:8px 0 28px rgba(20,33,61,.06)}
+.jano-brand{border-bottom-color:rgba(255,255,255,.10)}
+.jano-brand-copy strong{color:#fff}
+.jano-brand-copy small,.jano-brand-copy span{color:#b7c3d8}
+.jano-nav-label{color:#91a0ba}
+.jano-nav a{color:#d0d9e8;transition:background .18s ease,color .18s ease,transform .18s ease}
+.jano-nav a:hover{background:rgba(255,255,255,.09);color:#fff;transform:translateX(2px)}
+.jano-nav a.activo{background:rgba(166,206,57,.15);color:#d5f28a;border-left-color:var(--jano-ui-accent)}
+.jano-sidebar-bottom{border-top-color:rgba(255,255,255,.10)}
+.jano-sidebar-bottom .tema-boton,.jano-user span{color:#d0d9e8}
+.jano-user .sidebar-avatar{background:var(--jano-ui-accent);color:#17243f;font-weight:800}
+.jano-user .logout-button{color:#d0d9e8}
+.jano-topbar{position:sticky;top:0;z-index:20;min-height:68px;padding-inline:clamp(16px,2.6vw,38px);box-shadow:0 3px 14px rgba(20,33,61,.025)}
+.jano-topbar-context strong{font-size:14px;letter-spacing:.1px}
+.jano-topbar-meta{padding:8px 12px;border:1px solid var(--jano-ui-line);border-radius:999px;background:var(--jano-ui-bg)}
+.jano-status-dot{box-shadow:0 0 0 4px rgba(101,167,101,.12)}
+.jano-content{padding:clamp(18px,2.4vw,34px) clamp(16px,2.8vw,40px);flex:1}
+.jano-footer{border-top:1px solid var(--jano-ui-line);background:var(--jano-ui-surface);padding:14px 30px}
+.jano-content :is(.pn-sec,.pn-mapa,.pn-at,.dashboard-card,.stat-card,.panel,.maintenance-panel,.card,.report-card){border-color:var(--jano-ui-line);box-shadow:var(--jano-ui-shadow)}
+.jano-content :is(input,select,textarea){border-color:var(--jano-ui-line);border-radius:9px;min-height:40px}
+.jano-content :is(input,select,textarea):focus{outline:0;border-color:#8eaa48;box-shadow:0 0 0 3px rgba(166,206,57,.16)}
+.jano-content :is(button,.btn,a.button){transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.jano-content :is(button,.btn,a.button):hover{filter:brightness(.98)}
+.jano-content table{border-collapse:separate;border-spacing:0}
+.jano-content table thead th{font-size:10px;letter-spacing:.055em;color:var(--jano-ui-muted)}
+.jano-content table tbody tr:hover{background:rgba(166,206,57,.055)}
+.jano-content :is(.pn-sec,.pn-mapa,.pn-at){border-radius:14px;background:var(--jano-ui-surface)}
+.pn-head h1{letter-spacing:-.035em}
+.pn-band{border-radius:14px;box-shadow:var(--jano-ui-shadow)}
+.pn-bn b{letter-spacing:-.04em}
+.pn-sh h2,.pn-at h2{letter-spacing:-.015em}
+@media(max-width:900px){
+ .jano-sidebar{height:auto;position:relative;overflow:visible}
+ .jano-nav{display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;padding:10px;max-height:210px;overflow:auto}
+ .jano-nav-label{width:100%;padding:9px 8px 3px}
+ .jano-nav a{flex:1 1 190px;min-width:0}
+ .jano-nav a:hover{transform:none}
+ .jano-sidebar-bottom{flex-wrap:wrap}
+ .jano-topbar{position:relative}
+}
+@media(max-width:560px){
+ .jano-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:260px}
+ .jano-nav-label{grid-column:1/-1}
+ .jano-nav a{min-height:40px;padding:8px;font-size:11px}
+ .jano-content{padding:15px 12px}
+ .jano-footer{padding:12px;text-align:center}
+}
+@media(prefers-reduced-motion:reduce){.jano-shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

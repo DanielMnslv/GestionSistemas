@@ -1,0 +1,1158 @@
+/* ======================================================================
+   12-entregas-pestanas.css - Entregas, actas, pestañas y modo embebido
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* ---------- Entregas y actas dentro del panel ---------- */
+.pf-menu button {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: #080D79;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pf-ent[hidden] { display: none; }
+
+.pf-ent-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.pf-ent-cerrar {
+    padding: 4px 10px;
+    border: 1px solid #D5D9EF;
+    border-radius: 8px;
+    background: #fff;
+    color: #080D79;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.acta-modal-cab button {
+    padding: 4px 10px;
+    border: 1px solid #D5D9EF;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pf-menu li a:hover,
+.pf-menu button:hover,
+.pf-ent-cerrar:hover {
+    background: #EEF0FB;
+}
+
+/* ---------- Diseño unificado de entregas (cards como en radio) ---------- */
+/* Lista de cards en el panel de equipos */
+.pf-ent .rd-entregas {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.pf-ent .rd-entrega {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #E0E5ED;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pf-ent .rd-entrega:hover {
+    border-color: #080D79;
+    background: #F8F9FC;
+}
+
+.pf-ent .rd-entrega-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.pf-ent .rd-entrega-top strong { white-space: nowrap; }
+
+.pf-ent .rd-entrega-linea { font-size: 13px; }
+
+.pf-ent .rd-muted { color: #6B7299; font-size: 12px; }
+
+.pf-ent-vacio {
+    margin: 6px 0 10px;
+    color: #8890B5;
+    font-size: 13px;
+    text-align: center;
+    padding: 16px;
+}
+
+/* Lista de entregas en ficha de equipo (usar mismo diseño que radio) */
+.radio-detalle .rd-entregas-panel {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.radio-detalle .rd-entregas-panel .rd-entrega {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #E0E5ED;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.radio-detalle .rd-entregas-panel .rd-entrega:hover {
+    border-color: #080D79;
+    background: #F8F9FC;
+}
+
+.radio-detalle .rd-entregas-panel .rd-entrega-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.radio-detalle .rd-entregas-panel .rd-entrega-linea { font-size: 13px; }
+
+.radio-detalle .rd-entregas-panel .rd-muted { color: #6B7299; font-size: 12px; }
+
+.acta-modal[hidden] { display: none; }
+
+.acta-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(8, 13, 60, .55);
+}
+
+.acta-modal-caja {
+    display: flex;
+    flex-direction: column;
+    width: min(920px, 100%);
+    height: min(92vh, 100%);
+    overflow: hidden;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+}
+
+.acta-modal-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #080D79;
+    color: #fff;
+}
+
+.acta-modal-cab button { cursor: pointer; border-color: rgba(255, 255, 255, .5); background: transparent; color: #fff; }
+
+.acta-modal-cab button:hover { background: rgba(255, 255, 255, .16); }
+
+.acta-modal-caja iframe { flex: 1; width: 100%; border: 0; background: #F0F2FB; }
+
+/* ---------- Ficha del radio: pestañas, entregas con acta y modo embebido ---------- */
+.radio-detalle .rd-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    padding: 0 2px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--rd-border);
+}
+
+.radio-detalle .rd-tab {
+    flex: 0 0 auto;
+    padding: 11px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--jano-gray, #5B6475);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.radio-detalle .rd-tab:hover { color: var(--rd-blue); }
+
+.radio-detalle .rd-tab.is-activa {
+    border-bottom-color: var(--rd-blue);
+    color: var(--rd-blue);
+}
+
+.radio-detalle .rd-tab-danger.is-activa {
+    border-bottom-color: #B42318;
+    color: #B42318;
+}
+
+.radio-detalle .rd-tab-count {
+    display: inline-block;
+    min-width: 22px;
+    margin-left: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #EEF1F7;
+    font-size: 12px;
+    text-align: center;
+}
+
+.radio-detalle .rd-tabpanel[hidden] { display: none; }
+
+.radio-detalle .rd-subtitle {
+    margin: 22px 0 10px;
+    color: var(--rd-blue);
+    font-size: 14px;
+}
+
+.radio-detalle .rd-subtitle:first-child { margin-top: 0; }
+
+.radio-detalle .rd-panel-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.radio-detalle .rd-split {
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.radio-detalle .rd-entregas {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-height: 78vh;
+    overflow-y: auto;
+}
+
+.radio-detalle .rd-entrega {
+    display: grid;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #E0E5ED;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.radio-detalle .rd-entrega:hover {
+    border-color: #080D79;
+    background: #F8F9FC;
+}
+
+.radio-detalle .rd-entrega.is-activa {
+    border-color: #080D79;
+    box-shadow: inset 4px 0 0 #080D79;
+    background: #F6F8FC;
+}
+
+.radio-detalle .rd-entrega-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.radio-detalle .rd-entrega-top strong { white-space: nowrap; }
+
+.radio-detalle .rd-entrega-linea { font-size: 13px; }
+
+.radio-detalle .rd-muted { color: #6B7299; font-size: 12px; }
+
+/* Unificar colores de badges */
+.radio-detalle .rd-badge.rd-green {
+    background: #10B981;
+    color: #fff;
+}
+
+.radio-detalle .rd-badge.rd-gray {
+    background: #E5E7EB;
+    color: #6B7299;
+}
+
+/* Unificar badges en la tabla del panel */
+.pf-ent-tabla .badge-green {
+    background: #10B981;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.pf-ent-tabla .badge-gray {
+    background: #E5E7EB;
+    color: #6B7299;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Badges en ficha de equipo */
+.radio-detalle .badge-green {
+    background: #10B981;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.radio-detalle .badge-gray {
+    background: #E5E7EB;
+    color: #6B7299;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.radio-detalle .rd-visor {
+    min-width: 0;
+    border: 1px solid var(--rd-border);
+    border-radius: 12px;
+    background: #F6F8FC;
+    overflow: hidden;
+}
+
+.radio-detalle .rd-iframe {
+    display: block;
+    width: 100%;
+    min-height: 420px;
+    border: 0;
+    background: transparent;
+}
+
+@media (max-width: 860px) {
+    .radio-detalle .rd-split { grid-template-columns: 1fr; }
+
+    .radio-detalle .rd-entregas { max-height: 280px; }
+}
+
+/* Páginas (acta, hoja de vida) mostradas dentro de la ficha */
+.acta-embed .sidebar {
+    display: none !important;
+}
+
+.acta-embed .topbar {
+    display: none !important;
+}
+
+.acta-embed .dashboard-footer {
+    display: none !important;
+}
+
+.acta-embed .acta-ver {
+    display: none !important;
+}
+
+.acta-embed .shell { display: block; }
+
+.acta-embed .dashboard-container { padding: 14px !important; }
+
+/* ---------- Pestañas dentro del panel de la lista de equipos (radios) ---------- */
+.pf-tab { color: #4B5575; }
+
+.pf-tab:hover { background: #EEF0FB; color: #080D79; }
+
+.pf-tab.is-activa,
+.pf-tab.is-activa:hover {
+    background: #080D79;
+    color: #fff;
+}
+
+.pf-tab-baja { margin-left: auto; color: #B42318; }
+
+.pf-tab-baja:hover { background: #FDECEA; color: #B42318; }
+
+.pf-tab-baja.is-activa,
+.pf-tab-baja.is-activa:hover {
+    background: #B42318;
+    color: #fff;
+}
+
+.pf-tab:focus-visible { outline: 3px solid #8E96F0; outline-offset: 1px; }
+
+/* Barra de pestañas en pantallas angostas: se desplaza con ajuste a cada pestaña */
+.pf-tabs { padding: 6px; background: #fff; border: 1px solid #DCE0F2; border-radius: 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+
+.pf-tab { flex: 0 0 auto; padding: 8px 14px; border: 0; border-radius: 11px; background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; scroll-snap-align: start; white-space: nowrap; }
+
+@media (max-width: 900px) {
+    .pf-tab { padding: 10px 14px; }
+
+    /* objetivo táctil más cómodo */
+.pf-tab-baja { margin-left: 0; }
+}
+
+/* Indicador mientras carga el contenido de una pestaña (iframe) */
+.pf-cargando { display: none; margin: 0; padding: 14px 18px; color: #4B5575; font-size: 13px; font-weight: 600; }
+
+.pf-pane-externo.is-cargando .pf-cargando { display: block; }
+
+.pf-pane-externo.is-cargando .pf-marco { visibility: hidden; height: 0; min-height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .pf-tab { transition: none; }
+}
+
+.pf-pane-resumen { display: flex; flex-direction: column; gap: 8px; }
+
+.pf-pane-resumen[hidden],
+.pf-pane-externo[hidden] {
+    display: none;
+}
+
+.pf-pane-externo {
+    background: #fff;
+    border: 1px solid #DCE0F2;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.pf-marco {
+    display: block;
+    width: 100%;
+    height: max(460px, calc(100vh - 330px));
+    border: 0;
+    background: #fff;
+}
+
+.ficha-embed .sidebar,
+.ficha-embed .dashboard-footer,
+.ficha-embed .radio-detalle .rd-heading,
+.ficha-embed .radio-detalle .rd-tabs {
+    display: none !important;
+}
+
+.ficha-embed .shell { display: block; }
+
+.ficha-embed .dashboard-container { padding: 14px !important; }
+
+/* ======================================================================
+   Modo embebido (ficha dentro del panel y acta dentro de la ficha)
+   Aplana el marco de la página completa para que no se vea "tarjeta dentro
+   de tarjeta": sin degradado, sin esquinas redondeadas, sin márgenes dobles.
+   ====================================================================== */
+body.ficha-embed,
+body.acta-embed {
+    background: #fff;
+}
+
+.acta-embed {
+    background: transparent;
+}
+
+.ficha-embed .shell,
+.acta-embed .shell {
+    display: block;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.ficha-embed .main-panel,
+.acta-embed .main-panel {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.ficha-embed .dashboard-container,
+.acta-embed .dashboard-container {
+    width: 100%;
+    margin: 0;
+    padding: 16px !important;
+}
+
+/* Dentro de una pestaña, el panel no necesita su propio borde ni título repetido */
+.ficha-embed .radio-detalle .rd-panel { margin-bottom: 14px; }
+
+/* Entregas y actas: lista más angosta y acta con todo el ancho disponible */
+.ficha-embed .radio-detalle .rd-split {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    gap: 14px;
+}
+
+
+.ficha-embed .radio-detalle .rd-iframe {
+    min-height: 0;
+    overflow: hidden;
+}
+
+
+/* El acta ocupa todo el ancho del visor, sin caja propia */
+.acta-embed .acta {
+    max-width: none;
+    padding: 4px 6px 20px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.acta-embed .acta-acciones { max-width: none; margin: 0 0 10px; }
+
+.acta-embed .acta h1 { font-size: 20px; line-height: 1.25; }
+
+@media (max-width: 860px) {
+    .ficha-embed .radio-detalle .rd-split { grid-template-columns: 1fr; }
+}
+
+/* ---------- Segunda pasada: entregas y actas dentro de la ficha ---------- */
+html:has(> body.ficha-embed),
+html:has(> body.acta-embed) { scrollbar-width: thin; }
+
+/* El panel ya está dentro de la tarjeta de la lista: sin borde propio */
+.ficha-embed .radio-detalle .rd-panel {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.ficha-embed .radio-detalle .rd-panel-heading { padding: 0 0 12px; }
+
+.ficha-embed .radio-detalle .rd-panel-body { padding: 16px 0 0; }
+
+/* El acta se ve como un documento dentro de su propia tarjeta */
+.ficha-embed .radio-detalle .rd-visor {
+    border: 1px solid var(--rd-border);
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.acta-embed .acta { padding: 0; }
+
+/* ---------- Tercera pasada: todo el acta visible, sin bajar ---------- */
+/* Sin título repetido y lista de entregas en una fila arriba del acta */
+.ficha-embed .radio-detalle #panel-entregas .rd-panel-heading { display: none; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-panel-body { padding: 0; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entregas {
+    display: flex;
+    gap: 8px;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+}
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entregas li { flex: 0 0 230px; min-width: 0; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entrega { padding: 8px 12px; border-radius: 10px; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entrega-linea.rd-muted { display: none; }
+
+.ficha-embed .dashboard-container { padding: 10px 12px !important; }
+
+/* Ajustar cards en modo embebido */
+.ficha-embed .radio-detalle .rd-entrega {
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.ficha-embed .radio-detalle .rd-entrega-linea {
+    font-size: 12px;
+}
+
+/* ---------- Cabecera y pestañas compactas: más alto para el detalle ---------- */
+.pf { gap: 6px; }
+
+.pf .pf-cab {
+    padding: 6px 14px;
+    gap: 4px 12px;
+    border-top-width: 3px;
+    border-radius: 16px;
+}
+
+.pf .pf-cab h2 { font-size: 22px; }
+
+.pf .pf-modelo { flex-direction: row; align-items: baseline; gap: 8px; }
+
+.pf .pf-tipo { font-size: 10.5px; }
+
+.pf .pf-modelo strong { font-size: 14px; }
+
+.pf .pf-cab .btn { padding: 6px 12px; font-size: 12px; }
+
+@media (pointer: fine) {
+    .pf .pf-tabs { padding: 3px; gap: 3px; border-radius: 12px; }
+    .pf .pf-tab { padding: 6px 12px; font-size: 12.5px; border-radius: 9px; }
+}
+
+/* El detalle usa todo el alto que queda en pantalla */
+.pf-marco { height: max(500px, calc(100vh - 230px)); }
+
+/* ---------- Entregas y actas: el acta ocupa exactamente el alto que queda ---------- */
+html.fill-activo { overflow: hidden; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entrega-linea {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entrega-top { gap: 6px; }
+
+.ficha-embed .radio-detalle .rd-visor { margin: 0; }
+
+/* El contenedor de la página embebida no debe desbordar su iframe por el relleno */
+.ficha-embed .dashboard-container,
+.acta-embed .dashboard-container { box-sizing: border-box; max-width: 100%; }
+
+/* ---------- Devolución: formulario en diálogo modal ---------- */
+.radio-detalle .rd-devolver { margin: 0 0 12px; }
+
+.radio-detalle .rd-devolver-trigger {
+    display: flex;
+    width: fit-content;
+    margin-left: auto;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 16px;
+    border-radius: 10px;
+    background: #080D79;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 0;
+}
+
+.radio-detalle .rd-entregar > button {
+    display: flex;
+    width: fit-content;
+    margin-left: auto;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 16px;
+    border-radius: 10px;
+    background: #080D79;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    border: 0;
+    cursor: pointer;
+}
+
+.radio-detalle .rd-devolver-trigger:hover { background: #111B9B; }
+
+.radio-detalle .rd-devolver-trigger:focus-visible,
+.radio-detalle .rd-devolucion-modal button:focus-visible,
+.radio-detalle .rd-devolucion-modal textarea:focus-visible {
+    outline: 2px solid #080D79;
+    outline-offset: 2px;
+}
+
+.radio-detalle .rd-devolucion-modal,
+.rd-transferencia-modal {
+    width: min(520px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(90vh, 640px);
+    padding: 0;
+    overflow: auto;
+    border: 1px solid #D5D9EF;
+    border-radius: 18px;
+    color: #18203A;
+    background: #fff;
+    box-shadow: 0 20px 50px rgba(8, 13, 60, .28);
+}
+
+.radio-detalle .rd-devolucion-modal::backdrop,
+.rd-transferencia-modal::backdrop { background: rgba(8, 13, 60, .58); }
+
+.rd-devolucion-caja { display: grid; gap: 20px; padding: 22px; }
+
+.rd-devolucion-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+
+.rd-devolucion-cab h2 { margin: 0; color: #080D79; font-size: 20px; line-height: 1.25; }
+
+.rd-devolucion-cerrar,
+.rd-devolucion-cancelar {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid #D5D9EF;
+    border-radius: 10px;
+    color: #080D79;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rd-devolucion-caja .rd-baja-form { display: grid; gap: 10px; max-width: none; }
+
+.rd-devolucion-caja .rd-baja-form label { font-size: 14px; font-weight: 600; }
+
+.rd-devolucion-caja .rd-baja-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 144px;
+    padding: 12px;
+    border: 1px solid #CBD3E0;
+    border-radius: 10px;
+    color: #18203A;
+    background: #fff;
+    font: inherit;
+    resize: none;
+}
+
+.rd-devolucion-acciones { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+
+.rd-devolucion-acciones .rd-btn { justify-self: auto; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-devolver { margin-bottom: 8px; }
+
+.radio-detalle .rd-transferencia-accion {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.radio-detalle .rd-transferencia-trigger,
+.pf-comp .rd-transferencia-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 15px;
+    border: 0;
+    border-radius: 10px;
+    background: #080D79;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.radio-detalle .rd-transferencia-trigger:hover,
+.pf-comp .rd-transferencia-trigger:hover { background: #111B9B; }
+
+.radio-detalle .rd-transferencia-trigger:focus-visible {
+    outline: 2px solid #080D79;
+    outline-offset: 3px;
+}
+
+.pf-comp .rd-transferencia-trigger:focus-visible {
+    outline: 2px solid #080D79;
+    outline-offset: 3px;
+}
+
+.radio-detalle .rd-transferencia-accion p {
+    margin: 0;
+    color: #59608A;
+    font-size: 12px;
+    text-align: right;
+}
+
+.radio-detalle .rd-transferencia-modal,
+.rd-transferencia-modal {
+    width: min(560px, calc(100vw - 32px));
+}
+
+.radio-detalle .rd-transferencia-modal button:focus-visible,
+.radio-detalle .rd-transferencia-modal select:focus-visible,
+.rd-transferencia-modal button:focus-visible,
+.rd-transferencia-modal select:focus-visible {
+    outline: 2px solid #080D79;
+    outline-offset: 2px;
+}
+
+.radio-detalle .rd-transferencia-modal .rd-devolucion-cab p,
+.rd-transferencia-modal .rd-devolucion-cab p {
+    margin: 7px 0 0;
+    color: #59608A;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.radio-detalle .rd-transferencia-modal .rd-baja-form select,
+.rd-transferencia-modal .rd-baja-form select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 11px;
+    border: 1px solid #CDD2EC;
+    border-radius: 10px;
+    background: #F8F9FD;
+    color: #080D79;
+    font: inherit;
+}
+
+.radio-detalle .rd-transferencia-previa,
+.rd-transferencia-modal .rd-transferencia-previa {
+    padding: 14px;
+    border: 1px solid #DDE1F2;
+    border-radius: 12px;
+    background: #F8F9FD;
+}
+
+.radio-detalle .rd-transferencia-previa strong,
+.rd-transferencia-modal .rd-transferencia-previa strong { color: #080D79; }
+
+.radio-detalle .rd-transferencia-previa p,
+.rd-transferencia-modal .rd-transferencia-previa p {
+    margin: 7px 0 0;
+    color: #59608A;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.radio-detalle .rd-transferencia-previa ul,
+.rd-transferencia-modal .rd-transferencia-previa ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.radio-detalle .rd-transferencia-previa li,
+.rd-transferencia-modal .rd-transferencia-previa li {
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #E8EBFA;
+    color: #080D79;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.radio-detalle .rd-transferencia-previa ul[hidden],
+.rd-transferencia-modal .rd-transferencia-previa ul[hidden] { display: none; }
+
+.radio-detalle .rd-transferencia-componentes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 18px;
+    margin: 10px 0;
+    padding-left: 18px;
+    color: #18203A;
+    font-size: 13px;
+}
+
+.radio-detalle .rd-transferencia-componentes li span {
+    display: block;
+    color: #59608A;
+    font-size: 12px;
+}
+
+.radio-detalle .rd-transferencia small { color: #59608A; }
+
+.radio-detalle .rd-transferencia {
+    padding: 14px 0;
+    border-bottom: 1px solid #E8EAF4;
+}
+
+.radio-detalle .rd-transferencia:first-child { padding-top: 0; }
+.radio-detalle .rd-transferencia:last-child { padding-bottom: 0; border-bottom: 0; }
+
+.radio-detalle .rd-transferencia-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #080D79;
+}
+
+.radio-detalle .rd-transferencia > p {
+    margin: 8px 0;
+    color: #59608A;
+    font-size: 13px;
+}
+
+.radio-detalle .rd-transferencia .rd-badge.rd-amber {
+    background: #FFF3CF;
+    color: #8A5A00;
+}
+
+@media (max-width: 480px) {
+    .rd-devolucion-caja { gap: 16px; padding: 18px; }
+
+    .rd-devolucion-acciones { flex-direction: column; }
+
+    .rd-devolucion-acciones > button { width: 100%; }
+}
+
+/* ---------- Visor de actas: mensaje mientras no se elige una entrega ---------- */
+.radio-detalle .rd-visor-vacio {
+    margin: 0;
+    padding: 36px 16px;
+    color: #6B7299;
+    font-size: 13px;
+    text-align: center;
+}
+
+.radio-detalle .rd-visor-vacio[hidden],
+.radio-detalle .rd-iframe[hidden] { display: none; }
+
+/* =====================================================================
+   Mejora visual: tarjetas de entregas y botón de devolución / entrega
+   (misma lógica de antes; solo cambia la presentación)
+   ===================================================================== */
+
+/* Tarjeta de cada entrega: franja de color según el estado */
+.radio-detalle .rd-entrega,
+.pf-ent .rd-entrega {
+    position: relative;
+    gap: 5px;
+    border-color: #E0E5ED;
+    border-radius: 12px;
+    box-shadow: inset 4px 0 0 #D5D9EF, 0 1px 2px rgba(8, 13, 60, .04);
+}
+
+.radio-detalle .rd-entrega:has(.badge-green),
+.pf-ent .rd-entrega:has(.badge-green) { box-shadow: inset 4px 0 0 #10B981, 0 1px 2px rgba(8, 13, 60, .04); }
+
+.radio-detalle .rd-entrega:hover,
+.pf-ent .rd-entrega:hover {
+    border-color: #B9BFE6;
+    background: #F8F9FC;
+    box-shadow: inset 4px 0 0 #D5D9EF, 0 4px 12px rgba(8, 13, 60, .08);
+}
+
+.radio-detalle .rd-entrega:has(.badge-green):hover,
+.pf-ent .rd-entrega:has(.badge-green):hover { box-shadow: inset 4px 0 0 #10B981, 0 4px 12px rgba(8, 13, 60, .08); }
+
+/* La entrega abierta se distingue claramente */
+.radio-detalle .rd-entrega.is-activa,
+.radio-detalle .rd-entrega.is-activa:has(.badge-green) {
+    border-color: #080D79;
+    background: #F4F6FF;
+    box-shadow: inset 4px 0 0 #080D79, 0 0 0 3px rgba(8, 13, 121, .10);
+}
+
+/* Fecha y estado siempre en la misma línea */
+.radio-detalle .rd-entrega-top,
+.pf-ent .rd-entrega-top { flex-wrap: nowrap; gap: 8px; }
+
+.radio-detalle .rd-entrega-top strong,
+.pf-ent .rd-entrega-top strong { color: #182033; font-size: 14px; }
+
+/* Estado como etiqueta suave, igual que en el acta */
+.radio-detalle .rd-entrega .badge-green,
+.pf-ent .rd-entrega .badge-green {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #DDF3E4;
+    color: #0B5D33;
+    font-size: 11.5px;
+}
+
+.radio-detalle .rd-entrega .badge-gray,
+.pf-ent .rd-entrega .badge-gray {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #F1F2F7;
+    color: #6B7299;
+    font-size: 11.5px;
+}
+
+.radio-detalle .rd-entrega-linea:not(.rd-muted),
+.pf-ent .rd-entrega-linea:not(.rd-muted) { color: #3B4560; font-weight: 600; }
+
+/* Dentro de la ficha: el botón queda en la misma fila que las tarjetas */
+.ficha-embed .radio-detalle #panel-entregas .rd-panel-body:has(.rd-split) { position: relative; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-panel-body:has(.rd-split) .rd-devolver {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    margin: 0;
+}
+
+.ficha-embed .radio-detalle #panel-entregas .rd-panel-body:has(.rd-split) .rd-entregas { padding-right: 190px; }
+
+.ficha-embed .radio-detalle #panel-entregas .rd-entrega { padding: 10px 14px; }
+
+/* Botones de devolución / entrega con ícono y relieve */
+.radio-detalle .rd-devolver-trigger,
+.radio-detalle .rd-entregar > button {
+    gap: 7px;
+    box-shadow: 0 2px 6px rgba(8, 13, 121, .25);
+    transition: background .15s ease, box-shadow .15s ease;
+}
+
+.radio-detalle .rd-devolver-trigger::before { content: "↩"; font-size: 15px; line-height: 1; }
+
+.radio-detalle .rd-entregar > button::before { content: "+"; font-size: 17px; line-height: 1; }
+
+.radio-detalle .rd-devolver-trigger:hover,
+.radio-detalle .rd-entregar > button:hover { box-shadow: 0 4px 12px rgba(8, 13, 121, .32); }
+
+@media (max-width: 860px) {
+    .ficha-embed .radio-detalle #panel-entregas .rd-panel-body:has(.rd-split) .rd-devolver { position: static; margin-bottom: 8px; }
+
+    .ficha-embed .radio-detalle #panel-entregas .rd-panel-body:has(.rd-split) .rd-entregas { padding-right: 0; }
+}
+
+/* =====================================================================
+   Mejora visual: historial de mantenimientos (radio y equipos)
+   Mismos datos de antes; cambia la presentación y el botón abre el
+   formulario en una ventana dentro de la ficha.
+   ===================================================================== */
+.radio-detalle .rd-btn-mant {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 2px 6px rgba(8, 13, 121, .25);
+    transition: box-shadow .15s ease;
+}
+
+.radio-detalle .rd-btn-mant::before { content: "+"; font-size: 17px; line-height: 1; }
+
+.radio-detalle .rd-btn-mant:hover { box-shadow: 0 4px 12px rgba(8, 13, 121, .32); }
+
+/* Contador de intervenciones */
+.radio-detalle .rd-history-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 4px 6px 4px 12px;
+    border: 1px solid #E0E5ED;
+    border-radius: 999px;
+    background: #F4F6FA;
+    color: #647084;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.radio-detalle .rd-history-summary strong {
+    min-width: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #080D79;
+    color: #fff;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+}
+
+/* Tarjeta de cada intervención */
+.radio-detalle .rd-maintenance {
+    margin-bottom: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(8, 13, 60, .04);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.radio-detalle .rd-maintenance:hover,
+.radio-detalle details.rd-maintenance[open] {
+    border-color: #B9BFE6;
+    border-left-color: var(--rd-lime);
+    box-shadow: 0 4px 14px rgba(8, 13, 60, .08);
+}
+
+.radio-detalle .rd-maintenance-head { flex-wrap: nowrap; align-items: center; gap: 12px; }
+
+.radio-detalle .rd-maintenance-head h3 { margin: 0 0 3px; color: #182033; font-size: 16px; font-weight: 800; }
+
+.radio-detalle .rd-date { color: #647084; font-size: 12.5px; }
+
+.radio-detalle .rd-maintenance-chevron { margin: -3px 4px 0 2px; }
+
+.radio-detalle .rd-maintenance[open] > .rd-maintenance-head .rd-maintenance-chevron { margin-top: 3px; }
+
+/* Estado final con color */
+.radio-detalle .rd-estado {
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.radio-detalle .rd-estado-ok   { background: #DDF3E4; color: #0B5D33; }
+.radio-detalle .rd-estado-mal  { background: #FDE4E1; color: #B42318; }
+.radio-detalle .rd-estado-pend { background: #FFF3CF; color: #8A5A00; }
+.radio-detalle .rd-estado-sin  { background: #F1F2F7; color: #6B7299; }
+
+/* Detalle desplegado */
+.radio-detalle .rd-maintenance-body { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #D5DAEA; }
+
+.radio-detalle .rd-maintenance-field {
+    padding: 10px 12px;
+    border: 1px solid #EEF1F6;
+    border-radius: 10px;
+    background: #F8F9FC;
+}
+
+.radio-detalle .rd-maintenance-field strong {
+    margin-bottom: 4px;
+    color: #647084;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.radio-detalle .rd-maintenance-field p { color: #182033; font-weight: 500; }
+
+.radio-detalle .rd-trace summary { display: inline-block; padding: 6px 0; }
+
+@media (max-width: 640px) {
+    .radio-detalle .rd-maintenance-head { flex-wrap: wrap; }
+}

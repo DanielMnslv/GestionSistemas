@@ -1,0 +1,190 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Asignaciones de radios | JANO Inventario{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/asignaciones.css' %}?v=20261029c">
+{% endblock %}
+
+{% block content %}
+<section class="assignment-page">
+
+    <div class="assignment-heading">
+        <div>
+            <span class="eyebrow">GESTIÓN DE EQUIPOS</span>
+            <h1>Asignaciones de radios</h1>
+            <p>Control de entregas, devoluciones y trazabilidad de los equipos.</p>
+        </div>
+
+    </div>
+
+    <section class="assignment-panel">
+        <h2>Consultar asignaciones</h2>
+
+        <form method="get" class="assignment-filter" data-lista-filtros>
+            <div>
+                <label for="estado">Filtrar por estado</label>
+                <select name="estado" id="estado">
+                    <option value="ASIGNADO"
+                        {% if estado_seleccionado == "ASIGNADO" %}selected{% endif %}>
+                        Asignados
+                    </option>
+                    <option value="DEVUELTO"
+                        {% if estado_seleccionado == "DEVUELTO" %}selected{% endif %}>
+                        Devueltos
+                    </option>
+                    <option value=""
+                        {% if not estado_seleccionado %}selected{% endif %}>
+                        Todos los registros
+                    </option>
+                </select>
+            </div>
+
+            <button class="assignment-button" type="submit">
+                Filtrar resultados
+            </button>
+
+            <a class="assignment-button assignment-button-secondary"
+               href="{% url 'inventario:asignaciones_lista' %}">
+                Ver asignados
+            </a>
+        </form>
+
+        <p class="assignment-footer-note">
+            {{ total_resultados }} asignaci{{ total_resultados|pluralize:"ón,ones" }}.
+            Las devoluciones conservan el registro histórico de cada entrega.
+        </p>
+    </section>
+
+    <div class="assignment-table-wrap">
+        <table class="assignment-table">
+            <thead>
+                <tr>
+                    <th>Radio</th>
+                    <th>Funcionario</th>
+                    <th>Cliente y puesto</th>
+                    <th>Fecha de entrega</th>
+                    <th>Estado</th>
+                    <th>Responsables</th>
+                    <th>Acción / devolución</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for asignacion in asignaciones %}
+                <tr>
+                    <td>
+                        <span class="assignment-primary">
+                            {{ asignacion.radio.placa|default:"Sin placa" }}
+                        </span>
+                        <span class="assignment-muted">
+                            {{ asignacion.radio.marca }} {{ asignacion.radio.modelo }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="assignment-primary">
+                            {{ asignacion.cedula_funcionario|default:"Sin cédula" }}
+                        </span>
+                        <span class="assignment-muted">
+                            {{ asignacion.coordinador_zona|default:"Sin coordinador" }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="assignment-primary">
+                            {{ asignacion.cliente_asignado|default:"Sin cliente" }}
+                        </span>
+                        <span class="assignment-muted">
+                            {{ asignacion.puesto_asignado|default:"Sin puesto" }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ asignacion.fecha_entrega|date:"d/m/Y" }}
+                        <span class="assignment-muted">
+                            {{ asignacion.fecha_entrega|date:"H:i" }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {% if asignacion.estado == "ASIGNADO" %}
+                            <span class="assignment-status">Asignado</span>
+                        {% else %}
+                            <span class="assignment-status assignment-status-returned">
+                                Devuelto
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <strong>Entregó:</strong>
+                        <span class="assignment-muted">
+                            {% if asignacion.entregado_por %}
+                                {{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}
+                            {% else %}
+                                No registrado
+                            {% endif %}
+                        </span>
+
+                        {% if asignacion.recibido_por %}
+                            <strong>Recibió:</strong>
+                            <span class="assignment-muted">
+                                {{ asignacion.recibido_por.get_full_name|default:asignacion.recibido_por.username }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <a href="{% url 'inventario:asignacion_acta' asignacion.id %}">Ver acta</a>
+                        {% if asignacion.estado == "ASIGNADO" and permisos.entregas %}
+                            <form class="assignment-return"
+                                  method="post"
+                                  action="{% url 'inventario:asignacion_devolver' asignacion.id %}">
+                                {% csrf_token %}
+
+                                <label for="obs-{{ asignacion.id }}">
+                                    Observaciones de devolución
+                                </label>
+
+                                <textarea id="obs-{{ asignacion.id }}"
+                                          name="observaciones_devolucion"
+                                          rows="3"
+                                          placeholder="Estado del equipo, accesorios..."></textarea>
+
+                                <button class="assignment-button"
+                                        type="submit"
+                                        onclick="return confirm('¿Confirmas la devolución de este radio?')">
+                                    Registrar devolución
+                                </button>
+                            </form>
+                        {% elif asignacion.estado == "DEVUELTO" %}
+                            <strong>Fecha de devolución</strong>
+                            <span class="assignment-muted">
+                                {{ asignacion.fecha_devolucion|date:"d/m/Y H:i"|default:"No registrada" }}
+                            </span>
+
+                            <strong>Observaciones</strong>
+                            <span class="assignment-muted">
+                                {{ asignacion.observaciones_devolucion|default:"Sin observaciones" }}
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="assignment-empty">
+                        No hay asignaciones para el filtro seleccionado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "inventario/_paginacion.html" %}
+
+</section>
+{% endblock %}

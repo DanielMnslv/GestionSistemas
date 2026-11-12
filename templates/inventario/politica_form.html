@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Política de seguridad {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Política de seguridad</span>
+    </nav>
+    <header class="ficha-form-heading">
+        <span class="eyebrow">POLÍTICA DE SEGURIDAD INFORMÁTICA</span>
+        <h1>Verificar {{ equipo.placa }}</h1>
+        <p>{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.responsable_nombre %} · {{ equipo.responsable_nombre }}{% endif %}</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.especialista %}
+                {% include "inventario/_campo.html" with field=formulario.responsable %}
+            </div>
+            <hr class="ficha-divider">
+            <ol class="politica-puntos">
+                {% for punto in formulario.puntos %}
+                <li>
+                    <span>{{ punto.label }}</span>
+                    <div class="politica-opciones">{% for opcion in punto %}<label>{{ opcion.tag }} {{ opcion.choice_label }}</label>{% endfor %}</div>
+                </li>
+                {% endfor %}
+            </ol>
+            <hr class="ficha-divider">
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.observaciones ancho_completo=True %}
+                {% include "inventario/_campo.html" with field=formulario.actualizacion ancho_completo=True %}
+            </div>
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:equipo_detalle' equipo.placa %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Guardar verificación</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

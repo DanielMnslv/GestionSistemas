@@ -1,0 +1,306 @@
+/* ======================================================================
+   09-equipos-lista.css - Lista de equipos: búsqueda, filtros, encabezado y scroll
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* ---------- Lista de equipos: barra de búsqueda y filtros alineados ---------- */
+.lista-items .busca-items h1 { font-weight: 800; }
+
+.filtros-pildora .pildora {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.filtros-pildora .pildora select {
+    padding: 0 4px;
+    border: 0;
+    font-size: 13px;
+}
+
+.lista-items .equipos-tipo { align-items: center; }
+
+/* ---------- Lista de equipos: encabezado compacto (título, búsqueda y filtros en una franja) ---------- */
+.lista-items .barra-items {
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid #DDE1F2;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(8, 13, 121, .05);
+}
+
+.lista-items .busca-items {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+}
+
+.lista-items .busca-items h1 {
+    color: #080D79;
+    letter-spacing: -.3px;
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.lista-items .busca-items p {
+    display: block;
+    margin: 0;
+    color: #59608A;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.lista-items .caja-busqueda {
+    flex: 1 1 260px;
+    width: auto;
+    max-width: 440px;
+}
+
+.lista-items .caja-busqueda input {
+    height: 40px;
+    padding: 0 42px 0 16px;
+    border-radius: 14px;
+}
+
+.filtros-pildora { align-items: center; gap: 8px; }
+
+.filtros-pildora .pildora {
+    color: #59608A;
+    padding: 0 10px 0 16px;
+    white-space: nowrap;
+    font-size: 12px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 14px;
+    border: 1px solid #DDE1F2;
+    background: #F8F9FD;
+}
+
+.filtros-pildora .btn {
+    height: 40px;
+    min-height: 40px;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0 16px;
+}
+
+.filtros-pildora .pildora select {
+    width: auto;
+    min-width: 0;
+    outline: 0;
+    background: transparent;
+    color: #080D79;
+    font-weight: 700;
+    cursor: pointer;
+    height: 36px;
+}
+
+.lista-items .equipos-tipos {
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.lista-items .equipos-tipo {
+    gap: 8px;
+    padding: 5px 14px;
+    font-size: 13px;
+}
+
+.lista-items .equipos-tipo strong { font-size: 15px; }
+
+.main-panel {
+    backdrop-filter: none;
+    padding-top: 22px;
+}
+
+@media (min-width: 1500px) {
+    .lista-items .busca-items {
+        display: grid;
+        flex: 1 1 540px;
+        grid-template-columns: max-content minmax(260px, 440px);
+        justify-content: start;
+        grid-template-rows: auto auto;
+        align-items: center;
+        gap: 2px 16px;
+    }
+
+    .lista-items .busca-items h1 {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .lista-items .busca-items p {
+        display: block;
+        grid-column: 1;
+        grid-row: 2;
+        margin: 0;
+        font-size: 12px;
+    }
+
+    .lista-items .caja-busqueda {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        max-width: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .lista-fija-page .shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .lista-fija-page .sidebar {
+        min-width: 0;
+    }
+
+    .lista-fija-page .sidebar-nav {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        overflow: visible;
+        gap: 6px;
+    }
+
+    .lista-fija-page .sidebar-nav a {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 11px;
+    }
+
+    .lista-fija-page .sidebar-nav svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+.lista-items .filtros-pildora {
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+/* ---------- Lista de equipos: la página no se desplaza; solo las filas tienen scroll interno ---------- */
+@media (min-width: 901px) and (min-height: 560px) {
+    html:has(body.lista-fija-page) {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body.lista-fija-page {
+        height: 100vh;
+        height: 100dvh;
+        margin: 0;
+        padding: 16px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .lista-fija-page .shell {
+        height: 100%;
+        min-height: 0;
+        margin: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .lista-fija-page .sidebar {
+        height: 100%;
+        top: 0;
+    }
+
+    .lista-fija-page .main-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 22px 28px 10px;
+    }
+
+    .lista-fija-page .dashboard-container,
+    .lista-fija-page .radios-page {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .lista-fija-page .barra-items { flex: none; }
+
+    .lista-fija-page .filas-scroll {
+        overflow-y: auto;
+    }
+
+    .lista-fija-page .filas-items .table-footer {
+        flex: none;
+        padding: 0;
+    }
+
+    .lista-fija-page .paginacion { margin: 8px 0; }
+
+    .lista-fija-page .dashboard-footer { padding: 8px 10px 0; }
+}
+
+/* Equipos: el detalle de una fila se despliega encima (no empuja las demás) y no hay scroll */
+@media (min-width: 901px) and (min-height: 560px) {
+    .lista-fija-page .filas-items {
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+        display: flex;
+        overflow: visible;
+    }
+
+    .lista-fija-page .filas-scroll {
+        flex: 1;
+        min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #C9CDE6 transparent;
+        overflow: visible;
+    }
+
+    .lista-fija-page .filas-cabecera { top: 0; z-index: 2; background: #fff; position: static; }
+
+    .lista-fija-page .fila-item { position: relative; }
+
+    .lista-fija-page .fila-item[open] {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid #E6E9F3;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .lista-fija-page .fila-item[open] > summary {
+        background: #F3F5FD;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .lista-fija-page .fila-item[open] .fila-detalle {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        margin-top: -1px;
+        padding: 14px 18px 18px;
+        border: 1px solid #C9CDE6;
+        border-radius: 0 0 20px 20px;
+        background: #fff;
+        box-shadow: 0 16px 32px rgba(8, 13, 121, .14);
+    }
+}

@@ -1,0 +1,70 @@
+{% comment %}Pasos del registro de entrega de un radio (pestaña «Entregar» de la ficha). Espera "formulario_entrega" y "clausula".{% endcomment %}
+            <fieldset class="ficha-paso" data-paso="1" data-titulo="Vigilante">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Vigilante que recibe
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.vigilante %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Servicio y entrega">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Datos del servicio y entrega
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.coordinador_zona %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.cliente %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.puesto %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.cliente_asignado %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.puesto_asignado %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.observaciones_entrega ancho_completo=True %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="3" data-titulo="Estado al entregar">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">03</span>
+                Estado del equipo al entregar
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_radio_entrega %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_base_entrega %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_cargador_entrega %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_antena_entrega %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_baterias_entrega %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="4" data-titulo="Cláusula y firma">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">04</span>
+                Cláusula de confidencialidad y firma
+            </legend>
+
+            <p class="ficha-clausula">{{ clausula }}</p>
+
+            <div class="ficha-field">
+                <label class="ficha-check">
+                    {{ formulario_entrega.clausula_aceptada }}
+                    {{ formulario_entrega.clausula_aceptada.label }}
+                    <span class="ficha-required">*</span>
+                </label>
+                {% for error in formulario_entrega.clausula_aceptada.errors %}
+                    <p class="ficha-field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario_entrega.firma etiqueta="Firma del vigilante" %}
+
+            <aside class="ficha-responsibility-note">
+                <span aria-hidden="true">ⓘ</span>
+                <div>
+                    <strong>Control y trazabilidad.</strong>
+                    El sistema registra al usuario autenticado como responsable de la entrega.
+                    Verifica el vigilante, el cliente y el puesto antes de guardar.
+                </div>
+            </aside>
+            </fieldset>

@@ -1,0 +1,30 @@
+JANO INVENTARIO - ACTUALIZACION DEL REGISTRO DE MANTENIMIENTO
+
+Esta entrega contiene los archivos modificados para ampliar el formulario operativo.
+
+Incluye:
+- Funcionario responsable asociado al catálogo Funcionario (nullable para conservar historial).
+- Causa del daño para mantenimiento correctivo.
+- Selección múltiple de actividades preventivas y campo de detalle para Otros.
+- Selección múltiple de estados de entrega, conservando exactamente las cuatro opciones del formulario fuente.
+- Especialistas del formulario como opciones de selección.
+- Presentación condicional de campos según tipo de mantenimiento.
+- Migración 0030_mantenimiento_formulario_operativo.py.
+
+IMPORTANTE:
+- Aplicar únicamente en una COPIA local del proyecto y de su base de datos.
+- No copiar .env, bases de datos ni respaldos de este paquete (no se incluyen).
+- No aplicar en producción.
+- La migración no se ha ejecutado ni se ha validado contra la base local desde este entorno porque Django no está instalado aquí.
+- No se modificaron modelos de integración ni se activaron envíos/sincronizaciones.
+- Los registros históricos conservan sus valores; los campos nuevos son opcionales para compatibilidad.
+
+Pasos en la copia local:
+1. Reemplazar los archivos conservando sus rutas.
+2. Ejecutar: python manage.py check
+3. Ejecutar: python manage.py migrate --plan
+4. Revisar el plan y confirmar que solo aparece la migración 0030.
+5. Solo entonces ejecutar: python manage.py migrate inventario 0030
+6. Probar el registro preventivo y correctivo con un equipo de prueba.
+
+Si migrate --plan muestra operaciones distintas o una migración anterior pendiente, detenerse y revisar antes de continuar.

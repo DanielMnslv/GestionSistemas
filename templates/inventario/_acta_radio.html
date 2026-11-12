@@ -1,0 +1,61 @@
+<article class="acta acta-compacta">
+    <button class="ficha-form-button acta-imprimir" type="button" onclick="window.print()">Imprimir o guardar PDF</button>
+    <h1>Acta de entrega de radio</h1>
+    <p class="acta-sub">
+        Seguridad Jano
+        <span class="acta-chip">Entrega N.º {{ asignacion.pk }}</span>
+        <span class="acta-chip">{{ asignacion.fecha_entrega|date:"d/m/Y H:i" }}</span>
+        {% if asignacion.viene_del_formulario %}<span class="acta-origen">· Registrada desde el formulario de Google</span>{% endif %}
+    </p>
+
+    <h2>Equipo</h2>
+    <table class="acta-tabla">
+        <tr><th>Placa</th><td>{{ radio.placa|default:"-" }}</td></tr>
+        <tr><th>Serial</th><td>{{ radio.serial|default:"-" }}</td></tr>
+        <tr><th>Marca y modelo</th><td>{% if radio.marca or radio.modelo %}{{ radio.marca }} {{ radio.modelo }}{% else %}-{% endif %}</td></tr>
+    </table>
+
+    <h2>Estado al entregar</h2>
+    <table class="acta-tabla">
+        {% for fila in asignacion.estados_entrega %}
+        <tr><th>{{ fila.nombre }}</th><td>{% if fila.valor %}<span class="acta-estado acta-estado-{{ fila.tono }}">{{ fila.valor }}</span>{% else %}-{% endif %}</td></tr>
+        {% endfor %}
+    </table>
+
+    <h2>Servicio</h2>
+    <table class="acta-tabla">
+        <tr><th>Recibe</th><td>{{ asignacion.vigilante.nombre_completo|default:"-" }}</td></tr>
+        <tr><th>Cédula</th><td>{{ asignacion.cedula_funcionario|default:"-" }}</td></tr>
+        <tr><th>Cliente</th><td>{{ asignacion.cliente_asignado|default:"-" }}</td></tr>
+        <tr><th>Puesto</th><td>{{ asignacion.puesto_asignado|default:"-" }}</td></tr>
+        <tr><th>Coordinador de zona</th><td>{{ asignacion.coordinador_zona|default:"-" }}</td></tr>
+        <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username|default:"-" }}</td></tr>
+        {% if asignacion.observaciones_entrega_limpias %}
+        <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega_limpias|linebreaksbr }}</td></tr>
+        {% endif %}
+        {% if asignacion.fecha_devolucion %}
+        <tr><th>Devolución</th><td>{{ asignacion.fecha_devolucion|date:"d/m/Y H:i" }}{% if asignacion.observaciones_devolucion %} · {{ asignacion.observaciones_devolucion }}{% endif %}</td></tr>
+        {% endif %}
+    </table>
+
+    <h2>Cláusula de confidencialidad</h2>
+    <p>{{ clausula }}</p>
+    <p>
+        {% if asignacion.clausula_aceptada %}
+        <span class="acta-ok">✓ Aceptada por el vigilante.</span>
+        {% else %}
+        <span class="acta-sin-firma">No consta la aceptación de la cláusula.</span>
+        {% endif %}
+    </p>
+
+    <h2>Firma de quien recibe</h2>
+    <div class="acta-firma">
+        {% if asignacion.firma %}
+        <img src="{{ asignacion.firma }}" alt="Firma del vigilante">
+        {% elif asignacion.enlace_firma %}
+        <a href="{{ asignacion.enlace_firma }}" target="_blank" rel="noopener">Ver la firma adjunta en el formulario de Google</a>
+        {% else %}
+        <span class="acta-sin-firma">Sin firma registrada.</span>
+        {% endif %}
+    </div>
+</article>

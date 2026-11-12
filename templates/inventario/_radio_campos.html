@@ -1,0 +1,76 @@
+            <fieldset class="ficha-paso" data-paso="1" data-titulo="Identificación">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Identificación
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.placa %}
+                {% include "inventario/_campo.html" with field=formulario.serial %}
+                {% include "inventario/_campo.html" with field=formulario.codigo_fisico %}
+                {% include "inventario/_campo.html" with field=formulario.marca %}
+                {% include "inventario/_campo.html" with field=formulario.modelo %}
+                {% include "inventario/_campo.html" with field=formulario.tipo_frecuencia %}
+                {% include "inventario/_campo.html" with field=formulario.modalidad_servicio %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Estado del equipo">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Estado del equipo
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.estado_radio %}
+                {% include "inventario/_campo.html" with field=formulario.estado_base %}
+                {% include "inventario/_campo.html" with field=formulario.estado_cargador %}
+                {% include "inventario/_campo.html" with field=formulario.estado_antena %}
+                {% include "inventario/_campo.html" with field=formulario.estado_baterias %}
+                {% include "inventario/_campo.html" with field=formulario.estado_perilla_encendido %}
+                {% include "inventario/_campo.html" with field=formulario.estado_perilla_frecuencia %}
+                {% include "inventario/_campo.html" with field=formulario.estado_clip %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="3" data-titulo="Accesorios">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">03</span>
+                Accesorios
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.bateria_1 %}
+                {% include "inventario/_campo.html" with field=formulario.bateria_2 %}
+                {% include "inventario/_campo.html" with field=formulario.perilla_encendido %}
+                {% include "inventario/_campo.html" with field=formulario.perilla_frecuencia %}
+                {% include "inventario/_campo.html" with field=formulario.antena %}
+                {% include "inventario/_campo.html" with field=formulario.clip %}
+                {% include "inventario/_campo.html" with field=formulario.base %}
+                {% include "inventario/_campo.html" with field=formulario.cargador %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="4" data-titulo="Software y compra">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">04</span>
+                Software y compra
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.software_programacion %}
+                {% include "inventario/_campo.html" with field=formulario.version_software %}
+                {% include "inventario/_campo.html" with field=formulario.tipo_licencia %}
+                {% include "inventario/_campo.html" with field=formulario.licencia_software %}
+                {% include "inventario/_campo.html" with field=formulario.fecha_compra %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="5" data-titulo="Observaciones y revisión">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">05</span>
+                Observaciones y revisión
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.observaciones ancho_completo=True %}
+                {% include "inventario/_campo.html" with field=formulario.requiere_revision %}
+                {% include "inventario/_campo.html" with field=formulario.motivo_revision %}
+            </div>
+            </fieldset>
+

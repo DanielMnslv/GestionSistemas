@@ -1,0 +1,216 @@
+
+{% extends "base.html" %}
+
+{% block title %}Inventario de radios | JANO{% endblock %}
+
+
+{% block content %}
+<div class="radios-page">
+    <div class="page-heading">
+        <div>
+            <h1>Inventario de radios</h1>
+            <p>Consulta, seguimiento y control de los equipos registrados.</p>
+        </div>
+        {% if permisos.radios %}
+        <a class="btn btn-primary" href="{% url 'inventario:radio_crear' %}">Registrar radio</a>
+        {% endif %}
+    </div>
+
+    <section class="stats" aria-label="Resumen del inventario">
+        <article class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Total de radios</span>
+                <span class="stat-icon icon-blue" aria-hidden="true">◉</span>
+            </div>
+            <span class="stat-number">{{ total_radios }}</span>
+            <div class="stat-caption">Equipos activos · {{ total_bajas }} dado{{ total_bajas|pluralize }} de baja</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Operativos</span>
+                <span class="stat-icon icon-green" aria-hidden="true">✓</span>
+            </div>
+            <span class="stat-number">{{ total_operativos }}</span>
+            <div class="stat-caption">Marcados como operativos</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Revisión pendiente</span>
+                <span class="stat-icon icon-amber" aria-hidden="true">!</span>
+            </div>
+            <span class="stat-number">{{ total_revision }}</span>
+            <div class="stat-caption">Requieren verificación</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Sin serial</span>
+                <span class="stat-icon icon-red" aria-hidden="true">⌕</span>
+            </div>
+            <span class="stat-number">{{ total_sin_serial }}</span>
+            <div class="stat-caption">Registros por completar</div>
+        </article>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Buscar y filtrar equipos</h2>
+                <p>Combina los filtros para localizar un radio.</p>
+            </div>
+        </div>
+
+        <div class="filter-body">
+            <form method="get" data-lista-filtros>
+                <div class="filters">
+                    <div class="field">
+                        <label for="q">Búsqueda</label>
+                        <input id="q" type="search" name="q"
+                               value="{{ busqueda }}"
+                               placeholder="ID, código, placa, serial o marca">
+                    </div>
+
+                    <div class="field">
+                        <label for="condicion">Estado del radio</label>
+                        <select id="condicion" name="condicion">
+                            <option value="">Todos los estados</option>
+                            <option value="Operativo" {% if condicion_seleccionada == "Operativo" %}selected{% endif %}>Operativo</option>
+                            <option value="Regular" {% if condicion_seleccionada == "Regular" %}selected{% endif %}>Regular</option>
+                            <option value="Dañado" {% if condicion_seleccionada == "Dañado" %}selected{% endif %}>Dañado</option>
+                            <option value="Baja" {% if condicion_seleccionada == "Baja" %}selected{% endif %}>Baja</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="estado">Inventario</label>
+                        <select id="estado" name="estado">
+                            <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
+                            <option value="baja" {% if estado_seleccionado == "baja" %}selected{% endif %}>Dados de baja</option>
+                            <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="revision">Revisión</label>
+                        <select id="revision" name="revision">
+                            <option value="">Todos</option>
+                            <option value="si" {% if revision_seleccionada == "si" %}selected{% endif %}>Requiere revisión</option>
+                            <option value="no" {% if revision_seleccionada == "no" %}selected{% endif %}>Sin revisión pendiente</option>
+                        </select>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-primary" type="submit">Buscar</button>
+                        <a class="btn btn-light" href="{% url 'inventario:radios_lista' %}">Limpiar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <h2>Equipos registrados</h2>
+                <p>Selecciona el ID de un radio para consultar su ficha.</p>
+            </div>
+            <span class="result-pill">
+                {{ total_resultados }} resultado{{ total_resultados|pluralize }}
+            </span>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID / Código</th>
+                        <th>Serial</th>
+                        <th>Marca / Modelo</th>
+                        <th>Estado</th>
+                        <th>Revisión</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for radio in radios %}
+                    <tr>
+                        <td>
+                            <a class="radio-link"
+   href="{% url 'inventario:radio_detalle' radio.pk %}">
+    {{ radio.placa|default:"Sin placa" }}
+</a>
+<span class="subtext">
+    Código: {{ radio.codigo_fisico|default:"-" }}
+</span>
+                        </td>
+                        <td>{{ radio.serial|default:"-" }}</td>
+                        <td>
+                            {{ radio.marca|default:"-" }}
+                            <span class="subtext">{{ radio.modelo|default:"Modelo sin registrar" }}</span>
+                        </td>
+                        <td>
+                            {% if radio.estado_radio == "Operativo" %}
+                                <span class="badge badge-green">Operativo</span>
+                            {% elif radio.estado_radio == "Regular" %}
+                                <span class="badge badge-amber">Regular</span>
+                            {% elif radio.estado_radio == "Dañado" or radio.estado_radio == "Baja" %}
+                                <span class="badge badge-red">{{ radio.estado_radio }}</span>
+                            {% else %}
+                                <span class="badge badge-gray">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if radio.requiere_revision %}
+                                <span class="badge badge-amber">Pendiente</span>
+                                <span class="subtext">{{ radio.motivo_revision }}</span>
+                            {% else %}
+                                <span class="badge badge-green">Sin pendientes</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ radio.observaciones|default:"—"|truncatechars:65 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty">
+                            No se encontraron radios con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div>
+                Mostrando {{ radios|length }} equipos en esta página,
+                de {{ total_resultados }} resultado{{ total_resultados|pluralize }}.
+                Los indicadores superiores corresponden al inventario completo.
+            </div>
+
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="pagination" aria-label="Paginación de radios">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-light"
+                       href="?q={{ busqueda|urlencode }}&amp;condicion={{ condicion_seleccionada|urlencode }}&amp;revision={{ revision_seleccionada|urlencode }}&amp;estado={{ estado_seleccionado|urlencode }}&amp;page=1">Primera</a>
+                    <a class="btn btn-light"
+                       href="?q={{ busqueda|urlencode }}&amp;condicion={{ condicion_seleccionada|urlencode }}&amp;revision={{ revision_seleccionada|urlencode }}&amp;estado={{ estado_seleccionado|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>
+                {% endif %}
+
+                <span class="page-number">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a class="btn btn-light"
+                       href="?q={{ busqueda|urlencode }}&amp;condicion={{ condicion_seleccionada|urlencode }}&amp;revision={{ revision_seleccionada|urlencode }}&amp;estado={{ estado_seleccionado|urlencode }}&amp;page={{ page_obj.next_page_number }}">Siguiente</a>
+                    <a class="btn btn-light"
+                       href="?q={{ busqueda|urlencode }}&amp;condicion={{ condicion_seleccionada|urlencode }}&amp;revision={{ revision_seleccionada|urlencode }}&amp;estado={{ estado_seleccionado|urlencode }}&amp;page={{ page_obj.paginator.num_pages }}">Última</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

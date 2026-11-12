@@ -1,0 +1,34 @@
+{% comment %}Ajusta "pp" (filas por página) a la altura disponible en escritorio. Espera "defecto" y "clave" (clave ya no se usa; se deja para no tocar las plantillas que la envían).{% endcomment %}
+<script>
+(function () {
+    // Escritorio: se calculan las filas que caben para no mostrar barra de desplazamiento.
+    if (!window.matchMedia("(min-width: 901px) and (min-height: 560px)").matches) return;
+    var url = new URL(window.location.href);
+    var caja = document.querySelector(".mant-resultados .table-wrap");
+    // Si alguna fila no cupiera, la lista se desplaza dentro de su caja: ningún registro queda inalcanzable.
+    if (caja) caja.style.overflowY = "auto";
+    // El ajuste se hace UNA sola vez, en la primera página que se abre sin "pp". Las páginas siguientes
+    // llevan "pp" en sus enlaces y no se vuelven a ajustar; antes se recalculaba con la altura de cada
+    // página (las filas de dos líneas son más altas) y las páginas saltaban o no dejaban avanzar.
+    if (url.searchParams.has("pp")) return;
+    function ajustar() {
+        var filas = caja && caja.querySelectorAll("tbody tr[data-fila]");
+        if (!filas || !filas.length) return;
+        var cabeza = caja.querySelector("thead");
+        var alto = 0;
+        Array.prototype.forEach.call(filas, function (f) { alto = Math.max(alto, f.offsetHeight); });
+        if (!alto) return;
+        var libre = caja.clientHeight - (cabeza ? cabeza.offsetHeight : 0) - 2;
+        var n = Math.max(3, Math.min(50, Math.floor(libre / alto)));
+        var actual = {{ defecto }};
+        // Se conserva la posición: la página nueva empieza en el mismo registro que se veía.
+        var pagina = parseInt(url.searchParams.get("page") || "1", 10) || 1;
+        var nueva = Math.floor(((pagina - 1) * actual) / n) + 1;
+        url.searchParams.set("pp", n);
+        if (nueva > 1) url.searchParams.set("page", nueva); else url.searchParams.delete("page");
+        window.location.replace(url.toString());
+    }
+    var listo = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    listo.then(function () { window.requestAnimationFrame(ajustar); });
+})();
+</script>

@@ -1,0 +1,82 @@
+{% comment %}Lienzo de firma. Espera "campo" (el campo oculto de la firma), "etiqueta" y, si la firma no es obligatoria, "opcional".{% endcomment %}
+<div class="ficha-field ficha-firma">
+    <label for="firma-lienzo">{{ etiqueta|default:"Firma de quien recibe" }}{% if not opcional %} <span class="ficha-required">*</span>{% endif %}</label>
+    <canvas id="firma-lienzo" width="600" height="200"
+            aria-label="Espacio para firmar con el dedo o el mouse"></canvas>
+    {{ campo }}
+    <div class="ficha-firma-acciones">
+        <small class="ficha-field-help">Firma con el dedo (celular) o con el mouse.</small>
+        <button type="button" class="ficha-form-button ficha-form-button-secondary" id="firma-limpiar">
+            Borrar firma
+        </button>
+    </div>
+    <p class="ficha-field-error" id="firma-error" role="alert"
+       {% if not campo.errors %}hidden{% endif %}>
+        {% for error in campo.errors %}{{ error }}{% endfor %}
+    </p>
+</div>
+
+<script>
+(function () {
+    var lienzo = document.getElementById("firma-lienzo");
+    var campo = document.getElementById("{{ campo.auto_id }}");
+    var error = document.getElementById("firma-error");
+    var ctx = lienzo.getContext("2d");
+    var dibujando = false;
+
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#0B1F4D";
+
+    function punto(evento) {
+        var caja = lienzo.getBoundingClientRect();
+        return {
+x: (evento.clientX - caja.left) * lienzo.width / caja.width,
+y: (evento.clientY - caja.top) * lienzo.height / caja.height
+        };
+    }
+
+    // Al volver con errores, se conserva la firma ya dibujada.
+    if (campo.value) {
+        var imagen = new Image();
+        imagen.onload = function () { ctx.drawImage(imagen, 0, 0); };
+        imagen.src = campo.value;
+    }
+
+    lienzo.addEventListener("pointerdown", function (evento) {
+        dibujando = true;
+        lienzo.setPointerCapture(evento.pointerId);
+        var p = punto(evento);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    });
+    lienzo.addEventListener("pointermove", function (evento) {
+        if (!dibujando) return;
+        var p = punto(evento);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    });
+    function terminar() {
+        if (!dibujando) return;
+        dibujando = false;
+        campo.value = lienzo.toDataURL("image/png");
+        error.hidden = true;
+    }
+    lienzo.addEventListener("pointerup", terminar);
+    lienzo.addEventListener("pointercancel", terminar);
+
+    document.getElementById("firma-limpiar").addEventListener("click", function () {
+        ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+        campo.value = "";
+    });
+
+    lienzo.closest("form").addEventListener("submit", function (evento) {
+        if (!campo.value && {{ opcional|yesno:"false,true" }}) {
+evento.preventDefault();
+error.textContent = "Falta la firma.";
+error.hidden = false;
+lienzo.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    });
+})();
+</script>

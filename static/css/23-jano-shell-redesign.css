@@ -1,0 +1,434 @@
+﻿/* ==========================================================
+   JANO INVENTARIO — NUEVA INTERFAZ GLOBAL
+   Navegación, encabezado y estructura visual
+   ========================================================== */
+
+:root {
+    --jano-ui-primary: #0F766E;
+    --jano-ui-primary-hover: #115E59;
+    --jano-ui-accent: #14B8A6;
+    --jano-ui-bg: #F5F8FA;
+    --jano-ui-surface: #FFFFFF;
+    --jano-ui-text: #172B3A;
+    --jano-ui-muted: #718096;
+    --jano-ui-line: #E5EBEF;
+    --jano-ui-sidebar: #FFFFFF;
+    --jano-ui-sidebar-text: #526777;
+    --jano-ui-shadow: 0 4px 16px rgba(24,45,58,.045);
+    --jano-ui-radius: 13px;
+}
+
+html[data-tema="dark"] {
+    --jano-ui-bg: #10232D;
+    --jano-ui-surface: #192B35;
+    --jano-ui-text: #EAF2F4;
+    --jano-ui-muted: #A7BBC2;
+    --jano-ui-line: #304751;
+    --jano-ui-sidebar: #142A34;
+    --jano-ui-sidebar-text: #C1D0D5;
+    --jano-ui-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+
+/* ESTRUCTURA */
+body.dashboard-body {
+    background: var(--jano-ui-bg) !important;
+    color: var(--jano-ui-text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.jano-shell {
+    display: grid !important;
+    grid-template-columns: 258px minmax(0,1fr) !important;
+    min-height: 100vh;
+    background: var(--jano-ui-bg) !important;
+}
+
+/* MENÚ LATERAL */
+.jano-sidebar {
+    width: 258px !important;
+    min-width: 258px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    background: var(--jano-ui-sidebar) !important;
+    border-right: 1px solid var(--jano-ui-line) !important;
+    box-shadow: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.jano-brand {
+    min-height: 92px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border-bottom: 1px solid var(--jano-ui-line) !important;
+    text-decoration: none;
+}
+
+.jano-brand img {
+    width: 43px;
+    height: 43px;
+    object-fit: contain;
+}
+
+.jano-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.jano-brand-copy small {
+    color: var(--jano-ui-primary) !important;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+}
+
+.jano-brand-copy strong {
+    color: var(--jano-ui-text) !important;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .4px;
+}
+
+.jano-brand-copy span {
+    color: var(--jano-ui-muted) !important;
+    font-size: 10px;
+}
+
+/* NAVEGACIÓN */
+.jano-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 18px 13px;
+    flex: 1;
+}
+
+.jano-nav-label {
+    padding: 19px 12px 7px;
+    color: #8A9AA5 !important;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.15px;
+}
+
+.jano-nav a {
+    min-height: 43px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 0 !important;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--jano-ui-sidebar-text) !important;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .18s ease, color .18s ease;
+}
+
+.jano-nav a svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.jano-nav a:hover {
+    background: #F0F7F6 !important;
+    color: var(--jano-ui-primary) !important;
+}
+
+.jano-nav a.activo {
+    background: #E8F5F3 !important;
+    border-left: 0 !important;
+    color: #0F766E !important;
+    font-weight: 750;
+}
+
+.jano-nav a.activo svg {
+    color: #0F766E;
+}
+
+/* PIE DEL MENÚ Y USUARIO */
+.jano-sidebar-bottom {
+    padding: 13px 15px 16px;
+    border-top: 1px solid var(--jano-ui-line) !important;
+}
+
+.jano-sidebar-bottom .tema-boton {
+    width: 100%;
+    min-height: 39px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--jano-ui-muted) !important;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.jano-sidebar-bottom .tema-boton:hover {
+    background: #F0F7F6;
+    color: var(--jano-ui-primary) !important;
+}
+
+.jano-user {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-top: 13px;
+}
+
+.jano-user .sidebar-avatar {
+    width: 35px;
+    height: 35px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: #DDF3EF !important;
+    color: #0F766E !important;
+    font-weight: 800;
+}
+
+.jano-user span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--jano-ui-text) !important;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jano-user .logout-button {
+    color: var(--jano-ui-muted) !important;
+    background: transparent;
+    border: 0;
+}
+
+/* ÁREA PRINCIPAL */
+.jano-main {
+    min-width: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--jano-ui-bg) !important;
+}
+
+/* ENCABEZADO SUPERIOR */
+.jano-topbar {
+    min-height: 76px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 13px clamp(22px, 3vw, 42px);
+    background: var(--jano-ui-surface) !important;
+    border-bottom: 1px solid var(--jano-ui-line) !important;
+    box-shadow: none !important;
+}
+
+.jano-topbar-context {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.jano-topbar-kicker {
+    color: var(--jano-ui-muted) !important;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+.jano-topbar-context strong {
+    color: var(--jano-ui-text) !important;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.jano-topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 13px;
+    border: 1px solid var(--jano-ui-line) !important;
+    border-radius: 30px;
+    background: var(--jano-ui-bg) !important;
+    color: var(--jano-ui-muted) !important;
+    font-size: 10px;
+}
+
+.jano-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #16A579;
+    box-shadow: 0 0 0 4px rgba(22,165,121,.12);
+}
+
+/* CONTENIDO Y PIE */
+.jano-content {
+    width: 100%;
+    max-width: none;
+    flex: 1;
+    margin: 0;
+    padding: clamp(24px, 3vw, 42px);
+    color: var(--jano-ui-text);
+}
+
+.jano-footer {
+    padding: 16px 28px;
+    border-top: 1px solid var(--jano-ui-line) !important;
+    background: var(--jano-ui-surface) !important;
+    color: var(--jano-ui-muted) !important;
+    font-size: 9px;
+    letter-spacing: .9px;
+}
+
+/* ELEMENTOS COMUNES */
+.jano-content :is(input,select,textarea) {
+    border-color: var(--jano-ui-line);
+    border-radius: 9px;
+}
+
+.jano-content :is(input,select,textarea):focus {
+    outline: 0;
+    border-color: var(--jano-ui-primary);
+    box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+}
+
+.jano-content :is(button,.btn,a.button):focus-visible,
+.jano-nav a:focus-visible {
+    outline: 3px solid rgba(20,184,166,.45);
+    outline-offset: 3px;
+}
+
+/* MODO OSCURO */
+html[data-tema="dark"] .jano-nav a:hover {
+    background: #203D46 !important;
+}
+
+html[data-tema="dark"] .jano-nav a.activo {
+    background: #204A49 !important;
+    color: #8DE0D2 !important;
+}
+
+html[data-tema="dark"] .jano-sidebar-bottom .tema-boton:hover {
+    background: #203D46;
+}
+
+html[data-tema="dark"] .jano-user .sidebar-avatar {
+    background: #204A49 !important;
+    color: #8DE0D2 !important;
+}
+
+/* TABLETAS */
+@media (max-width: 900px) {
+    .jano-shell {
+        grid-template-columns: 1fr !important;
+    }
+
+    .jano-sidebar {
+        width: 100% !important;
+        min-width: 0;
+        height: auto;
+        position: relative;
+        overflow: visible;
+    }
+
+    .jano-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 10px 13px;
+        max-height: 230px;
+        overflow-y: auto;
+    }
+
+    .jano-nav-label {
+        width: 100%;
+        padding: 9px 8px 3px;
+    }
+
+    .jano-sidebar-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .jano-sidebar-bottom .tema-boton {
+        width: auto;
+    }
+
+    .jano-topbar {
+        position: relative;
+    }
+
+    .jano-content {
+        padding: 22px 18px;
+    }
+}
+
+/* MÓVILES */
+@media (max-width: 560px) {
+    .jano-nav {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        max-height: 280px;
+    }
+
+    .jano-nav-label {
+        grid-column: 1 / -1;
+    }
+
+    .jano-topbar {
+        padding: 12px 15px;
+    }
+
+    .jano-topbar-meta {
+        display: none;
+    }
+
+    .jano-user span {
+        max-width: 145px;
+    }
+
+    .jano-content {
+        padding: 16px 12px;
+    }
+
+    .jano-footer {
+        padding: 12px;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jano-shell * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+    }
+}

@@ -1,0 +1,200 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} | JANO Inventario{% endblock %}
+{% block body_class %}{% if request.GET.embed %}ficha-embed{% endif %}{% endblock %}
+
+
+{% block content %}
+<section class="ficha-form-page">
+
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ titulo }}</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">GESTIÓN DE EQUIPOS</span>
+        <h1>{{ titulo }}</h1>
+        <p>
+            Registra la entrega del radio, identifica al vigilante responsable
+            y completa la información del cliente y puesto de servicio.
+        </p>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="ficha-form-notice" role="status">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <section class="ficha-form-card" aria-labelledby="ficha-card-title">
+
+        <div class="ficha-form-card-header">
+            <div class="ficha-form-icon" aria-hidden="true">▣</div>
+            <div>
+                <h2 id="ficha-card-title">Datos de la entrega</h2>
+                <p>Los campos marcados con * son obligatorios.</p>
+            </div>
+        </div>
+
+        <form method="post" class="ficha-form-content">
+            {% csrf_token %}
+            {% if request.GET.pestanas_radio %}
+            <input type="hidden" name="pestanas_radio" value="1">
+            {% endif %}
+
+            {% if formulario.non_field_errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>No fue posible registrar la entrega.</strong>
+                    {{ formulario.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">01</span>
+                Identificación del radio y del vigilante
+            </h3>
+
+            <div class="ficha-form-grid">
+                {% for field in formulario %}
+                    {% if field.name == "radio" or field.name == "vigilante" %}
+                        <div class="ficha-field">
+                            <label for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="ficha-required">*</span>
+                                {% endif %}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.help_text %}
+                                <small class="ficha-field-help">
+                                    {{ field.help_text }}
+                                </small>
+                            {% endif %}
+
+                            {% for error in field.errors %}
+                                <p class="ficha-field-error" role="alert">
+                                    {{ error }}
+                                </p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <hr class="ficha-divider">
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Datos del servicio y entrega
+            </h3>
+
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.coordinador_zona %}
+                {% include "inventario/_campo.html" with field=formulario.cliente %}
+                {% include "inventario/_campo.html" with field=formulario.puesto %}
+                {% include "inventario/_campo.html" with field=formulario.cliente_asignado %}
+                {% include "inventario/_campo.html" with field=formulario.puesto_asignado %}
+                {% include "inventario/_campo.html" with field=formulario.observaciones_entrega ancho_completo=True %}
+            </div>
+
+            <hr class="ficha-divider">
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">03</span>
+                Estado del equipo al entregar
+            </h3>
+
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.estado_radio_entrega %}
+                {% include "inventario/_campo.html" with field=formulario.estado_base_entrega %}
+                {% include "inventario/_campo.html" with field=formulario.estado_cargador_entrega %}
+                {% include "inventario/_campo.html" with field=formulario.estado_antena_entrega %}
+                {% include "inventario/_campo.html" with field=formulario.estado_baterias_entrega %}
+            </div>
+
+            <hr class="ficha-divider">
+
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">04</span>
+                Cláusula de confidencialidad y firma
+            </h3>
+
+            <p class="ficha-clausula">{{ clausula }}</p>
+
+            <div class="ficha-field">
+                <label class="ficha-check">
+                    {{ formulario.clausula_aceptada }}
+                    {{ formulario.clausula_aceptada.label }}
+                    <span class="ficha-required">*</span>
+                </label>
+                {% for error in formulario.clausula_aceptada.errors %}
+                    <p class="ficha-field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del vigilante" %}
+
+            <aside class="ficha-responsibility-note">
+                <span aria-hidden="true">ⓘ</span>
+                <div>
+                    <strong>Control y trazabilidad.</strong>
+                    El sistema registra al usuario autenticado como responsable
+                    de la entrega. Verifica el radio, el vigilante, el cliente
+                    y el puesto antes de guardar. Si el radio ya tiene una
+                    asignación activa, primero deberá registrarse su devolución.
+                </div>
+            </aside>
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% url 'inventario:equipos_lista' %}">
+                    Cancelar
+                </a>
+
+                <button class="ficha-form-button" type="submit">
+                    Registrar entrega →
+                </button>
+            </div>
+        </form>
+    </section>
+</section>
+
+<script>
+(function () {
+    // Filtra los puestos por el cliente elegido.
+    var cliente = document.getElementById("{{ formulario.cliente.auto_id }}");
+    var puesto = document.getElementById("{{ formulario.puesto.auto_id }}");
+    var url = "{% url 'inventario:puestos_json' %}";
+    var elegido = puesto.value;
+
+    function cargar() {
+        puesto.innerHTML = "";
+        var vacio = document.createElement("option");
+        vacio.value = "";
+        vacio.textContent = cliente.value ? "Seleccione el puesto" : "Seleccione primero el cliente";
+        puesto.appendChild(vacio);
+        if (!cliente.value) return;
+        fetch(url + "?cliente=" + encodeURIComponent(cliente.value), {credentials: "same-origin"})
+            .then(function (r) { return r.json(); })
+            .then(function (datos) {
+                datos.puestos.forEach(function (p) {
+                    var op = document.createElement("option");
+                    op.value = p.id;
+                    op.textContent = p.texto;
+                    if (String(p.id) === elegido) op.selected = true;
+                    puesto.appendChild(op);
+                });
+            });
+    }
+    cliente.addEventListener("change", function () { elegido = ""; cargar(); });
+    cargar();
+})();
+</script>
+{% endblock %}

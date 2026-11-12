@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Atender {{ ticket.numero }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:tickets_lista' %}">Tickets</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:ticket_detalle' ticket.numero %}">{{ ticket.numero }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Visita</span>
+    </nav>
+    <header class="ficha-form-heading">
+        <span class="eyebrow">VISITA Y ACTA</span>
+        <h1>Atender {{ ticket.numero }}</h1>
+        <p>{{ ticket.descripcion|truncatechars:200 }}</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" enctype="multipart/form-data" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            {% if formulario.errors or intervencion.errors or errores_fotos %}
+            <div class="ficha-form-errors" role="alert">
+                <strong>Revisa los campos marcados.</strong>
+                {% if errores_fotos %}<ul>{% for e in errores_fotos %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if intervencion %}
+            <h3 class="ficha-section-heading"><span class="ficha-section-number">01</span> Intervención en {{ ticket.equipo.placa }}</h3>
+            <div class="ficha-form-grid">
+                {% for field in intervencion %}
+                    {% if field.widget_type == "textarea" %}
+                        {% include "inventario/_campo.html" with ancho_completo=True %}
+                    {% else %}
+                        {% include "inventario/_campo.html" %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <hr class="ficha-divider">
+            {% endif %}
+
+            <h3 class="ficha-section-heading"><span class="ficha-section-number">{% if intervencion %}02{% else %}01{% endif %}</span> Solución y evidencias</h3>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.solucion ancho_completo=True %}
+                <div class="ficha-field full-width">
+                    <label for="fotos">Fotos de la visita</label>
+                    <input id="fotos" type="file" name="fotos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple class="form-control">
+                    <small class="ficha-field-help">JPG, PNG o WEBP de hasta 5 MB. En el celular abre la cámara.</small>
+                </div>
+                {% include "inventario/_campo.html" with field=formulario.firma_nombre %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el servicio" opcional=True %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:ticket_detalle' ticket.numero %}">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Resolver ticket</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

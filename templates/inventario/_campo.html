@@ -1,0 +1,13 @@
+<div class="ficha-field{% if ancho_completo %} full-width{% endif %}">
+    <label for="{{ field.id_for_label }}">
+        {{ field.label }}
+        {% if field.field.required %}<span class="ficha-required">*</span>{% endif %}
+    </label>
+    {{ field }}
+    {% if field.help_text %}
+        <small class="ficha-field-help">{{ field.help_text }}</small>
+    {% endif %}
+    {% for error in field.errors %}
+        <p class="ficha-field-error" role="alert">{{ error }}</p>
+    {% endfor %}
+</div>

@@ -1,0 +1,185 @@
+{% comment %}Ventana emergente de Registrar / Programar. Se incluye desde _mant_cabecera.html, así que está en todas las pestañas de Mantenimiento. Cualquier enlace con data-mant-modal la abre.{% endcomment %}
+{% if permisos.mantenimientos or permisos.programar %}
+<dialog id="mant-modal" class="mant-modal" aria-labelledby="mant-modal-titulo"{% if permisos.mantenimientos %} data-url-registrar="{% url 'inventario:mantenimiento_crear' %}"{% endif %}{% if permisos.programar %} data-url-programar="{% url 'inventario:mantenimiento_programado_crear' %}"{% endif %}{% if permisos.mantenimientos %} data-url-completar="{% url 'inventario:mantenimiento_programado_completar' 0 %}"{% endif %}>
+    <div class="mant-modal-carga" data-carga>Cargando formulario…</div>
+    <div data-contenido></div>
+</dialog>
+
+{% include "inventario/_buscador_equipo.html" %}
+
+<script>
+(function () {
+    // "Registrar" y "Programar" abren su formulario en esta ventana emergente (ya no hay página completa).
+    var dialogo = document.getElementById("mant-modal");
+    if (!dialogo || typeof dialogo.showModal !== "function") return;
+    var contenido = dialogo.querySelector("[data-contenido]");
+    var carga = dialogo.querySelector("[data-carga]");
+    var origen = null;
+
+    function cerrar() {
+        dialogo.close();
+    }
+
+    function limpiarDireccion() {
+        // Quita ?abrir=… de la dirección para que recargar la página no vuelva a abrir la ventana.
+        var p = new URLSearchParams(window.location.search);
+        if (!p.has("abrir")) return;
+        ["abrir", "equipo", "programacion"].forEach(function (k) { p.delete(k); });
+        var resto = p.toString();
+        history.replaceState(null, "", window.location.pathname + (resto ? "?" + resto : ""));
+    }
+
+    function pedir(url, opciones) {
+        opciones = opciones || {};
+        opciones.headers = { "X-Requested-With": "XMLHttpRequest" };
+        opciones.credentials = "same-origin";
+        return fetch(url, opciones).then(function (r) {
+            if (r.redirected || !r.ok) throw new Error("fallback");
+            return r;
+        });
+    }
+
+    var MAX_CAMPO = 220;  // px: a partir de aquí el campo desplaza su propio texto
+
+    function crecer(area) {
+        // Crece con el texto (nunca baja de su alto inicial) para no tener que arrastrar la esquina.
+        var min = parseFloat(area.dataset.min) || area.offsetHeight;
+        area.style.height = min + "px";
+        area.style.height = Math.min(Math.max(min, area.scrollHeight + 2), MAX_CAMPO) + "px";
+    }
+
+    function mostrar(html) {
+        contenido.innerHTML = html;
+        carga.hidden = true;
+        Array.prototype.forEach.call(contenido.querySelectorAll("textarea"), function (a) {
+            a.dataset.min = a.offsetHeight;
+            crecer(a);
+        });
+        // El campo Equipo pasa a ser un selector con búsqueda; el enfoque se da cuando ya está listo.
+        var listo = window.buscadorEquipo ? window.buscadorEquipo(contenido) : Promise.resolve();
+        listo.then(function () {
+            var error = contenido.querySelector(".maintenance-form-errors");
+            if (error) { error.scrollIntoView({ block: "center" }); return; }
+            // Se enfoca el primer dato obligatorio que falta (Equipo, Tipo al registrar, Fecha al programar).
+            var campos = contenido.querySelectorAll("[required]");
+            for (var i = 0; i < campos.length; i++) {
+                if (!campos[i].value) {
+                    if (campos[i].tomselect) { campos[i].tomselect.focus(); } else { campos[i].focus(); }
+                    break;
+                }
+            }
+        });
+    }
+
+    function abrir(enlace) {
+        origen = enlace;
+        contenido.innerHTML = "";
+        carga.hidden = false;
+        dialogo.showModal();
+        pedir(enlace.href)
+            .then(function (r) {
+                if ((r.headers.get("Content-Type") || "").indexOf("application/json") !== -1) {
+                    // Ya no se puede abrir (p. ej. la programación ya se completó): se recarga para mostrar el aviso.
+                    limpiarDireccion();
+                    window.location.reload();
+                    return;
+                }
+                return r.text().then(mostrar);
+            })
+            .catch(falloAlAbrir);
+    }
+
+    function falloAlAbrir() {
+        // Ya no existe una página completa a la que volver: el aviso se da dentro de la ventana.
+        carga.hidden = true;
+        contenido.innerHTML =
+            '<div class="mant-modal-carga">No se pudo abrir el formulario. Recarga la página (F5) e inténtalo de nuevo; ' +
+            'si tu sesión venció, vuelve a ingresar.' +
+            '<p><button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-cerrar>Cerrar</button></p></div>';
+    }
+
+    document.addEventListener("click", function (e) {
+        var enlace = e.target.closest("a[data-mant-modal]");
+        if (!enlace || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+        e.preventDefault();
+        abrir(enlace);
+    });
+
+    dialogo.addEventListener("click", function (e) {
+        // Cerrar con la X, con Cancelar o al pulsar fuera de la ventana.
+        if (e.target === dialogo || e.target.closest("[data-cerrar]")) cerrar();
+    });
+
+    dialogo.addEventListener("input", function (e) {
+        if (e.target.tagName === "TEXTAREA") crecer(e.target);
+    });
+
+    dialogo.addEventListener("keydown", function (e) {
+        // Ctrl/Cmd + Enter guarda sin buscar el botón.
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            var form = dialogo.querySelector("form[data-mant-form]");
+            if (form) { e.preventDefault(); form.requestSubmit(); }
+        }
+    });
+
+    dialogo.addEventListener("close", function () {
+        contenido.innerHTML = "";
+        limpiarDireccion();
+        if (origen) origen.focus();
+    });
+
+    dialogo.addEventListener("submit", function (e) {
+        var form = e.target.closest("form[data-mant-form]");
+        if (!form) return;
+        e.preventDefault();
+        var boton = form.querySelector("[type=submit]");
+        if (boton.disabled) return;
+        var textoBoton = boton.textContent;
+        boton.disabled = true;
+        boton.textContent = "Guardando…";
+        pedir(form.action, { method: "POST", body: new FormData(form) })
+            .then(function (r) {
+                if ((r.headers.get("Content-Type") || "").indexOf("application/json") !== -1) {
+                    // Guardado: se recarga el panel para actualizar estado, fechas y mensaje.
+                    limpiarDireccion();
+                    window.location.reload();
+                    return;
+                }
+                return r.text().then(mostrar);  // Con errores: se muestra de nuevo el formulario.
+            })
+            .catch(function () {
+                boton.disabled = false;
+                boton.textContent = textoBoton;
+                contenido.insertAdjacentHTML("afterbegin",
+                    '<div class="maintenance-form-errors" role="alert">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.</div>');
+            });
+    });
+
+    // Los enlaces directos (ficha del equipo, marcadores) llegan como ?abrir=registrar|programar[&equipo=PLACA]
+    // o ?abrir=completar&programacion=ID. La lista puede recargarse una vez para ajustar sus filas
+    // a la pantalla, así que la ventana se abre un instante después de cargar y la dirección
+    // se limpia solo al cerrarla o guardar.
+    var parametros = new URLSearchParams(window.location.search);
+    var que = parametros.get("abrir");
+    var urlForm = null;
+    if (que === "registrar") urlForm = dialogo.dataset.urlRegistrar;
+    else if (que === "programar") urlForm = dialogo.dataset.urlProgramar;
+    else if (que === "completar" && /^\d+$/.test(parametros.get("programacion") || "") && dialogo.dataset.urlCompletar) {
+        urlForm = dialogo.dataset.urlCompletar.replace("/0/", "/" + parametros.get("programacion") + "/");
+    }
+    if (urlForm) {
+        var placa = parametros.get("equipo");
+        var abrirSola = function () {
+            setTimeout(function () {
+                abrir({
+                    href: urlForm + (placa ? "?" + new URLSearchParams({ equipo: placa }).toString() : ""),
+                    focus: function () {}
+                });
+            }, 600);
+        };
+        if (document.readyState === "complete") abrirSola();
+        else window.addEventListener("load", abrirSola);
+    }
+})();
+</script>
+{% endif %}

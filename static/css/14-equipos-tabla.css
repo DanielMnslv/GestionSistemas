@@ -1,0 +1,438 @@
+/* ======================================================================
+   14-equipos-tabla.css - Equipos: tabla de dos estados + ficha completa
+   Estado 1: la tabla usa todo el ancho (6 columnas).
+   Estado 2: al elegir una fila la ficha se abre a la izquierda y la tabla
+   se reduce a placa, equipo y estado. Los datos vacíos nunca se ocultan:
+   se marcan en ámbar con "Sin dato".
+   Se carga después de 13-panel-mantenimientos.css (ver templates/_estilos.html).
+   ====================================================================== */
+
+/* ---------- Disposición: dos estados ---------- */
+.eq-split { grid-template-columns: minmax(0, 1fr); }
+
+.eq-split:not(.has-ficha) .eq-panel { display: none; }
+
+.eq-split.has-ficha { grid-template-columns: minmax(0, 1fr) minmax(300px, 34%); }
+
+.eq-split.has-ficha .col-extra { display: none; }
+
+/* La ficha va a la izquierda y la lista (tabla) a la derecha. */
+@media (min-width: 901px) {
+    .eq-split > .eq-panel { grid-column: 1; grid-row: 1; }
+
+    .eq-split.has-ficha > .eq-izq { grid-column: 2; grid-row: 1; }
+
+    /* Sin ficha abierta la tabla ocupa todo el ancho. */
+    .eq-split:not(.has-ficha) > .eq-izq { grid-column: 1; grid-row: 1; }
+}
+
+@media (max-width: 900px) {
+    .eq-split,
+    .eq-split.has-ficha { grid-template-columns: minmax(0, 1fr); }
+
+    .eq-split .col-extra { display: none; }
+}
+
+/* ---------- Tabla ---------- */
+.eq-tabla-wrap { padding: 0 8px 8px; gap: 0; }
+
+.eq-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+
+.eq-tabla thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 9px 12px;
+    background: #E3E7F7;
+    border-bottom: 1px solid #C9CEE8;
+    color: #59608A;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.eq-tabla td {
+    max-width: 260px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #D5D9EF;
+    color: #2A2F63;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.eq-tabla .empty { padding: 24px 10px; text-align: center; color: #59608A; white-space: normal; }
+
+/* La fila ya no es un bloque flex: se restablece lo que traía la lista anterior. */
+.eq-tabla tr.eq-fila {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.eq-tabla tr.eq-fila:hover td,
+.eq-tabla tr.eq-fila:focus-visible td { background: #F4F6FE; }
+
+.eq-tabla tr.eq-fila:focus-visible { outline: 2px solid #080D79; outline-offset: -2px; }
+
+.eq-tabla tr.eq-fila.sel td { background: #080D79; border-bottom-color: #080D79; color: #fff; }
+
+.eq-tabla tr.eq-fila.sel td:first-child { border-radius: 12px 0 0 12px; }
+
+.eq-tabla tr.eq-fila.sel td:last-child { border-radius: 0 12px 12px 0; }
+
+.eq-tabla tr.eq-fila.sel .eq-placa { color: #fff; }
+
+.eq-tabla .eq-c-placa { width: 1%; }
+
+.eq-tabla .eq-c-estado { white-space: nowrap; }
+
+.eq-tabla .eq-c-estado .badge { margin-left: 6px; padding: 1px 7px; font-size: 10.5px; }
+
+.eq-tabla .eq-c-estado .badge:first-child { margin-left: 0; }
+
+.eq-sin { color: #8890B5; font-style: italic; }
+
+.eq-tabla tr.sel .eq-sin { color: #C9CEF5; }
+
+/* Estado con punto de color */
+.eq-estado { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+
+.eq-estado::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--punto, #8890B5); }
+
+.eq-estado-green { color: #0B6B3A; --punto: #16A34A; }
+.eq-estado-amber { color: #8A5A00; --punto: #F0A500; }
+.eq-estado-red   { color: #B42318; --punto: #E5484D; }
+.eq-estado-gray  { color: #59608A; --punto: #8890B5; }
+
+.eq-tabla tr.sel .eq-estado { color: #fff; }
+
+/* Columna "Datos" */
+.eq-datos { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+
+.eq-datos::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+.eq-datos-falta { color: #8A5A00; }
+.eq-datos-falta::before { background: #F0A500; }
+.eq-datos-ok { color: #0B6B3A; }
+
+.eq-tabla tr.sel .eq-datos { color: #FFD27A; }
+.eq-tabla tr.sel .eq-datos-ok { color: #9BE3B5; }
+
+/* ---------- Ficha: botón de cerrar (vuelve al estado 1) ---------- */
+.eq-panel .pf-cab { position: relative; padding-right: 48px; }
+
+.pf-cerrar {
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #CDD2EC;
+    border-radius: 50%;
+    background: #fff;
+    color: #080D79;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.pf-cerrar:hover { background: #EEF0FF; border-color: #080D79; }
+
+.pf-cerrar:focus-visible { outline: 2px solid #080D79; outline-offset: 2px; }
+
+/* ---------- Ficha: progreso de datos ---------- */
+.pf-progreso {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 9px 14px;
+    border: 1px solid #D5D9EF;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(8, 13, 121, .05);
+}
+
+.pf-prog-txt { color: #2A2F63; font-size: 13px; white-space: nowrap; }
+
+.pf-prog-txt strong { color: #080D79; font-weight: 800; }
+
+.pf-barra { flex: 1 1 140px; height: 8px; border-radius: 999px; background: #E6E9F3; overflow: hidden; }
+
+.pf-barra i { display: block; height: 100%; border-radius: inherit; background: #16A34A; }
+
+.pf-solo { display: inline-flex; align-items: center; gap: 6px; color: #59608A; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+
+.pf-solo input { width: 15px; height: 15px; margin: 0; accent-color: #080D79; }
+
+/* ---------- Ficha: datos vacíos, siempre visibles ---------- */
+.pf-sin { color: #8A5A00; font-weight: 700; }
+
+.pf-vacio-dato { background: #FFF3CF; border-color: #F2D58A !important; }
+
+.pf-vacio-dato strong { color: #8A5A00; }
+
+.eq-panel .pf-secciones > .pf-card dl > div.pf-fila-vacia,
+.pf-fila-vacia { padding: 7px 6px; border-radius: 6px; background: #FFF3CF; }
+
+.pf-obs-vacia { margin: 0; padding: 7px 8px; border-radius: 6px; }
+
+/* Datos de baja en un equipo activo: se ven, pero no cuentan como pendientes */
+.pf-fila-na dd { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+
+.pf-na { color: #8890B5; font-weight: 600; }
+
+.pf-fila-na small { color: #8890B5; font-size: 10.5px; font-weight: 500; }
+
+/* ---------- Ficha: componentes como chips ---------- */
+.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; padding: 0; list-style: none; }
+
+.pf-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 11px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.pf-chip-est { font-size: 10.5px; font-weight: 700; }
+
+.pf-chip-ok { background: #DDF3E4; border-color: #BFE3CB; color: #0B5D33; }
+.pf-chip-ok .pf-chip-est-amber { color: #8A5A00; }
+.pf-chip-ok .pf-chip-est-red { color: #B42318; }
+
+.pf-chip-no { background: #F1F2F7; color: #8890B5; font-weight: 600; }
+.pf-chip-no .pf-chip-nom { text-decoration: line-through; }
+
+.pf-chip-q { background: #FFF3CF; border: 1px dashed #E9C36A; color: #8A5A00; }
+
+/* ---------- "Resaltar solo lo pendiente": se atenúa lo completo, no se quita nada ---------- */
+.pf .pf-dato,
+.pf .pf-chip,
+.pf .pf-card dl > div,
+.pf .pf-card > p { transition: opacity .15s ease; }
+
+.pf-solo-pendiente .pf-dato:not(.pf-vacio-dato),
+.pf-solo-pendiente .pf-chip:not(.pf-chip-q),
+.pf-solo-pendiente .pf-card dl > div:not(.pf-fila-vacia),
+.pf-solo-pendiente .pf-card > p:not(.pf-fila-vacia) { opacity: .35; }
+
+/* ---------- Ficha en el panel: una columna si es angosto, dos si hay espacio ---------- */
+.eq-split.has-ficha .pf-secciones { grid-template-columns: minmax(0, 1fr); }
+
+@container (min-width: 700px) {
+    .eq-split.has-ficha .pf-secciones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Resumen de radio_detalle.html y equipo_pestanas.html: vacíos visibles ---------- */
+.radio-detalle .rd-item.rd-vacio { background: #FFF3CF; border-color: #F2D58A; }
+
+.radio-detalle .rd-item.rd-vacio .rd-value,
+.radio-detalle .rd-vacio-nota { color: #8A5A00; font-weight: 700; }
+
+.radio-detalle .rd-vacio-nota { margin: 8px 0 0; padding: 10px 14px; border-radius: 9px; background: #FFF3CF; font-size: 14px; }
+
+.rd-progreso {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border: 1px solid #D5D9EF;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.rd-prog-txt { color: #2A2F63; font-size: 13px; white-space: nowrap; }
+
+.rd-prog-txt strong { color: #080D79; font-weight: 800; }
+
+.rd-barra { flex: 1 1 160px; height: 8px; border-radius: 999px; background: #E6E9F3; overflow: hidden; }
+
+.rd-barra i { display: block; height: 100%; border-radius: inherit; background: #16A34A; }
+
+.rd-solo { display: inline-flex; align-items: center; gap: 6px; color: #59608A; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+
+.rd-solo input { width: 15px; height: 15px; margin: 0; accent-color: #080D79; }
+
+.radio-detalle .rd-item,
+.radio-detalle .rd-note { transition: opacity .15s ease; }
+
+.rd-solo-pendiente .rd-item:not(.rd-vacio),
+.rd-solo-pendiente .rd-note:not(.rd-vacio-nota) { opacity: .35; }
+
+/* ---------- Búsqueda y filtros (Tipo, Inventario, Buscar, Limpiar) en la misma fila ---------- */
+.eq-lista-card > .eq-buscar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+
+.eq-buscar .caja-busqueda { flex: 1 1 240px; width: auto; min-width: 200px; }
+
+.eq-buscar .eq-filtros { flex: 0 1 auto; flex-wrap: wrap; }
+
+/* Filtros bajo la búsqueda: alineados a la izquierda, compactos y en una sola línea si caben */
+.eq-buscar .eq-filtros {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+}
+
+.eq-buscar .eq-filtros .pildora {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 6px 0 12px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.eq-buscar .eq-filtros .pildora select { height: 32px; font-size: 13px; }
+
+.eq-buscar .eq-filtros .btn {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 12.5px;
+}
+
+/* ---------- Filtros desplegables dentro de la barra de búsqueda (reemplaza la fila de pastillas) ---------- */
+.eq-lista-card > .eq-buscar { display: block; position: relative; }
+
+.eq-busca-fila { position: relative; }
+
+.eq-lista-card > .eq-buscar .caja-busqueda input { padding-right: 84px; }
+
+.eq-filtro-btn {
+    position: absolute;
+    top: 50%;
+    right: 42px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #59608A;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.eq-filtro-btn:hover,
+.eq-filtro-btn[aria-expanded="true"] { background: #EEF0FF; color: #080D79; }
+
+.eq-filtro-btn:focus-visible { outline: 2px solid #080D79; outline-offset: 1px; }
+
+.eq-filtro-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
+.eq-filtro-n {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    display: grid;
+    place-items: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #080D79;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.eq-filtros {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    box-sizing: border-box;
+    width: min(680px, 100%);
+    max-height: min(70vh, 560px);
+    padding: 18px;
+    overflow-y: auto;
+    border: 1px solid #CDD2EC;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(8, 13, 121, .18);
+}
+
+.eq-filtros[hidden] { display: none; }
+
+.eq-filtro {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    min-width: 0;
+    color: #59608A;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .025em;
+}
+
+.eq-filtro select {
+    height: 38px;
+    min-width: 0;
+    padding: 0 10px;
+    border: 1px solid #DDE1F2;
+    border-radius: 12px;
+    background: #F8F9FD;
+    color: #080D79;
+    font: inherit;
+    font-size: 13px;
+}
+
+.eq-filtro select:focus {
+    border-color: #080D79;
+    outline: 2px solid rgba(8, 13, 121, .12);
+    outline-offset: 1px;
+}
+
+.eq-filtros-acc {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid #E8EAF4;
+}
+
+.eq-filtros-acc .btn { height: 36px; min-height: 36px; padding: 0 16px; border-radius: 12px; font-size: 12.5px; }
+
+@media (max-width: 600px) {
+    .eq-filtros {
+        grid-template-columns: minmax(0, 1fr);
+        width: min(420px, 100%);
+        max-height: min(72vh, 560px);
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .eq-filtros-acc { justify-content: stretch; }
+
+    .eq-filtros-acc .btn { flex: 1; }
+}

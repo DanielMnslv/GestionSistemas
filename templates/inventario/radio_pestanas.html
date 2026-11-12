@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ radio.etiqueta }} | JANO Inventario{% endblock %}
+{% block body_class %}ficha-embed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/actas.css' %}?v=20261103e">
+{% endblock %}
+
+{% block content %}
+<div class="radio-detalle radio-pestanas-embed" id="radio-pestanas" data-inicial="{{ pestana_inicial|default:'entregas' }}">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="pf-aviso pf-aviso-info" role="status">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <section class="rd-panel rd-radio-panel" id="panel-entregas" hidden>
+        <div class="rd-panel-heading rd-panel-heading-row">
+            <div>
+                <h2>Entregas y actas</h2>
+                <p>Elige una entrega de la lista para ver su acta completa al lado.</p>
+            </div>
+            {% if not asignacion_activa and radio.activo and permisos.entregas %}
+            <a class="rd-btn" href="{% url 'inventario:asignacion_crear' %}?radio={{ radio.pk }}&amp;embed=1&amp;pestanas_radio=1">Registrar entrega</a>
+            {% endif %}
+        </div>
+        <div class="rd-panel-body">
+            {% if asignacion_activa and permisos.entregas %}
+            <div class="rd-devolver">
+                <button class="rd-devolver-trigger" type="button" data-abrir-devolucion="modal-devolucion-radio-{{ radio.pk }}">Registrar devolución</button>
+            </div>
+            <dialog class="rd-devolucion-modal" id="modal-devolucion-radio-{{ radio.pk }}" aria-labelledby="modal-devolucion-radio-titulo-{{ radio.pk }}">
+                <div class="rd-devolucion-caja">
+                    <header class="rd-devolucion-cab">
+                        <h2 id="modal-devolucion-radio-titulo-{{ radio.pk }}">Registrar devolución del radio</h2>
+                        <button class="rd-devolucion-cerrar" type="button" data-cerrar-devolucion aria-label="Cerrar">Cerrar</button>
+                    </header>
+                    <form method="post" action="{% url 'inventario:asignacion_devolver' asignacion_activa.pk %}" class="rd-baja-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="pestanas_radio" value="1">
+                        <label for="observaciones-devolucion-radio-{{ radio.pk }}">Observaciones de la devolución</label>
+                        <textarea id="observaciones-devolucion-radio-{{ radio.pk }}" name="observaciones_devolucion" rows="2" placeholder="Estado del radio y accesorios recibidos"></textarea>
+                        <div class="rd-devolucion-acciones">
+                            <button class="rd-devolucion-cancelar" type="button" data-cerrar-devolucion>Cancelar</button>
+                            <button class="rd-btn" type="submit">Confirmar devolución</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+            {% endif %}
+            {% if asignaciones %}
+            <div class="rd-split">
+            <ul class="rd-entregas" id="lista-entregas-radio-{{ radio.pk }}">
+                {% for asignacion in asignaciones %}
+                <li>
+                    <button class="rd-entrega" type="button" data-radio-acta="acta-radio-{{ asignacion.pk }}">
+                        <span class="rd-entrega-top">
+                            <strong>{{ asignacion.fecha_entrega|date:"d/m/Y H:i" }}</strong>
+                            {% if asignacion.estado == "ASIGNADO" %}<span class="badge-green">Asignado</span>{% else %}<span class="badge-gray">Devuelto</span>{% endif %}
+                        </span>
+                        <span class="rd-entrega-linea">{{ asignacion.cliente_asignado|default:"Sin cliente" }} · {{ asignacion.puesto_asignado|default:"Sin puesto" }}</span>
+                        <span class="rd-entrega-linea rd-muted">{{ asignacion.coordinador_zona|default:"Sin responsable" }} · C.C. {{ asignacion.cedula_funcionario|default:"sin dato" }}</span>
+                        {% if asignacion.fecha_devolucion %}<span class="rd-entrega-linea rd-muted">Devuelto el {{ asignacion.fecha_devolucion|date:"d/m/Y H:i" }}</span>{% endif %}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="rd-visor" id="visor-actas-radio-{{ radio.pk }}">
+                <p class="rd-visor-vacio" data-acta-vacia>Haz clic en una entrega para ver su acta.</p>
+                {% for asignacion in asignaciones %}
+                <div class="acta-embed rd-acta" id="acta-radio-{{ asignacion.pk }}" hidden>
+                    {% include "inventario/_acta_radio.html" %}
+                </div>
+                {% endfor %}
+            </div>
+            </div>
+            {% else %}
+            <p class="rd-empty">Este radio no tiene entregas registradas.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="rd-panel rd-radio-panel" id="panel-mantenimientos" hidden>
+        <div class="rd-panel-heading rd-panel-heading-row">
+            <div>
+                <h2>Mantenimientos</h2>
+                <p>Historial de intervenciones registradas.</p>
+            </div>
+            {% if radio.activo and permisos.mantenimientos %}
+            <a class="rd-btn" data-mant-modal href="{% url 'inventario:mantenimiento_crear' %}?equipo={{ radio.equipo.placa|urlencode }}">Registrar mantenimiento</a>
+            {% endif %}
+        </div>
+        <div class="rd-panel-body">
+            {% if mantenimientos %}
+            {% for mantenimiento in mantenimientos %}
+            <details class="rd-maintenance">
+                <summary class="rd-maintenance-head">
+                    <div class="rd-maintenance-title">
+                        <h3>{{ mantenimiento.get_tipo_display }}</h3>
+                        <div class="rd-date">{{ mantenimiento.fecha_intervencion|date:"d/m/Y H:i" }} · {{ mantenimiento.tecnico_responsable }}</div>
+                    </div>
+                    <span class="rd-badge rd-blue">{{ mantenimiento.get_estado_final_display|default:"Estado sin dato" }}</span>
+                </summary>
+                <div class="rd-maintenance-body">
+                    <p><strong>Motivo:</strong> {{ mantenimiento.motivo|default:"Sin información"|linebreaksbr }}</p>
+                    <p><strong>Diagnóstico:</strong> {{ mantenimiento.diagnostico|default:"Sin información"|linebreaksbr }}</p>
+                    <p><strong>Trabajo realizado:</strong> {{ mantenimiento.trabajo_realizado|default:"Sin información"|linebreaksbr }}</p>
+                    <p><strong>Repuestos:</strong> {{ mantenimiento.repuestos_utilizados|default:"-"|linebreaksbr }}</p>
+                    {% if mantenimiento.observaciones %}<p><strong>Observaciones:</strong> {{ mantenimiento.observaciones|linebreaksbr }}</p>{% endif %}
+                </div>
+            </details>
+            {% endfor %}
+            {% else %}
+            <p class="rd-empty">Este radio no tiene mantenimientos registrados.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if permisos.radios %}
+    <section class="rd-panel rd-radio-panel" id="panel-editar" hidden>
+        <div class="rd-panel-heading">
+            <h2>Editar datos</h2>
+            <p>La placa y el serial no pueden repetirse entre radios.</p>
+        </div>
+        <div class="rd-panel-body">
+            {% if formulario.errors %}
+            <div class="ficha-form-errors" role="alert">Revisa los campos marcados.</div>
+            {% endif %}
+            <form method="post" action="{% url 'inventario:radio_editar' radio.pk %}" class="ficha-form-content ficha-pasos" id="form-editar-radio" novalidate data-con-errores="{% if formulario.errors %}1{% endif %}">
+                {% csrf_token %}
+                <input type="hidden" name="pestanas_radio" value="1">
+                {% if formulario.errors %}
+                <div class="ficha-form-errors" role="alert">
+                    <strong>Revisa los campos marcados.</strong>
+                    {{ formulario.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="ficha-progreso">
+                    <div class="ficha-progreso-info">
+                        <span>Paso <strong data-p-actual>1</strong> de <strong data-p-total>5</strong> · <span data-p-titulo></span></span>
+                        <span data-p-porcentaje>0%</span>
+                    </div>
+                    <div class="ficha-progreso-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de la edición"><span></span></div>
+                    <ol class="ficha-progreso-lista" data-p-lista></ol>
+                </div>
+
+                {% include "inventario/_radio_campos.html" %}
+
+                <p class="ficha-paso-aviso" role="alert" data-p-aviso hidden></p>
+
+                <div class="ficha-form-actions">
+                    <button class="ficha-form-button ficha-form-button-secondary" type="button" data-radio-cancelar>Cancelar</button>
+                    <div class="ficha-acciones-der">
+                        <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
+                        <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Guardar cambios</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="rd-panel rd-radio-panel" id="panel-baja" hidden>
+        <div class="rd-panel-heading">
+            <h2>{% if radio.activo %}Dar de baja{% else %}Radio dado de baja{% endif %}</h2>
+        </div>
+        <div class="rd-panel-body">
+            {% if radio.activo %}
+                {% if asignacion_activa %}
+                <p class="rd-empty">Registra la devolución antes de dar de baja este radio.</p>
+                {% else %}
+                <form method="post" action="{% url 'inventario:radio_dar_baja' radio.pk %}" class="rd-baja-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="pestanas_radio" value="1">
+                    <label for="{{ formulario_baja.motivo_baja.id_for_label }}">{{ formulario_baja.motivo_baja.label }}</label>
+                    {{ formulario_baja.motivo_baja }}
+                    {% for error in formulario_baja.motivo_baja.errors %}<p class="ficha-field-error" role="alert">{{ error }}</p>{% endfor %}
+                    <button class="rd-btn rd-btn-danger" type="submit">Confirmar baja</button>
+                </form>
+                {% endif %}
+            {% else %}
+            <p>Dado de baja el {{ radio.fecha_baja|date:"d/m/Y" }}. {{ radio.motivo_baja }}</p>
+            <form method="post" action="{% url 'inventario:radio_reactivar' radio.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="pestanas_radio" value="1">
+                <button class="rd-btn rd-btn-secondary" type="submit">Reactivar radio</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% if permisos.mantenimientos or permisos.programar %}
+{% include "inventario/_mant_ventana.html" %}
+{% endif %}
+<script>
+(function () {
+    var contenedor = document.getElementById("radio-pestanas");
+    if (!contenedor) return;
+    var paneles = contenedor.querySelectorAll(".rd-radio-panel");
+    contenedor.addEventListener("click", function (event) {
+        var abrir = event.target.closest("[data-abrir-devolucion]");
+        if (abrir) {
+            document.getElementById(abrir.getAttribute("data-abrir-devolucion")).showModal();
+            return;
+        }
+        if (event.target.closest("[data-cerrar-devolucion]")) {
+            event.target.closest("dialog").close();
+            return;
+        }
+        if (event.target.matches("dialog.rd-devolucion-modal")) {
+            event.target.close();
+            return;
+        }
+        var entrega = event.target.closest("[data-radio-acta]");
+        if (entrega) {
+            var visor = entrega.closest(".rd-split").querySelector(".rd-visor");
+            visor.querySelectorAll(".rd-acta").forEach(function (acta) {
+                acta.hidden = acta.id !== entrega.getAttribute("data-radio-acta");
+            });
+            visor.querySelector("[data-acta-vacia]").hidden = true;
+            contenedor.querySelectorAll("[data-radio-acta]").forEach(function (boton) {
+                boton.classList.toggle("is-activa", boton === entrega);
+            });
+        }
+    });
+    function mostrarPanel() {
+        var pestana = window.location.hash.slice(1) ||
+            contenedor.getAttribute("data-inicial");
+        paneles.forEach(function (panel) {
+            panel.hidden = panel.id !== "panel-" + pestana;
+        });
+    }
+    window.addEventListener("hashchange", mostrarPanel);
+    mostrarPanel();
+})();
+</script>
+<script>
+(function () {
+    var formulario = document.getElementById("form-editar-radio");
+    if (!formulario) return;
+    var pasos = Array.prototype.slice.call(
+        formulario.querySelectorAll(".ficha-paso")
+    );
+    if (!pasos.length) return;
+    var barra = formulario.querySelector(".ficha-progreso-barra");
+    var lista = formulario.querySelector("[data-p-lista]");
+    var aviso = formulario.querySelector("[data-p-aviso]");
+    var anterior = formulario.querySelector("[data-p-anterior]");
+    var siguiente = formulario.querySelector("[data-p-siguiente]");
+    var guardar = formulario.querySelector("[data-p-guardar]");
+    var paso = 0;
+    var desbloqueado = 0;
+    var botones = pasos.map(function (item, indice) {
+        var elemento = document.createElement("li");
+        var boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "ficha-progreso-paso";
+        boton.innerHTML = "<b>" + (indice + 1) + "</b><span></span>";
+        boton.lastChild.textContent = item.dataset.titulo;
+        boton.addEventListener("click", function () {
+            if (indice <= desbloqueado) ir(indice);
+        });
+        elemento.appendChild(boton);
+        lista.appendChild(elemento);
+        return boton;
+    });
+
+    function camposDe(item) {
+        return Array.prototype.slice.call(
+            item.querySelectorAll("input, select, textarea")
+        );
+    }
+
+    function validar(indice) {
+        var primero = null;
+        camposDe(pasos[indice]).forEach(function (campo) {
+            var invalido = !campo.checkValidity();
+            campo.classList.toggle("is-invalido", invalido);
+            if (invalido && !primero) primero = campo;
+        });
+        aviso.hidden = !primero;
+        aviso.textContent = primero
+            ? "Completa los campos marcados para continuar."
+            : "";
+        if (primero) primero.focus();
+        return !primero;
+    }
+
+    function pintar() {
+        var porcentaje = Math.round(paso / pasos.length * 100);
+        formulario.querySelector("[data-p-actual]").textContent = paso + 1;
+        formulario.querySelector("[data-p-titulo]").textContent =
+            pasos[paso].dataset.titulo;
+        formulario.querySelector("[data-p-porcentaje]").textContent =
+            porcentaje + "%";
+        barra.setAttribute("aria-valuenow", porcentaje);
+        barra.firstElementChild.style.width = porcentaje + "%";
+        pasos.forEach(function (item, indice) {
+            item.hidden = indice !== paso;
+        });
+        botones.forEach(function (boton, indice) {
+            boton.disabled = indice > desbloqueado;
+            boton.classList.toggle("is-actual", indice === paso);
+            boton.classList.toggle("is-hecho", indice < paso);
+            if (indice === paso) boton.setAttribute("aria-current", "step");
+            else boton.removeAttribute("aria-current");
+        });
+        anterior.hidden = paso === 0;
+        siguiente.hidden = paso === pasos.length - 1;
+        guardar.hidden = paso !== pasos.length - 1;
+    }
+
+    function ir(indice) {
+        paso = indice;
+        desbloqueado = Math.max(desbloqueado, indice);
+        pintar();
+        aviso.hidden = true;
+        var primero = camposDe(pasos[indice])[0];
+        if (primero && formulario.offsetParent) {
+            primero.focus({ preventScroll: true });
+        }
+        formulario.querySelector(".ficha-progreso").scrollIntoView({
+            block: "nearest",
+        });
+    }
+
+    siguiente.addEventListener("click", function () {
+        if (validar(paso)) ir(paso + 1);
+    });
+    anterior.addEventListener("click", function () { ir(paso - 1); });
+    formulario.addEventListener("keydown", function (evento) {
+        if (evento.key !== "Enter" ||
+            evento.target.tagName === "TEXTAREA" ||
+            evento.target.tagName === "BUTTON") return;
+        evento.preventDefault();
+        if (paso < pasos.length - 1) {
+            if (validar(paso)) ir(paso + 1);
+        } else if (validar(paso)) {
+            formulario.requestSubmit();
+        }
+    });
+    formulario.addEventListener("input", function (evento) {
+        evento.target.classList.remove("is-invalido");
+    });
+    formulario.addEventListener("submit", function (evento) {
+        for (var indice = 0; indice < pasos.length; indice += 1) {
+            if (!validar(indice)) {
+                evento.preventDefault();
+                ir(indice);
+                validar(indice);
+                return;
+            }
+        }
+    });
+
+    if (formulario.dataset.conErrores) {
+        var indiceError = pasos.findIndex(function (item) {
+            return item.querySelector(".ficha-field-error");
+        });
+        desbloqueado = pasos.length - 1;
+        paso = indiceError >= 0 ? indiceError : 0;
+    }
+    pintar();
+
+    formulario.querySelector("[data-radio-cancelar]").addEventListener(
+        "click",
+        function () {
+            var ficha = window.parent.document.querySelector(".pf:not([hidden])");
+            var resumen = ficha && ficha.querySelector(
+                '.pf-tab[data-pf-tab="resumen"]'
+            );
+            if (resumen) resumen.click();
+            else window.location.hash = "entregas";
+        }
+    );
+})();
+</script>
+{% endblock %}

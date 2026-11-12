@@ -1,0 +1,226 @@
+/* Estilos de la pantalla: asignaciones (antes en <style> de la plantilla) */
+
+.assignment-page {
+    width: 100%;
+    color: #182033;
+}
+
+.assignment-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.assignment-heading h1 {
+    margin: 8px 0;
+    color: var(--jano-blue);
+    font-size: clamp(26px, 3vw, 34px);
+}
+
+.assignment-heading p {
+    margin: 0;
+    color: var(--jano-gray);
+    line-height: 1.6;
+}
+
+.assignment-button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 17px;
+    border: 1px solid var(--jano-blue);
+    border-radius: 9px;
+    background: var(--jano-blue);
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .2s, transform .2s;
+}
+
+.assignment-button:hover {
+    background: var(--jano-blue-dark);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.assignment-button-secondary {
+    border-color: var(--jano-border);
+    background: white;
+    color: var(--jano-blue);
+}
+
+.assignment-button-secondary:hover {
+    background: #F0F2FA;
+    color: var(--jano-blue-dark);
+}
+
+.assignment-panel {
+    margin-bottom: 24px;
+    padding: 22px;
+    border: 1px solid var(--jano-border);
+    border-radius: 15px;
+    background: white;
+    box-shadow: 0 8px 26px #080D790A;
+}
+
+.assignment-panel h2 {
+    margin: 0 0 16px;
+    color: var(--jano-blue);
+    font-size: 18px;
+}
+
+.assignment-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 14px;
+}
+
+.assignment-filter label,
+.assignment-return label {
+    display: block;
+    margin-bottom: 7px;
+    color: #182033;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.assignment-filter select,
+.assignment-return textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #CBD3E0;
+    border-radius: 8px;
+    background: white;
+    color: #182033;
+    font: inherit;
+}
+
+.assignment-filter select { min-width: 200px; }
+
+.assignment-return textarea {
+    min-height: 72px;
+    resize: vertical;
+}
+
+.assignment-filter select:focus,
+.assignment-return textarea:focus {
+    outline: 2px solid var(--jano-lime);
+    outline-offset: 1px;
+    border-color: var(--jano-blue);
+}
+
+.assignment-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--jano-border);
+    border-radius: 12px;
+    background: white;
+}
+
+.assignment-table {
+    width: 100%;
+    min-width: 1050px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.assignment-table th {
+    padding: 15px 13px;
+    background: var(--jano-blue);
+    color: white;
+    font-size: 11px;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.assignment-table td {
+    padding: 15px 13px;
+    border-bottom: 1px solid var(--jano-border);
+    vertical-align: top;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.assignment-table tbody tr:last-child td { border-bottom: 0; }
+
+.assignment-table tbody tr:hover { background: #F8F9FD; }
+
+.assignment-primary {
+    display: block;
+    color: var(--jano-blue);
+    font-weight: 800;
+}
+
+.assignment-muted {
+    display: block;
+    margin-top: 3px;
+    color: var(--jano-gray);
+    font-size: 12px;
+}
+
+.assignment-status {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: #FFF8D9;
+    color: #6A5700;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.assignment-status-returned {
+    background: #E8F7ED;
+    color: #176534;
+}
+
+.assignment-return { min-width: 190px; }
+
+.assignment-return .assignment-button {
+    width: 100%;
+    margin-top: 9px;
+    padding: 9px 11px;
+    font-size: 12px;
+}
+
+.assignment-empty {
+    padding: 35px 18px !important;
+    color: var(--jano-gray);
+    text-align: center;
+}
+
+.assignment-footer-note {
+    margin-top: 14px;
+    color: var(--jano-gray);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+    .assignment-panel { padding: 16px; }
+
+    .assignment-heading { align-items: stretch; }
+
+    .assignment-heading .assignment-button { width: 100%; }
+
+    .assignment-filter {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .assignment-filter select,
+    .assignment-filter .assignment-button {
+        width: 100%;
+    }
+}

@@ -1,0 +1,120 @@
+<dialog id="seguridad-modal" class="mant-modal seguridad-modal" aria-label="Formulario de seguridad">
+    <div class="mant-modal-carga" data-carga>Cargando formulario…</div>
+    <div data-contenido></div>
+</dialog>
+
+<style>
+    .seguridad-modal,
+    .ficha-embed .seguridad-modal { width: min(820px, calc(100vw - 32px)); }
+    .seguridad-modal .maintenance-form-field { margin-bottom: 14px; }
+    .seguridad-modal .maintenance-form-field:last-child { margin-bottom: 0; }
+    .seguridad-modal .maintenance-form-field label { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 600; }
+    .seguridad-modal .maintenance-form-field input,
+    .seguridad-modal .maintenance-form-field select,
+    .seguridad-modal .maintenance-form-field textarea { width: 100%; min-height: 38px; padding: 8px 11px; }
+    .seguridad-modal .maintenance-form-errors { display: block; margin-top: 5px; }
+    .seguridad-modal .mant-modal-pie { flex-wrap: wrap; }
+    @media (max-width: 760px) {
+        .seguridad-modal,
+        .ficha-embed .seguridad-modal { width: 100vw; }
+        .seguridad-modal .mant-modal-pie { flex-direction: column; align-items: stretch; }
+    }
+</style>
+
+<script>
+(function () {
+    var dialogo = document.getElementById("seguridad-modal");
+    if (!dialogo || typeof dialogo.showModal !== "function") return;
+    var contenido = dialogo.querySelector("[data-contenido]");
+    var carga = dialogo.querySelector("[data-carga]");
+    var origen = null;
+
+    function pedir(url, opciones) {
+        opciones = opciones || {};
+        opciones.headers = { "X-Requested-With": "XMLHttpRequest" };
+        opciones.credentials = "same-origin";
+        return fetch(url, opciones).then(function (respuesta) {
+            if (respuesta.redirected || !respuesta.ok) throw new Error("No se pudo completar la solicitud.");
+            return respuesta;
+        });
+    }
+
+    function mostrar(html) {
+        contenido.innerHTML = html;
+        carga.hidden = true;
+        var error = contenido.querySelector(".maintenance-form-errors");
+        if (error) {
+            error.scrollIntoView({ block: "center" });
+            return;
+        }
+        var primerCampo = contenido.querySelector("input:not([type=hidden]), select, textarea");
+        if (primerCampo) primerCampo.focus();
+    }
+
+    function mostrarError(mensaje) {
+        carga.hidden = true;
+        contenido.innerHTML = '<div class="mant-modal-carga" role="alert">' + mensaje +
+            '<p><button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-cerrar>Cerrar</button></p></div>';
+    }
+
+    function abrir(enlace) {
+        origen = enlace;
+        contenido.innerHTML = "";
+        carga.hidden = false;
+        dialogo.showModal();
+        pedir(enlace.href)
+            .then(function (respuesta) { return respuesta.text().then(mostrar); })
+            .catch(function () {
+                mostrarError("No se pudo abrir el formulario. Recarga la página e inténtalo de nuevo; si tu sesión venció, vuelve a ingresar.");
+            });
+    }
+
+    document.addEventListener("click", function (evento) {
+        var enlace = evento.target.closest("a[data-seguridad-modal]");
+        if (!enlace || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.button) return;
+        evento.preventDefault();
+        abrir(enlace);
+    });
+
+    dialogo.addEventListener("click", function (evento) {
+        if (evento.target === dialogo || evento.target.closest("[data-cerrar]")) dialogo.close();
+    });
+
+    dialogo.addEventListener("keydown", function (evento) {
+        if (evento.key === "Enter" && (evento.ctrlKey || evento.metaKey)) {
+            var formulario = dialogo.querySelector("form[data-seguridad-form]");
+            if (formulario) { evento.preventDefault(); formulario.requestSubmit(); }
+        }
+    });
+
+    dialogo.addEventListener("close", function () {
+        contenido.innerHTML = "";
+        if (origen) origen.focus();
+    });
+
+    dialogo.addEventListener("submit", function (evento) {
+        var formulario = evento.target.closest("form[data-seguridad-form]");
+        if (!formulario) return;
+        evento.preventDefault();
+        var boton = formulario.querySelector("[type=submit]");
+        if (!boton || boton.disabled) return;
+        var texto = boton.textContent;
+        boton.disabled = true;
+        boton.textContent = "Guardando…";
+        pedir(formulario.action, { method: "POST", body: new FormData(formulario) })
+            .then(function (respuesta) {
+                if ((respuesta.headers.get("Content-Type") || "").indexOf("application/json") !== -1) {
+                    window.location.reload();
+                    return;
+                }
+                return respuesta.text().then(mostrar);
+            })
+            .catch(function () {
+                boton.disabled = false;
+                boton.textContent = texto;
+                contenido.insertAdjacentHTML("afterbegin",
+                    '<div class="maintenance-form-errors" role="alert">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.</div>');
+            });
+    });
+})();
+</script>

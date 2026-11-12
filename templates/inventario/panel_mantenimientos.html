@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load l10n %}
+
+{% block title %}Estado de mantenimientos | JANO Inventario{% endblock %}
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page">
+    {% include "inventario/_mant_cabecera.html" with pestana=vista %}
+
+    {% if vista == "resumen" %}
+    <section class="panel mant-tipos">
+        <div class="table-wrap">
+            <table class="semaforo tabla-tarjetas">
+                <thead>
+                    <tr>
+                        <th>Tipo de equipo</th>
+                        {% for valor, etiqueta in estados %}<th class="semaforo-{{ valor|lower }}">{{ etiqueta }}</th>{% endfor %}
+                        <th>Total</th>
+                        <th>Distribución</th>
+                        <th>Al día</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tipo, etiqueta, conteos, pct, barras, total in filas %}
+                    <tr>
+                        <td class="tarjeta-titulo"><strong>{{ etiqueta }}</strong></td>
+                        {% for estado, n in conteos %}
+                        <td data-label="{% for valor, nombre in estados %}{% if valor == estado %}{{ nombre }}{% endif %}{% endfor %}">{% if n %}<a class="mant-num mant-{{ estado|lower }}" href="?tipo={{ tipo }}&amp;estado={{ estado }}">{{ n }}</a>{% else %}<span class="subtext">0</span>{% endif %}</td>
+                        {% endfor %}
+                        <td data-label="Total"><a class="mant-num-total" href="?tipo={{ tipo }}">{{ total }}</a></td>
+                        <td class="mant-minibarra-celda"><div class="mant-minibarra">{% for e, n, ancho in barras %}{% if n %}<span class="mant-tramo mant-{{ e|lower }}" style="width: {{ ancho|unlocalize }}%" title="{{ n }}"></span>{% endif %}{% endfor %}</div></td>
+                        <td data-label="Al día"><span class="mant-pct">{{ pct }} %</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="tarjeta-titulo"><strong>Total</strong></td>
+                        {% for estado, n in totales %}
+                        <td data-label="{% for valor, nombre in estados %}{% if valor == estado %}{{ nombre }}{% endif %}{% endfor %}"><a class="mant-num mant-{{ estado|lower }}" href="?estado={{ estado }}">{{ n }}</a></td>
+                        {% endfor %}
+                        <td data-label="Total"><a class="mant-num-total" href="?vista=equipos">{{ total_equipos }}</a></td>
+                        <td class="mant-minibarra-celda"><div class="mant-minibarra">{% for item in resumen %}{% if item.n %}<span class="mant-tramo mant-{{ item.estado|lower }}" style="width: {{ item.ancho|unlocalize }}%" title="{{ item.n }}"></span>{% endif %}{% endfor %}</div></td>
+                        <td data-label="Al día"><strong class="mant-pct">{{ pct_al_dia }} %</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+    {% else %}
+    <section class="panel mant-filtros">
+        <form method="get" class="filters filters-mant" data-lista-filtros>
+            <input type="hidden" name="vista" value="equipos">
+            <div class="field">
+                <label class="solo-lector" for="q">Equipo</label>
+                <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Equipo: placa, serial, marca o modelo">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="tipo">Tipo</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Todos los tipos</option>
+                    {% for valor, etiqueta in tipos_opciones %}<option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="estado">Estado</label>
+                <select id="estado" name="estado">
+                    <option value="">Todos los estados</option>
+                    {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="responsable">Responsable</label>
+                <input id="responsable" type="search" name="responsable" value="{{ responsable }}" placeholder="Responsable">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="ubicacion">Ubicación</label>
+                <input id="ubicacion" type="search" name="ubicacion" value="{{ ubicacion }}" placeholder="Puesto o área">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if hay_filtros %}<a class="btn btn-light" href="{% url 'inventario:panel_mantenimientos' %}?vista=equipos">Limpiar</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>{{ titulo_lista }}</h2>
+                <p>{{ total_seleccion }} equipo{{ total_seleccion|pluralize }} · los más urgentes primero</p>
+            </div>
+            {% if total_seleccion %}<a class="btn btn-light" href="?{{ parametros }}{% if parametros %}&amp;{% endif %}exportar=xlsx">Exportar a Excel</a>{% endif %}
+        </div>
+        {% if equipos %}
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista">
+                <thead>
+                    <tr><th>Equipo</th><th>Responsable / Ubicación</th><th>Estado</th><th>Último</th><th>Vence</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for equipo in equipos %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" %}<span class="subtext">{{ equipo.get_tipo_display }}{% if equipo.marca %} · {{ equipo.marca }} {{ equipo.modelo }}{% endif %}</span></td>
+                        <td data-label="Responsable">{% if equipo.responsable_nombre %}{{ equipo.responsable_nombre }}{% else %}<span class="mant-sin-dato">Sin responsable</span>{% endif %}{% if equipo.ubicacion %}<span class="subtext">{{ equipo.ubicacion }}</span>{% endif %}</td>
+                        <td data-label="Estado"><span class="mant-etiqueta mant-{{ equipo.estado_mantenimiento|lower }}">{% for valor, nombre in estados %}{% if valor == equipo.estado_mantenimiento %}{{ nombre }}{% endif %}{% endfor %}</span>{% if equipo.plazo_texto %}<span class="subtext">{{ equipo.plazo_texto }}</span>{% endif %}</td>
+                        <td data-label="Último">{% if equipo.ultimo_fecha %}{{ equipo.ultimo_fecha|date:"d/m/Y" }}{% else %}<span class="mant-sin-dato">Nunca</span>{% endif %}</td>
+                        <td data-label="Vence">{% if equipo.proximo_mantenimiento %}{{ equipo.proximo_mantenimiento|date:"d/m/Y" }}{% else %}<span class="mant-sin-dato">—</span>{% endif %}</td>
+                        <td class="mant-acciones-celda"><div class="mant-acciones">
+                            {% if equipo.proximo_programado %}<span class="mant-programado{% if equipo.programado_atrasado %} atrasado{% endif %}" title="Ya hay una visita programada para este equipo">{% if equipo.programado_atrasado %}Programado y sin cumplir: {% else %}Programado: {% endif %}{{ equipo.proximo_programado|date:"d/m/Y" }}</span>{% endif %}
+                            {% if permisos.mantenimientos %}<a class="btn btn-light" data-mant-modal href="{% url 'inventario:mantenimiento_crear' %}?equipo={{ equipo.placa|urlencode }}">Registrar</a>{% endif %}
+                            {% if permisos.programar and not equipo.proximo_programado %}<a class="mant-enlace-accion" data-mant-modal href="{% url 'inventario:mantenimiento_programado_crear' %}?equipo={{ equipo.placa|urlencode }}">Programar</a>{% endif %}
+                        </div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_seleccion %}
+        {% else %}
+        <p class="mant-vacio">No hay equipos con esos filtros.{% if hay_filtros %} <a href="{% url 'inventario:panel_mantenimientos' %}?vista=equipos">Quitar filtros</a>{% endif %}</p>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+
+{% include "inventario/_mant_ajuste_filas.html" with defecto=10 clave="mantPpIntento" %}
+{% endblock %}

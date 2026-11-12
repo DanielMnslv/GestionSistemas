@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión | JANO Inventario</title>
+    {% include "_estilos.html" %}
+</head>
+<body class="login-body">
+
+    <main class="login-container">
+        <section class="login-brand">
+            <img src="{% static 'img/logo-jano-simbolo-color.svg' %}"
+                 alt="Seguridad JANO"
+                 class="login-logo">
+
+            <h1>JANO <span>INVENTARIO</span></h1>
+            <p> Control de equipos y comunicaciones </p>
+
+            <div class="brand-decoration"></div>
+        </section>
+
+        <section class="login-form-container">
+            <div class="login-heading">
+                <span class="eyebrow">PLATAFORMA INTERNA</span>
+                <h2>Bienvenido</h2>
+                <p>Ingresa tus credenciales para continuar.</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" class="login-form">
+                {% csrf_token %}
+
+                <label for="username">Usuario</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Ingresa tu usuario"
+                    autocomplete="username"
+                    required
+                    autofocus
+                >
+
+                <label for="password">Contraseña</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Ingresa tu contraseña"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="submit" class="login-button">
+                    Iniciar sesión
+                </button>
+            </form>
+
+            <p class="login-security">
+                Acceso exclusivo para personal autorizado.
+            </p>
+        </section>
+    </main>
+
+    <footer class="login-footer">
+        SEGURIDAD JANO · SISTEMA DE INVENTARIO
+    </footer>
+
+</body>
+</html>
+```

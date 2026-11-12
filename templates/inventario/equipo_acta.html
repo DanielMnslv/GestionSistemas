@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Acta de entrega {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block body_class %}{% if request.GET.embed %}acta-embed{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/actas.css' %}?v=20261103e">
+{% endblock %}
+
+{% block content %}
+<div class="acta-acciones">
+    <a class="ficha-form-button ficha-form-button-secondary acta-ver" href="{% url 'inventario:equipo_detalle' equipo.placa %}">Ver equipo</a>
+    <button class="ficha-form-button" type="button" onclick="window.print()">Imprimir o guardar PDF</button>
+</div>
+
+<article class="acta{% if request.GET.embed %} acta-compacta{% endif %}">
+    <h1>Acta de entrega de equipo</h1>
+    <p class="acta-sub">Seguridad Jano
+        <span class="acta-chip">Entrega N.º E-{{ asignacion.pk }}</span>
+        <span class="acta-chip">{{ asignacion.fecha_entrega|date:"d/m/Y H:i" }}</span></p>
+
+    <h2>Equipo</h2>
+    <table class="acta-tabla">
+        <tr><th>Placa</th><td>{{ equipo.placa }}</td></tr>
+        <tr><th>Tipo</th><td>{{ equipo.get_tipo_display }}</td></tr>
+        <tr><th>Serial</th><td>{{ equipo.serial|default:"Sin dato" }}</td></tr>
+        <tr><th>Marca y modelo</th><td>{{ equipo.marca }} {{ equipo.modelo }}</td></tr>
+    </table>
+
+    <h2>Características y accesorios</h2>
+    <table class="acta-tabla">
+        {% for etiqueta, valor in filas_detalle %}
+        <tr><th>{{ etiqueta }}</th><td>{% if valor.year %}{{ valor|date:"d/m/Y" }}{% else %}{{ valor }}{% endif %}</td></tr>
+        {% endfor %}
+        {% if asignacion.accesorios %}
+        <tr><th>Accesorios entregados</th><td>{{ asignacion.accesorios|linebreaksbr }}</td></tr>
+        {% endif %}
+        {% if not filas_detalle and not asignacion.accesorios %}
+        <tr><th>Detalle</th><td>Sin datos adicionales</td></tr>
+        {% endif %}
+    </table>
+
+    <h2>Entrega</h2>
+    <table class="acta-tabla">
+        <tr><th>Recibe</th><td>{{ asignacion.nombre_recibe|default:"Sin dato" }} · C.C. {{ asignacion.cedula_recibe|default:"sin dato" }}{% if asignacion.funcionario.cargo %} · {{ asignacion.funcionario.cargo }}{% endif %}</td></tr>
+        <tr><th>Área o sede</th><td>{{ asignacion.area|default:"Sin dato" }}</td></tr>
+        <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}</td></tr>
+        {% if asignacion.observaciones_entrega %}
+        <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega|linebreaksbr }}</td></tr>
+        {% endif %}
+        {% if asignacion.fecha_devolucion %}
+        <tr><th>Devolución</th><td>{{ asignacion.fecha_devolucion|date:"d/m/Y H:i" }} · {{ asignacion.observaciones_devolucion }}</td></tr>
+        {% endif %}
+    </table>
+
+    <h2>Cláusula de responsabilidad</h2>
+    <p>{{ clausula }}</p>
+    <p>
+        {% if asignacion.clausula_aceptada %}<span class="acta-ok">✓ Aceptada por el funcionario.</span>
+        {% else %}<span class="acta-sin-firma">No consta la aceptación de la cláusula.</span>{% endif %}
+    </p>
+
+    <h2>Firma de quien recibe</h2>
+    <div class="acta-firma">
+        {% if asignacion.firma %}
+        <img src="{{ asignacion.firma }}" alt="Firma del funcionario">
+        {% elif asignacion.enlace_firma %}
+        <a href="{{ asignacion.enlace_firma }}" target="_blank" rel="noopener">Ver la firma adjunta en el formulario de Google</a>
+        {% else %}
+        <span class="acta-sin-firma">Sin firma registrada.</span>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

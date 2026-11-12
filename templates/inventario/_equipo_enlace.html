@@ -1,0 +1,7 @@
+{% comment %}Enlace a la ficha de un equipo. Espera "equipo".{% endcomment %}
+{% if equipo.tipo == "RADIO" and equipo.radio %}
+<a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+{% else %}
+<a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+{% endif %}
+<span class="equipo-tipo">{{ equipo.get_tipo_display }}</span>

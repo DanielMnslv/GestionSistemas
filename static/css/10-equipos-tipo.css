@@ -1,0 +1,93 @@
+/* ======================================================================
+   10-equipos-tipo.css - Registrar equipo: elegir tipo
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* ---------- Registrar equipo: elegir tipo ---------- */
+.elegir-tipo { max-width: 980px; }
+
+.elegir-tipo .ficha-form-heading h1 {
+    color: #080D79;
+    font-weight: 800;
+    letter-spacing: -.4px;
+}
+
+.elegir-tipo .ficha-form-heading p {
+    margin-top: 4px;
+    color: #8890B5;
+}
+
+.tipo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+}
+
+.tipo-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 18px;
+    border: 1px solid #fff;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .85);
+    box-shadow: 0 4px 16px rgba(8, 13, 121, .06);
+    color: #080D79;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+
+.tipo-card:hover,
+.tipo-card:focus-visible {
+    transform: translateY(-2px);
+    border-color: #C9CDE6;
+    box-shadow: 0 10px 26px rgba(8, 13, 121, .12);
+    outline: 0;
+}
+
+.tipo-icono {
+    display: grid;
+    flex: none;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border-radius: 15px;
+    background: #EEF0FB;
+    transition: background .15s;
+}
+
+.tipo-card:hover .tipo-icono,
+.tipo-card:focus-visible .tipo-icono {
+    background: #C8D32B;
+}
+
+.tipo-icono svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.tipo-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.tipo-flecha {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: #8890B5;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform .15s;
+}
+
+.tipo-card:hover .tipo-flecha { transform: translateX(3px); }

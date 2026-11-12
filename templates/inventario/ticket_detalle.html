@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.numero }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<div class="radio-detalle">
+    <div class="rd-heading">
+        <div>
+            <h1>{{ ticket.numero }} · {{ ticket.get_estado_display }}</h1>
+            <p>{{ ticket.get_tipo_display }} · {{ ticket.get_categoria_display }} · Prioridad {{ ticket.get_prioridad_display|lower }}</p>
+        </div>
+        <div class="rd-actions">
+            {% if puede_iniciar %}
+            <form method="post" action="{% url 'inventario:ticket_iniciar' ticket.numero %}" class="rd-inline-form">
+                {% csrf_token %}
+                <button class="rd-btn rd-btn-secondary" type="submit">Iniciar atención</button>
+            </form>
+            {% endif %}
+            {% if puede_atender %}
+            <a class="rd-btn" href="{% url 'inventario:ticket_atender' ticket.numero %}">Registrar visita y resolver</a>
+            {% endif %}
+            <a class="rd-btn rd-btn-secondary" href="{% url 'inventario:tickets_lista' %}">Volver a tickets</a>
+        </div>
+    </div>
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Solicitud</h2></div>
+        <div class="rd-panel-body">
+            <div class="rd-observations">{{ ticket.descripcion|linebreaksbr }}</div>
+            <div class="rd-grid" style="margin-top:16px">
+                <div class="rd-item"><span class="rd-label">Equipo</span><span class="rd-value">{% if ticket.equipo %}{% include "inventario/_equipo_enlace.html" with equipo=ticket.equipo %}{% else %}Sin equipo{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Solicitante</span><span class="rd-value">{{ ticket.solicitante_nombre|default:"—" }}{% if ticket.solicitante_cedula %} · C.C. {{ ticket.solicitante_cedula }}{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Contacto</span><span class="rd-value">{{ ticket.solicitante_correo|default:"Sin correo" }}{% if ticket.solicitante_telefono %} · {{ ticket.solicitante_telefono }}{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Ubicación</span><span class="rd-value">{{ ticket.ubicacion|default:"—" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Origen</span><span class="rd-value">{{ ticket.get_origen_display }}</span></div>
+                <div class="rd-item"><span class="rd-label">Creado</span><span class="rd-value">{{ ticket.creado_en|date:"d/m/Y H:i" }}</span></div>
+                <div class="rd-item"><span class="rd-label">Técnico</span><span class="rd-value">{% if ticket.tecnico %}{{ ticket.tecnico.get_full_name|default:ticket.tecnico.username }}{% else %}Sin asignar{% endif %}</span></div>
+                <div class="rd-item"><span class="rd-label">Visita</span><span class="rd-value">{{ ticket.fecha_programada|date:"d/m/Y"|default:"Sin programar" }} {{ ticket.get_franja_display }}</span></div>
+                {% if ticket.tiempo_respuesta %}
+                <div class="rd-item"><span class="rd-label">Tiempo de respuesta</span><span class="rd-value">{{ ticket.creado_en|timesince:ticket.resuelto_en }}</span></div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% if puede_asignar %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>{% if ticket.tecnico %}Reasignar o reprogramar{% else %}Asignar técnico{% endif %}</h2></div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:ticket_asignar' ticket.numero %}" class="ficha-form-grid">
+                {% csrf_token %}
+                {% include "inventario/_campo.html" with field=form_asignar.tecnico %}
+                {% include "inventario/_campo.html" with field=form_asignar.fecha_programada %}
+                {% include "inventario/_campo.html" with field=form_asignar.franja %}
+                <div class="ficha-field"><button class="rd-btn" type="submit">Guardar asignación</button></div>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if ticket.solucion or intervenciones or fotos %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Visita y solución</h2></div>
+        <div class="rd-panel-body">
+            {% if ticket.solucion %}<div class="rd-observations">{{ ticket.solucion|linebreaksbr }}</div>{% endif %}
+            {% for m in intervenciones %}
+            <article class="rd-maintenance">
+                <div class="rd-maintenance-head">
+                    <div><h3>{{ m.get_tipo_display }} · {{ m.equipo.placa }}</h3><div class="rd-date">{{ m.fecha_intervencion|date:"d/m/Y H:i" }} · {{ m.tecnico_responsable }}</div></div>
+                    <span class="rd-badge rd-blue">{{ m.get_estado_final_display|default:"Estado sin dato" }}</span>
+                </div>
+                <div class="rd-maintenance-grid">
+                    <div class="rd-maintenance-field"><strong>Diagnóstico</strong><p>{{ m.diagnostico|default:"Sin información"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ m.trabajo_realizado|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Repuestos</strong><p>{{ m.repuestos_utilizados|default:"Ninguno"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Resultado</strong><p>{{ m.get_resultado_display }}</p></div>
+                </div>
+            </article>
+            {% endfor %}
+            {% if fotos %}
+            <div class="ticket-fotos">
+                {% for foto in fotos %}
+                <a href="{% url 'inventario:ticket_foto' foto.pk %}" target="_blank" rel="noopener"><img src="{% url 'inventario:ticket_foto' foto.pk %}" alt="Foto de la visita {{ forloop.counter }}"></a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if ticket.firma %}
+            <p class="rd-note">Recibió: {{ ticket.firma_nombre }}</p>
+            <img class="ficha-firma-imagen" src="{{ ticket.firma }}" alt="Firma de quien recibe">
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Bitácora</h2></div>
+        <div class="rd-panel-body">
+            <ol class="ticket-bitacora">
+                {% for e in eventos %}
+                <li>
+                    <strong>{{ e.get_tipo_display }}</strong>
+                    <span class="subtext">{{ e.fecha|date:"d/m/Y H:i" }}{% if e.usuario %} · {{ e.usuario.get_full_name|default:e.usuario.username }}{% endif %}{% if not e.publico %} · interno{% endif %}</span>
+                    {% if e.texto %}<p>{{ e.texto|linebreaksbr }}</p>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% if puede_comentar %}
+            <form method="post" action="{% url 'inventario:ticket_comentar' ticket.numero %}" class="rd-baja-form">
+                {% csrf_token %}
+                <label for="{{ form_texto.texto.id_for_label }}">Agregar comentario</label>
+                {{ form_texto.texto }}
+                <label class="ficha-check">{{ form_texto.publico }} {{ form_texto.publico.label }}</label>
+                <button class="rd-btn rd-btn-secondary" type="submit">Comentar</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if puede_cancelar %}
+    <section class="rd-panel">
+        <div class="rd-panel-heading"><h2>Cancelar ticket</h2></div>
+        <div class="rd-panel-body">
+            <form method="post" action="{% url 'inventario:ticket_cancelar' ticket.numero %}" class="rd-baja-form">
+                {% csrf_token %}
+                <label for="motivo-cancelar">Motivo</label>
+                <textarea id="motivo-cancelar" name="texto" rows="2"></textarea>
+                <button class="rd-btn rd-btn-danger" type="submit" onclick="return confirm('¿Cancelar este ticket?');">Cancelar ticket</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

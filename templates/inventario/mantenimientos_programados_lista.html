@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Intervenciones programadas | JANO Inventario{% endblock %}
+{% block body_class %}lista-fija-page{% endblock %}
+
+{% block content %}
+<div class="radios-page mant-page">
+    {% include "inventario/_mant_cabecera.html" %}
+
+    <section class="panel mant-filtros">
+        <form method="get" class="filters filters-prog" data-lista-filtros>
+            <div class="field">
+                <label class="solo-lector" for="q">Buscar equipo o descripción</label>
+                <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Placa, serial o descripción">
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="estado">Estado de la programación</label>
+                <select name="estado" id="estado">
+                    <option value="PROGRAMADO" {% if estado_seleccionado == "PROGRAMADO" %}selected{% endif %}>Programados</option>
+                    <option value="COMPLETADO" {% if estado_seleccionado == "COMPLETADO" %}selected{% endif %}>Completados</option>
+                    <option value="CANCELADO" {% if estado_seleccionado == "CANCELADO" %}selected{% endif %}>Cancelados</option>
+                    <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos los estados</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="tipo_equipo">Tipo de equipo</label>
+                <select id="tipo_equipo" name="tipo_equipo">
+                    <option value="" {% if not tipo_equipo_seleccionado %}selected{% endif %}>Todos los equipos</option>
+                    {% for valor, etiqueta in tipos_equipo %}<option value="{{ valor }}" {% if tipo_equipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="solo-lector" for="tipo">Tipo de mantenimiento</label>
+                <select id="tipo" name="tipo">
+                    <option value="" {% if not tipo_seleccionado %}selected{% endif %}>Todos los mantenimientos</option>
+                    {% for valor, etiqueta in tipos_mantenimiento %}<option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="fecha_desde">Programado desde</label>
+                <input id="fecha_desde" type="date" name="fecha_desde" value="{{ fecha_desde }}">
+            </div>
+            <div class="field">
+                <label for="fecha_hasta">Programado hasta</label>
+                <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ fecha_hasta }}">
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if hay_filtros %}<a class="btn btn-light" href="{% url 'inventario:mantenimientos_programados_lista' %}">Limpiar</a>{% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="panel mant-resultados">
+        <div class="panel-heading mant-resultado-cabeza">
+            <div>
+                <h2>{% if estado_seleccionado == "COMPLETADO" %}Completados{% elif estado_seleccionado == "CANCELADO" %}Cancelados{% else %}Programados{% endif %}</h2>
+                <p>{{ total_resultados }} registro{{ total_resultados|pluralize }} · la fecha más próxima primero</p>
+            </div>
+        </div>
+        {% if programaciones %}
+        <div class="table-wrap">
+            <table class="tabla-tarjetas mant-lista mant-prog">
+                <thead>
+                    <tr><th>Equipo</th><th>Fecha programada</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th>Creado por</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in programaciones %}
+                    <tr data-fila>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" with equipo=item.equipo %}<span class="subtext">{{ item.equipo.get_tipo_display }} · {{ item.equipo.serial|default:"Sin serial" }}</span></td>
+                        <td data-label="Fecha">{{ item.fecha_programada|date:"d/m/Y" }}{% if item.estado == "PROGRAMADO" and item.fecha_programada < hoy %}<span class="subtext mant-atraso">Sin cumplir</span>{% endif %}</td>
+                        <td data-label="Tipo">{{ item.get_tipo_display }}</td>
+                        <td data-label="Descripción" class="mant-trabajo">{{ item.descripcion|truncatechars:90 }}</td>
+                        <td data-label="Estado">{% if item.estado == "PROGRAMADO" %}<span class="mant-etiqueta mant-info">Programado</span>{% elif item.estado == "COMPLETADO" %}<span class="mant-etiqueta mant-vigente">Completado</span>{% elif item.estado == "CANCELADO" %}<span class="mant-etiqueta mant-sin_mantenimiento">Cancelado</span>{% else %}<span class="mant-etiqueta mant-sin_mantenimiento">{{ item.get_estado_display }}</span>{% endif %}</td>
+                        <td data-label="Creado por">{% if item.creado_por %}{{ item.creado_por.get_username }}{% else %}<span class="mant-sin-dato">No disponible</span>{% endif %}</td>
+                        <td class="mant-acciones-celda"><div class="mant-acciones">
+                            {% if item.estado == "PROGRAMADO" %}
+                                {% if permisos.mantenimientos %}<a class="btn btn-light" data-mant-modal href="{% url 'inventario:mantenimiento_programado_completar' item.pk %}">Completar</a>{% endif %}
+                                {% if permisos.programar %}
+                                <form method="post" action="{% url 'inventario:mantenimiento_programado_cancelar' item.pk %}" onsubmit="return confirm('¿Confirmas que deseas cancelar esta programación?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="mant-enlace-accion mant-cancelar">Cancelar</button>
+                                </form>
+                                {% endif %}
+                            {% elif item.intervencion_realizada %}
+                                <a class="mant-enlace-accion" href="{% url 'inventario:mantenimientos_lista' %}">Ver historial</a>
+                            {% else %}
+                                <span class="mant-sin-dato">Sin acciones</span>
+                            {% endif %}
+                        </div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "inventario/_mant_pie.html" with total=total_resultados %}
+        {% else %}
+        <p class="mant-vacio">No hay mantenimientos para el estado seleccionado.</p>
+        {% endif %}
+    </section>
+</div>
+
+{% include "inventario/_mant_ajuste_filas.html" with defecto=50 clave="mantProgPpIntento" %}
+{% endblock %}

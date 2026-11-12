@@ -1,0 +1,75 @@
+/* ======================================================================
+   05-tickets-politica.css - Tarjetas de tipo, panel de mantenimientos y política
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* Tarjetas de tipo de equipo (inventario general) */
+.equipos-tipos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.equipos-tipo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--jano-border);
+    background: #fff;
+    color: var(--jano-blue);
+    font-weight: 600;
+}
+
+.equipos-tipo strong { font-size: 20px; }
+
+.semaforo td,
+.semaforo th {
+    text-align: center;
+}
+
+.semaforo td:first-child,
+.semaforo th:first-child {
+    text-align: left;
+}
+
+.maintenance-field label span,
+.semaforo .semaforo-vencido {
+    color: #B42318;
+}
+
+.semaforo .semaforo-proximo { color: #B54708; }
+
+.semaforo .semaforo-vigente { color: #067647; }
+
+.semaforo .semaforo-sin_mantenimiento { color: var(--jano-gray); }
+/* Verificación de la política de seguridad */
+.politica-puntos {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.politica-puntos li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--jano-border);
+}
+
+.politica-puntos li > span {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.politica-opciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.politica-opciones label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}

@@ -1,0 +1,364 @@
+/* ======================================================================
+   07-diseno.css - Paleta JANO y diseño de referencia (catálogo y módulos)
+   Se carga en este orden (ver templates/_estilos.html); el orden es parte de la cascada.
+   ====================================================================== */
+
+/* ---------- Paleta original JANO: barra lateral azul con acento lima ---------- */
+.sidebar-brand { color: #fff; }
+
+.sidebar-brand small { display: block; color: #D9DEFF; }
+
+.sidebar-user { color: #fff; }
+
+.sidebar-avatar {
+    width: 36px;
+    place-items: center;
+    text-transform: uppercase;
+    background: #C8D32B;
+    color: #080D79;
+}
+
+.welcome-heading h1 {
+    color: #080D79;
+}
+
+.dashboard-card h2 {
+    color: #080D79;
+}
+
+.card-icon {
+    width: 44px;
+    background: #EFF0FF;
+    color: #080D79;
+}
+
+.radios-page th {
+    text-transform: uppercase;
+    background: #f7f8fb;
+}
+
+.maintenance-table th {
+    background: #f7f8fb;
+}
+
+.login-heading h2 { color: #080D79; }
+
+.brand-decoration { background: #C8D32B; }
+
+/* ---------- Diseño como la referencia: un solo contenedor, barra de iconos, filas desplegables ---------- */
+.solo-lector {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+body.dashboard-body { background: linear-gradient(135deg, #F7E9F0 0%, #F4F6FA 45%, #E4E9FB 100%); }
+
+/* Dos zonas separadas: la barra lateral (tarjeta azul JANO) y el panel de contenido (tarjeta blanca),
+   con un espacio entre ambas para que no parezcan una sola página. */
+.shell {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 18px;
+    min-height: calc(100vh - 36px);
+    margin: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sidebar {
+    backdrop-filter: none;
+    top: 18px;
+    align-items: center;
+    gap: 26px;
+    height: calc(100vh - 36px);
+    padding: 22px 0 20px;
+    border: 0;
+    border-radius: 28px;
+    /* arranca en el mismo azul del logo (#010165) para que el logo se funda con la barra */
+    background: linear-gradient(180deg, #010165 0%, #080D79 55%, #0E1596 100%);
+    box-shadow: 0 14px 34px rgba(8, 13, 121, .28);
+}
+
+.sidebar-brand { text-decoration: none; padding: 0; }
+
+.sidebar-brand img {
+    object-fit: contain;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+}
+
+.sidebar-nav {
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background .15s, color .15s;
+    width: 46px;
+    height: 46px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 15px;
+    color: #AEB4F0;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+}
+
+.sidebar-nav a.activo {
+    box-shadow: none;
+    background: #C8D32B;
+    color: #080D79;
+}
+
+.sidebar-nav svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    width: 22px;
+    height: 22px;
+}
+
+.sidebar-user {
+    flex-direction: column;
+    padding: 0;
+    background: transparent;
+    gap: 10px;
+}
+
+.sidebar-user .logout-button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    padding: 0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+}
+
+.sidebar-user .logout-button:hover { background: rgba(255, 255, 255, .24); }
+
+.sidebar-user .logout-button svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.main-panel {
+    padding: 30px 34px 18px;
+    border: 1px solid #fff;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, .82);
+    box-shadow: 0 14px 44px rgba(8, 13, 121, .08);
+}
+
+/* Lista tipo catálogo */
+.lista-items .barra-items { display: flex; }
+
+.lista-items .busca-items p {
+    margin: 0 0 14px;
+    color: var(--jano-gray);
+    font-size: 13px;
+}
+
+.caja-busqueda {
+    position: relative;
+    display: block;
+    width: min(420px, 100%);
+}
+
+.caja-busqueda input {
+    width: 100%;
+    padding: 13px 44px 13px 18px;
+    border: 1px solid #fff;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(8, 13, 121, .06);
+    color: var(--lv-ink);
+    font: inherit;
+    font-size: 13px;
+}
+
+.filas-items .flecha {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.caja-busqueda svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    color: #8890B5;
+}
+
+.filtros-pildora {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.filtros-pildora .pildora {
+    border: 1px solid #C9CDE6;
+    background: rgba(255, 255, 255, .7);
+}
+
+.filtros-pildora .pildora select {
+    min-height: 40px;
+    color: var(--lv-ink);
+    font: inherit;
+    font-weight: 700;
+}
+
+.lista-items .equipos-tipo {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .7);
+}
+
+.radios-page .panel,
+.radios-page .stat-card,
+.maintenance-panel {
+    border-color: #fff;
+    background: rgba(255, 255, 255, .72);
+    border-radius: 26px;
+}
+
+.radios-page td {
+    vertical-align: middle;
+    padding-top: 18px;
+    padding-bottom: 18px;
+    border-top-color: #E6E9F3;
+}
+
+@media (max-width: 900px) {
+    .shell {
+        margin: 8px;
+        gap: 10px;
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+        height: auto;
+        flex-direction: row;
+        padding: 12px;
+        border-radius: 22px;
+    }
+
+    .sidebar-nav { flex-direction: row; }
+
+    .sidebar-user {
+        flex-direction: row;
+        margin-left: auto;
+    }
+
+    .main-panel {
+        border-radius: 22px;
+        padding: 20px 14px 12px;
+    }
+
+    .filas-cabecera { display: none; }
+
+    .fila-item > .fila-resumen { grid-template-columns: 1fr 30px; }
+
+    .fila-item > .fila-resumen > span:nth-of-type(n+1):not(:last-of-type) { grid-column: 1; }
+
+    .fila-detalle { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- Barra lateral como en la referencia (escritorio) ----------
+   Un solo bloque: la franja azul va pegada al panel blanco y solo se redondean las
+   esquinas exteriores. Barra de 74px, ítems de 40px, íconos de 18px. */
+@media (min-width: 901px) {
+    .shell {
+        grid-template-columns: 74px minmax(0, 1fr);
+        gap: 0;
+        min-height: calc(100vh - 32px);
+        margin: 16px;
+        border-radius: 28px;
+        box-shadow: 0 14px 44px rgba(8, 13, 121, .10);
+    }
+
+    .sidebar {
+        top: 16px;
+        gap: 24px;
+        height: calc(100vh - 32px);
+        padding: 20px 0 16px;
+        border-radius: 28px 0 0 28px;
+        box-shadow: none;
+    }
+
+    .sidebar-brand img {
+        width: 40px;
+        height: 40px;
+        border-radius: 0;
+    }
+
+    .sidebar-nav { gap: 9px; }
+
+    .sidebar-nav a {
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
+    }
+
+    .sidebar-nav svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .sidebar-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    .sidebar-user { gap: 9px; }
+
+    .sidebar-user .logout-button {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+    }
+
+    .sidebar-user .logout-button svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .main-panel {
+        padding-right: 28px;
+        padding-left: 28px;
+        border: 0;
+        border-radius: 0 28px 28px 0;
+        box-shadow: none;
+    }
+}
