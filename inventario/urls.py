@@ -7,6 +7,7 @@ app_name = "inventario"
 urlpatterns = [
     path("informes/", include("inventario.informes.urls")),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
+    path("buscar/", views_equipos.buscar_json, name="buscar"),
     path("clientes/", views_catalogos.clientes_lista, name="clientes_lista"),
     path("clientes/nuevo/", views_catalogos.cliente_crear, name="cliente_crear"),
     path("clientes/puestos.json", views_catalogos.puestos_json, name="puestos_json"),

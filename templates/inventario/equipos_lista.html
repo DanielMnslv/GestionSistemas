@@ -6,96 +6,110 @@
 
 {% block content %}
 <div class="radios-page lista-items">
-    <form method="get" class="barra-items" id="eq-form">
-        <div class="busca-items">
-            <h1>Buscar equipos</h1>
-            <p>Escribe placa, serial, marca o responsable.</p>
-        </div>
-        <div class="filtros-pildora">
-            {% if permisos.equipos %}
-            <a class="btn btn-primary" href="{% url 'inventario:equipo_crear' %}">Registrar equipo +</a>
-            {% endif %}
-        </div>
-    </form>
+    <form method="get" id="eq-form" class="barra-items" hidden></form>
+    <input type="hidden" form="eq-form" name="tipo" value="{{ tipo_seleccionado }}" data-eq-sync>
 
+    <div id="eq-resumen">
+        <div class="jx-head jx-head-compact">
+            <div>
+                <h1>Equipos y radios</h1>
+                <p>{{ total_resultados }} equipo{{ total_resultados|pluralize }}{% if n_filtros %} con los filtros aplicados{% else %} activos en el inventario{% endif %}</p>
+            </div>
+            <div class="jx-head-actions">
+                <a class="jx-btn" href="{{ url_exportar }}" download><svg class="jx-i"><use href="#i-file"/></svg>Exportar a Excel</a>
+                {% if permisos.equipos %}<a class="jx-btn jx-btn-primary" href="{% url 'inventario:equipo_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar equipo</a>{% endif %}
+            </div>
+        </div>
+
+        <nav class="jx-tabs" aria-label="Tipo de equipo">
+            {% for p in pestanas %}
+            <a class="jx-tab{% if p.activo %} is-active{% endif %}" href="{{ p.url }}" data-eq-ajax{% if p.activo %} aria-current="true"{% endif %}>{{ p.etiqueta }}<span>{{ p.total }}</span></a>
+            {% endfor %}
+        </nav>
+
+        {% if filtros_activos %}
+        <div class="jx-chips" aria-label="Filtros aplicados">
+            {% for f in filtros_activos %}
+            <a class="jx-chip" href="{{ f.quitar }}" data-eq-ajax title="Quitar este filtro">{{ f.texto }}<span aria-hidden="true">×</span><span class="sr-only">(quitar)</span></a>
+            {% endfor %}
+            <a class="jx-chip-clear" href="{{ url_limpiar }}" data-eq-ajax>Limpiar todo</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="jx-filterbar">
+        <label class="jx-filter-search">
+            <svg class="jx-i"><use href="#i-search"/></svg>
+            <span class="sr-only">Buscar por placa, serial, marca, responsable o vehículo</span>
+            <input id="q" form="eq-form" type="search" name="q" value="{{ busqueda }}" placeholder="Placa, serial, marca, responsable, vehículo…">
+        </label>
+        <label class="jx-select"><span>Estado</span>
+            <select form="eq-form" name="estado_operativo">
+                <option value="">Todos</option>
+                <option value="OPERATIVO" {% if estado_operativo_seleccionado == "OPERATIVO" %}selected{% endif %}>Operativos</option>
+                <option value="NO_OPERATIVO" {% if estado_operativo_seleccionado == "NO_OPERATIVO" %}selected{% endif %}>No operativos</option>
+            </select>
+        </label>
+        <label class="jx-select"><span>Mantenimiento</span>
+            <select form="eq-form" name="mantenimiento">
+                <option value="">Todos</option>
+                {% for valor, etiqueta in estados_mantenimiento %}
+                <option value="{{ valor }}" {% if mantenimiento_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="jx-select"><span>Ubicación</span>
+            <select form="eq-form" name="disponibilidad">
+                <option value="">Todas</option>
+                <option value="en_inventario" {% if disponibilidad_seleccionada == "en_inventario" %}selected{% endif %}>En bodega</option>
+                <option value="entregado" {% if disponibilidad_seleccionada == "entregado" %}selected{% endif %}>Entregados</option>
+            </select>
+        </label>
+        <label class="jx-select"><span>Responsable</span>
+            <select form="eq-form" name="asignacion">
+                <option value="">Todos</option>
+                <option value="asignado" {% if asignacion_seleccionada == "asignado" %}selected{% endif %}>Con responsable</option>
+                <option value="sin_asignar" {% if asignacion_seleccionada == "sin_asignar" %}selected{% endif %}>Sin responsable</option>
+            </select>
+        </label>
+        <label class="jx-select"><span>Revisión</span>
+            <select form="eq-form" name="revision">
+                <option value="">Todos</option>
+                <option value="si" {% if revision_seleccionada == "si" %}selected{% endif %}>Por revisar</option>
+                <option value="no" {% if revision_seleccionada == "no" %}selected{% endif %}>Sin revisión pendiente</option>
+            </select>
+        </label>
+        <details class="jx-more"{% if datos_seleccionados or accesorios_seleccionados or estado_seleccionado != "activos" %} open{% endif %}>
+            <summary class="jx-btn"><svg class="jx-i"><use href="#i-list"/></svg>Más filtros</summary>
+            <div class="jx-more-panel">
+        <label class="jx-select"><span>Datos</span>
+            <select form="eq-form" name="datos">
+                <option value="">Todos</option>
+                <option value="completos" {% if datos_seleccionados == "completos" %}selected{% endif %}>Completos</option>
+                <option value="pendientes" {% if datos_seleccionados == "pendientes" %}selected{% endif %}>Con datos pendientes</option>
+            </select>
+        </label>
+        <label class="jx-select"><span>Accesorios</span>
+            <select form="eq-form" name="accesorios" title="Solo radios">
+                <option value="">Todos</option>
+                <option value="completos" {% if accesorios_seleccionados == "completos" %}selected{% endif %}>Radios completos (8 de 8)</option>
+                <option value="incompletos" {% if accesorios_seleccionados == "incompletos" %}selected{% endif %}>Radios incompletos</option>
+            </select>
+        </label>
+        <label class="jx-select"><span>Inventario</span>
+            <select form="eq-form" id="estado" name="estado">
+                <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
+                <option value="baja" {% if estado_seleccionado == "baja" %}selected{% endif %}>Dados de baja</option>
+                <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
+            </select>
+        </label>
+            </div>
+        </details>
+    </div>
 
     <div class="eq-split">
         <div class="eq-izq">
         <section class="eq-lista-card" aria-label="Equipos">
-            <div class="eq-lista-cab">
-                <strong>Equipos</strong>
-                <span class="eq-result-count">{{ total_resultados }} resultado{{ total_resultados|pluralize }}</span>
-            </div>
-            <div class="eq-buscar">
-                <div class="eq-busca-fila">
-                    <label class="caja-busqueda">
-                        <span class="solo-lector">Buscar equipos por placa, serial, marca, responsable o vehículo</span>
-                        <input id="q" form="eq-form" type="search" name="q" value="{{ busqueda }}" placeholder="Placa, serial, marca, responsable, vehículo…">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/></svg>
-                    </label>
-                    <button type="button" class="eq-filtro-btn" id="eq-filtro-btn" aria-expanded="false" aria-controls="eq-filtros" title="Filtros">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-                        <span class="solo-lector">Filtros</span>
-                        {% if n_filtros %}<span class="eq-filtro-n">{{ n_filtros }}</span>{% endif %}
-                    </button>
-                </div>
-                <div class="eq-filtros" id="eq-filtros" hidden>
-                    <label class="eq-filtro">Tipo
-                        <select form="eq-form" id="tipo" name="tipo">
-                            <option value="">Todos</option>
-                            {% for valor, etiqueta, total in tipos %}
-                            <option value="{{ valor }}" {% if tipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Inventario
-                        <select form="eq-form" id="estado" name="estado">
-                            <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
-                            <option value="baja" {% if estado_seleccionado == "baja" %}selected{% endif %}>Dados de baja</option>
-                            <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Asignación
-                        <select form="eq-form" name="asignacion">
-                            <option value="">Todos</option>
-                            <option value="asignado" {% if asignacion_seleccionada == "asignado" %}selected{% endif %}>Con responsable</option>
-                            <option value="sin_asignar" {% if asignacion_seleccionada == "sin_asignar" %}selected{% endif %}>Sin asignar</option>
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Ubicación física
-                        <select form="eq-form" name="disponibilidad">
-                            <option value="">Todos</option>
-                            <option value="en_inventario" {% if disponibilidad_seleccionada == "en_inventario" %}selected{% endif %}>Guardado en inventario</option>
-                            <option value="entregado" {% if disponibilidad_seleccionada == "entregado" %}selected{% endif %}>Fuera del inventario (en uso)</option>
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Datos
-                        <select form="eq-form" name="datos">
-                            <option value="">Todos</option>
-                            <option value="completos" {% if datos_seleccionados == "completos" %}selected{% endif %}>Completos</option>
-                            <option value="pendientes" {% if datos_seleccionados == "pendientes" %}selected{% endif %}>Con datos pendientes</option>
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Accesorios (radios)
-                        <select form="eq-form" name="accesorios">
-                            <option value="">Todos</option>
-                            <option value="completos" {% if accesorios_seleccionados == "completos" %}selected{% endif %}>Completos (8 de 8)</option>
-                            <option value="incompletos" {% if accesorios_seleccionados == "incompletos" %}selected{% endif %}>Incompletos</option>
-                        </select>
-                    </label>
-                    <label class="eq-filtro">Revisión
-                        <select form="eq-form" name="revision">
-                            <option value="">Todos</option>
-                            <option value="si" {% if revision_seleccionada == "si" %}selected{% endif %}>Requiere revisión</option>
-                            <option value="no" {% if revision_seleccionada == "no" %}selected{% endif %}>Sin revisión pendiente</option>
-                        </select>
-                    </label>
-                    <div class="eq-filtros-acc">
-                        <a class="btn btn-light" href="{% url 'inventario:equipos_lista' %}">Limpiar</a>
-                        <button class="btn btn-primary" type="submit" form="eq-form">Buscar</button>
-                    </div>
-                </div>
-            </div>
             <div class="eq-lista eq-tabla-wrap">
                 <table class="eq-tabla" aria-label="Lista de equipos. Elige una fila para ver su ficha">
                     <thead>
@@ -654,6 +668,12 @@
                 cambiar(".eq-lista tbody", doc);
                 cambiar(".eq-result-count", doc);
                 cambiar("#eq-panel", doc);
+                cambiar("#eq-resumen", doc);
+                // Los filtros quedan igual a los de la página nueva (al usar una pestaña o un chip).
+                doc.querySelectorAll('[form="eq-form"][name]').forEach(function (nuevo) {
+                    var actual = document.querySelector('[form="eq-form"][name="' + nuevo.name + '"]');
+                    if (actual && actual !== document.activeElement) actual.value = nuevo.value;
+                });
                 // Paginación: puede aparecer o desaparecer según el resultado
                 var pagNueva = doc.querySelector(".eq-pag"), pagVieja = document.querySelector(".eq-pag");
                 if (pagVieja && pagNueva) pagVieja.innerHTML = pagNueva.innerHTML;
@@ -661,9 +681,11 @@
                 else if (pagNueva) document.querySelector(".eq-lista-card").appendChild(pagNueva);
                 // Contador de filtros activos sobre el botón
                 var btn = document.getElementById("eq-filtro-btn");
-                var nVieja = btn.querySelector(".eq-filtro-n"), nNueva = doc.querySelector("#eq-filtro-btn .eq-filtro-n");
-                if (nVieja) nVieja.remove();
-                if (nNueva) btn.appendChild(nNueva);
+                if (btn) {
+                    var nVieja = btn.querySelector(".eq-filtro-n"), nNueva = doc.querySelector("#eq-filtro-btn .eq-filtro-n");
+                    if (nVieja) nVieja.remove();
+                    if (nNueva) btn.appendChild(nNueva);
+                }
                 // Si había una ficha abierta, el diseño no cambia: se abre la ficha de la primera
                 // fila de la nueva lista. Si no hay filas, se cierra.
                 var split = document.querySelector(".eq-split");
@@ -693,6 +715,17 @@
     if (botonBuscar) botonBuscar.addEventListener("click", function (e) { e.preventDefault(); window.eqCargar(urlDesdeFormulario()); });
     var q = document.getElementById("q");
     if (q) q.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); window.eqCargar(urlDesdeFormulario()); } });
+
+    // Pestañas por tipo y chips de filtros, sin recargar la página.
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest("#eq-resumen a[data-eq-ajax]");
+        if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        e.preventDefault();
+        if (a.classList.contains("jx-chip-clear")) {
+            var qq = document.getElementById("q"); if (qq) qq.value = "";
+        }
+        window.eqCargar(a.href);
+    });
 
     // Paginación sin recarga
     document.addEventListener("click", function (e) {

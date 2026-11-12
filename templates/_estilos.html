@@ -1,5 +1,9 @@
-﻿{% load static %}
+{% load static %}
 <script>
+    /* Menú lateral reducido: se fija antes de pintar, igual que el tema. */
+    (function () {
+        try { if (localStorage.getItem("jano-menu") === "mini") document.documentElement.classList.add("jx-mini"); } catch (e) {}
+    })();
     /* Tema claro/oscuro: se fija antes de pintar para evitar el parpadeo (el botón vive en static/js/tema.js). */
     (function () {
         var t = null;
@@ -36,3 +40,10 @@
 <link rel="stylesheet" href="{% static 'css/22-jano-design-system.css' %}?v=20261112a">
 
 <link rel="stylesheet" href="{% static 'css/23-jano-shell-redesign.css' %}?v=20261112a">
+
+<!-- Sistema de diseño nuevo: va de último para mandar sobre las hojas anteriores. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="{% static 'css/jano.css' %}?v=20261112f">
+<script src="{% static 'js/jano.js' %}?v=20261112a" defer></script>

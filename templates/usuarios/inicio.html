@@ -1,97 +1,190 @@
 ﻿{% extends "base.html" %}
 {% load static %}
 
-{% block title %}Panel principal | JANO Inventario{% endblock %}
-
-{% block body_class %}panel-page{% endblock %}
+{% block title %}Dashboard | JANO Inventario{% endblock %}
 
 {% block extra_css %}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-<link rel="stylesheet" href="{% static 'css/17-panel-inicio.css' %}?v=20261105b">
-<link rel="stylesheet" href="{% static 'css/20-jano-dashboard.css' %}?v=20261112d">{% endblock %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">{% endblock %}
 
 {% block content %}
-<div class="pn">
-    <header class="pn-head">
-        <div>
-            <h1>Inventario de equipos</h1>
-            {% now "l j \d\e F \d\e Y" as fecha_hoy %}
-            <p class="pn-sub">{{ fecha_hoy|lower|capfirst }}. {{ programados_mes }} mantenimiento{{ programados_mes|pluralize }} programado{{ programados_mes|pluralize }} este mes.</p>
-        </div>
-        <div class="pn-acts">
-            <a class="pn-btn" href="{% url 'inventario:equipos_lista' %}">Ver todos los equipos</a>
-            <a class="pn-btn pn-btn-p" href="{% url 'inventario:equipo_crear' %}">Registrar equipo</a>
-        </div>
-    </header>
+{% url 'inventario:equipos_lista' as u_equipos %}
+{% url 'inventario:panel_mantenimientos' as u_mant %}
+<div class="jx-hello">
+    <div>
+        <h1>Hola, {{ request.user.first_name|default:request.user.username }}</h1>
+        <p>Así está hoy la infraestructura de TI de Seguridad JANO.</p>
+    </div>
+    {% now "l j \d\e F \d\e Y" as fecha_hoy %}
+    <span class="jx-hello-date"><svg class="jx-i"><use href="#i-calendar"/></svg>{{ fecha_hoy|capfirst }}</span>
+</div>
 
-    <section class="pn-band" aria-label="Estado del inventario">
-        <div class="pn-bn"><small>Equipos activos</small><b>{{ total }}</b></div>
-        <div class="pn-bn"><small><i class="d o"></i>Operativos</small><b>{{ n_ok }}</b><em>{{ pct_ok }}%</em></div>
-        <div class="pn-bn"><small><i class="d r"></i>Regulares</small><b>{{ n_reg }}</b></div>
-        <div class="pn-bn"><small><i class="d m"></i>Con falla</small><b>{{ n_mal }}</b></div>
-        <div class="pn-bn"><small><i class="d s"></i>Sin estado</small><b>{{ n_sin }}</b></div>
-        <div class="pn-comp" role="img" aria-label="Composición del inventario por estado">
-            <i class="o" style="width:{{ w_ok }}%"></i><i class="r" style="width:{{ w_reg }}%"></i><i class="m" style="width:{{ w_mal }}%"></i><i class="s" style="width:{{ w_sin }}%"></i>
+<section class="jx-card" aria-labelledby="t-acciones">
+    <div class="jx-card-head"><h2 id="t-acciones">Accesos rápidos</h2></div>
+    <div class="jx-quick">
+        {% if permisos.equipos or request.user.is_superuser %}<a href="{% url 'inventario:equipo_crear' %}"><span class="jx-quick-ico jx-tone-primary"><svg class="jx-i"><use href="#i-monitor"/></svg></span>Registrar equipo</a>{% endif %}
+        {% if permisos.radios or request.user.is_superuser %}<a href="{% url 'inventario:radio_crear' %}"><span class="jx-quick-ico jx-tone-violet"><svg class="jx-i"><use href="#i-radio"/></svg></span>Registrar radio</a>{% endif %}
+        {% if permisos.mantenimientos or request.user.is_superuser %}<a href="{% url 'inventario:mantenimiento_crear' %}"><span class="jx-quick-ico jx-tone-ok"><svg class="jx-i"><use href="#i-wrench"/></svg></span>Registrar mantenimiento</a>{% endif %}
+        {% if permisos.programar or request.user.is_superuser %}<a href="{% url 'inventario:mantenimiento_programado_crear' %}"><span class="jx-quick-ico jx-tone-warn"><svg class="jx-i"><use href="#i-calendar"/></svg></span>Programar visita</a>{% endif %}
+        <a href="{% url 'inventario:politica_lista' %}?estado=SIN_VERIFICAR"><span class="jx-quick-ico jx-tone-teal"><svg class="jx-i"><use href="#i-shield"/></svg></span>Verificar política</a>
+        <a href="{% url 'inventario:informes_inicio' %}"><span class="jx-quick-ico jx-tone-info"><svg class="jx-i"><use href="#i-file"/></svg></span>Informes</a>
+    </div>
+</section>
+
+<div class="jx-kpis" style="margin-top:18px">
+    <a class="jx-kpi" href="{{ u_equipos }}">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Equipos activos</span><span class="jx-kpi-ico soft-primary"><svg class="jx-i"><use href="#i-box"/></svg></span></div>
+        <span class="jx-kpi-value">{{ total }}</span>
+        <span class="jx-kpi-foot">{{ tipos|length }} tipo{{ tipos|length|pluralize }} de equipo</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_equipos }}?estado_operativo=OPERATIVO">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Operativos</span><span class="jx-kpi-ico soft-ok"><svg class="jx-i"><use href="#i-check"/></svg></span></div>
+        <span class="jx-kpi-value">{{ n_ok }}</span>
+        <div class="jx-kpi-bar" aria-hidden="true"><i style="width:{{ pct_ok }}%"></i></div>
+        <span class="jx-kpi-foot">{{ pct_ok }}% del inventario · {{ n_sin }} sin estado</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_equipos }}?disponibilidad=entregado">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Entregados</span><span class="jx-kpi-ico soft-info"><svg class="jx-i"><use href="#i-handoff"/></svg></span></div>
+        <span class="jx-kpi-value">{{ entregados }}</span>
+        <span class="jx-kpi-foot">A vigilantes y funcionarios</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_equipos }}?disponibilidad=en_inventario">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">En bodega</span><span class="jx-kpi-ico soft-lime"><svg class="jx-i"><use href="#i-warehouse"/></svg></span></div>
+        <span class="jx-kpi-value">{{ en_bodega }}</span>
+        <span class="jx-kpi-foot">Sin entrega vigente · {{ bodega }} radio{{ bodega|pluralize }}</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+</div>
+<div class="jx-kpis">
+    <a class="jx-kpi" href="{{ u_mant }}?vista=equipos&amp;estado=VENCIDO">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Mantenimientos vencidos</span><span class="jx-kpi-ico soft-bad"><svg class="jx-i"><use href="#i-alert"/></svg></span></div>
+        <span class="jx-kpi-value">{{ mant_vencidos }}</span>
+        <span class="jx-kpi-foot">Más de seis meses sin preventivo</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_mant }}?vista=equipos&amp;estado=SIN_MANTENIMIENTO">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Sin mantenimiento</span><span class="jx-kpi-ico soft-warn"><svg class="jx-i"><use href="#i-clock"/></svg></span></div>
+        <span class="jx-kpi-value">{{ mant_sin }}</span>
+        <span class="jx-kpi-foot">Nunca han tenido una intervención</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_equipos }}?revision=si">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Por revisar</span><span class="jx-kpi-ico soft-warn"><svg class="jx-i"><use href="#i-flag"/></svg></span></div>
+        <span class="jx-kpi-value">{{ en_revision }}</span>
+        <span class="jx-kpi-foot">Marcados para revisión física</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{% url 'inventario:politica_lista' %}?estado=SIN_VERIFICAR">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Política pendiente</span><span class="jx-kpi-ico soft-primary"><svg class="jx-i"><use href="#i-shield"/></svg></span></div>
+        <span class="jx-kpi-value">{{ politica_pendientes }}</span>
+        <span class="jx-kpi-foot">Computadores sin verificación vigente</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+</div>
+
+<div class="jx-grid jx-grid-3-1">
+    <section class="jx-card" aria-labelledby="t-tendencia">
+        <div class="jx-card-head">
+            <div><h2 id="t-tendencia">Mantenimientos realizados</h2><p>Intervenciones registradas por mes, últimos 12 meses</p></div>
+            <a class="jx-card-link" href="{% url 'inventario:mantenimientos_lista' %}">Ver intervenciones</a>
+        </div>
+        <div class="jx-card-body"><div class="jx-chart"><canvas id="g-tendencia" aria-label="Mantenimientos por mes" role="img"></canvas></div></div>
+    </section>
+    <section class="jx-card" aria-labelledby="t-semaforo">
+        <div class="jx-card-head">
+            <div><h2 id="t-semaforo">Estado de mantenimiento</h2><p>Preventivo cada seis meses</p></div>
+        </div>
+        <div class="jx-card-body">
+            <div class="jx-donut"><canvas id="g-semaforo" aria-label="Equipos por estado de mantenimiento" role="img"></canvas>
+                <div class="jx-donut-center"><b>{{ pct_al_dia }}%</b><small>al día</small></div></div>
+            <ul class="jx-donut-legend" style="margin-top:12px">
+                <li><a href="{{ u_mant }}?vista=equipos&amp;estado=VENCIDO"><i class="c-bad"></i><span>Vencido</span><b>{{ mant_vencidos }}</b></a></li>
+                <li><a href="{{ u_mant }}?vista=equipos&amp;estado=SIN_MANTENIMIENTO"><i class="c-none"></i><span>Sin mantenimiento</span><b>{{ mant_sin }}</b></a></li>
+                <li><a href="{{ u_mant }}?vista=equipos&amp;estado=PROXIMO"><i class="c-warn"></i><span>Vence en 30 días</span><b>{{ mant_proximos }}</b></a></li>
+                <li><a href="{{ u_mant }}?vista=equipos&amp;estado=VIGENTE"><i class="c-ok"></i><span>Vigente</span><b>{{ mant_vigentes }}</b></a></li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<div class="jx-grid jx-grid-2">
+    <section class="jx-card" aria-labelledby="t-tipos">
+        <div class="jx-card-head">
+            <div><h2 id="t-tipos">Equipos por tipo</h2><p>Toque un tipo para ver su lista</p></div>
+            <ul class="jx-legend" aria-hidden="true"><li><i class="c-ok"></i>Operativo</li><li><i class="c-warn"></i>Regular</li><li><i class="c-bad"></i>Con falla</li><li><i class="c-none"></i>Sin estado</li></ul>
+        </div>
+        <div class="jx-card-body jx-types">
+            {% for t in tipos %}
+            <a class="jx-type" href="{{ u_equipos }}?tipo={{ t.tipo }}" title="{{ t.ok }} operativos, {{ t.reg }} regulares, {{ t.mal }} con falla, {{ t.sin }} sin estado">
+                <span class="jx-type-name">{{ t.nombre }}<em>{{ t.total }}</em></span>
+                <span class="jx-stack"><i class="c-ok" style="width:{{ t.w_ok }}%"></i><i class="c-warn" style="width:{{ t.w_reg }}%"></i><i class="c-bad" style="width:{{ t.w_mal }}%"></i><i class="c-none" style="width:{{ t.w_sin }}%"></i></span>
+                <span class="jx-type-pct">{{ t.pct_ok }}%</span>
+            </a>
+            {% empty %}
+            <div class="jx-empty"><svg class="jx-i"><use href="#i-box"/></svg><p>Todavía no hay equipos registrados.</p></div>
+            {% endfor %}
         </div>
     </section>
 
-    <div class="pn-main">
-        <section class="pn-mapa" aria-labelledby="pn-t-mapa">
-            <div class="pn-sh"><h2 id="pn-t-mapa">Dónde están los radios</h2></div>
-            <div id="pn-map" role="region" aria-label="Mapa con la ubicación de los radios"></div>
-            <p class="pn-mp" id="pn-mp"></p>
-            <ol class="pn-lugares" id="pn-lugares" aria-label="Lugares con radios"></ol>
-        </section>
-
-        <aside class="pn-at" aria-labelledby="pn-t-at">
-            <h2 id="pn-t-at">Requiere atención</h2>
-            <ul class="pn-at-l">
-                <li><a href="{% url 'inventario:equipos_lista' %}?tipo=RADIO"><b{% if radios_danados %} class="hot"{% endif %}>{{ radios_danados }}</b><span>Radios dañados</span></a></li>
-                <li><a href="{% url 'inventario:equipos_lista' %}?revision=si"><b{% if en_revision %} class="hot"{% endif %}>{{ en_revision }}</b><span>Equipos marcados para revisión</span></a></li>
-                <li><a href="{% url 'inventario:mantenimientos_programados_lista' %}"><b{% if vencidos %} class="hot"{% endif %}>{{ vencidos }}</b><span>Mantenimientos vencidos</span></a></li>
-                <li><a href="{% url 'inventario:equipos_lista' %}?tipo=RADIO&amp;disponibilidad=en_inventario"><b>{{ bodega }}</b><span>Radios en bodega sin asignar</span></a></li>
+    <section class="jx-card" aria-labelledby="t-atencion">
+        <div class="jx-card-head">
+            <div><h2 id="t-atencion">Requiere atención</h2><p>Lo que hay que resolver primero</p></div>
+            <a class="jx-card-link" href="{% url 'inventario:mantenimientos_programados_lista' %}">Programación</a>
+        </div>
+        <div class="jx-card-body" style="padding-top:8px">
+            <ul class="jx-list">
+                <li><a href="{% url 'inventario:informe_detalle' 'antivirus_vencimientos' %}"><span class="jx-list-ico jx-kpi-ico soft-bad"><svg class="jx-i"><use href="#i-virus"/></svg></span><span class="jx-list-txt"><b>Antivirus vencidos</b><small>{{ antivirus_por_vencer }} más vencen en los próximos 30 días</small></span><span class="jx-list-num{% if antivirus_vencidos %} is-bad{% endif %}">{{ antivirus_vencidos }}</span></a></li>
+                <li><a href="{% url 'inventario:mantenimientos_programados_lista' %}"><span class="jx-list-ico jx-kpi-ico soft-warn"><svg class="jx-i"><use href="#i-calendar"/></svg></span><span class="jx-list-txt"><b>Visitas programadas atrasadas</b><small>{{ programados_mes }} programada{{ programados_mes|pluralize }} para este mes</small></span><span class="jx-list-num{% if vencidos %} is-warn{% endif %}">{{ vencidos }}</span></a></li>
+                <li><a href="{{ u_equipos }}?tipo=RADIO"><span class="jx-list-ico jx-kpi-ico soft-bad"><svg class="jx-i"><use href="#i-radio"/></svg></span><span class="jx-list-txt"><b>Radios dañados</b><small>Activos con estado dañado</small></span><span class="jx-list-num{% if radios_danados %} is-bad{% endif %}">{{ radios_danados }}</span></a></li>
+                <li><a href="{% url 'inventario:politica_lista' %}?estado=INCUMPLE"><span class="jx-list-ico jx-kpi-ico soft-warn"><svg class="jx-i"><use href="#i-shield"/></svg></span><span class="jx-list-txt"><b>Política con incumplimientos</b><small>Última verificación con puntos sin cumplir</small></span><span class="jx-list-num{% if politica_incumple %} is-warn{% endif %}">{{ politica_incumple }}</span></a></li>
             </ul>
-            <h3>Próximos mantenimientos</h3>
-            <ul class="pn-prox">
+            <h3 style="margin:18px 0 6px;font-size:13px;color:var(--jx-muted);text-transform:uppercase;letter-spacing:.08em">Próximas visitas</h3>
+            <ul class="jx-list">
                 {% for p in proximos %}
-                <li><a href="{{ p.url }}"><span>{{ p.placa }}<small>{{ p.tipo }}</small></span><time>{{ p.fecha }}</time></a></li>
+                <li><a href="{{ p.url }}"><span class="jx-list-txt"><b>{{ p.placa }}</b><small>{{ p.tipo }}</small></span><time>{{ p.fecha }}</time></a></li>
                 {% empty %}
-                <li class="pn-vacio">No hay mantenimientos programados.</li>
+                <li><span class="jx-list-row"><span class="jx-list-txt"><small>No hay visitas programadas.</small></span></span></li>
                 {% endfor %}
             </ul>
-            <a class="pn-at-mas" href="{% url 'inventario:mantenimientos_programados_lista' %}">Ver toda la programación</a>
-        </aside>
-    </div>
-
-    <div class="pn-two">
-        <section class="pn-sec" aria-labelledby="pn-t-tipos">
-            <div class="pn-sh"><h2 id="pn-t-tipos">Equipos por tipo</h2><span class="pn-mut">Toque un tipo para ver su lista</span></div>
-            <ul class="pn-leg" aria-hidden="true"><li><i class="d o"></i>Operativo</li><li><i class="d r"></i>Regular</li><li><i class="d m"></i>Con falla</li><li><i class="d s"></i>Sin estado</li></ul>
-            <div class="pn-tipos">
-                {% for t in tipos %}
-                <a class="pn-tipo" href="{% url 'inventario:equipos_lista' %}?tipo={{ t.tipo }}">
-                    <span class="pn-nm">{{ t.nombre }}</span><span class="pn-ct">{{ t.total }}</span>
-                    <span class="pn-seg" title="{{ t.ok }} operativos, {{ t.reg }} regulares, {{ t.mal }} con falla, {{ t.sin }} sin estado"><i class="o" style="width:{{ t.w_ok }}%"></i><i class="r" style="width:{{ t.w_reg }}%"></i><i class="m" style="width:{{ t.w_mal }}%"></i><i class="s" style="width:{{ t.w_sin }}%"></i></span>
-                    <span class="pn-pc">{{ t.pct_ok }}%</span>
-                </a>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="pn-sec" aria-labelledby="pn-t-calor">
-            <div class="pn-sh"><h2 id="pn-t-calor">Mantenimientos por tipo</h2><span class="pn-mut">Últimas 18 semanas</span></div>
-            <div class="pn-stats"><div><b id="pn-min">0</b><small>Mínimo por semana</small></div><div><b id="pn-avg">0</b><small>Promedio</small></div><div><b id="pn-max">0</b><small>Máximo</small></div></div>
-            <div class="pn-heat" id="pn-heat" role="img" aria-label="Mantenimientos por tipo de equipo y semana"></div>
-        </section>
-    </div>
+        </div>
+    </section>
 </div>
+
+<div class="jx-grid jx-grid-3-1">
+    <section class="jx-card" aria-labelledby="t-mapa">
+        <div class="jx-card-head">
+            <div><h2 id="t-mapa">Dónde están los radios</h2><p>Radios con entrega vigente, por municipio del puesto</p></div>
+        </div>
+        <div class="jx-card-body">
+            <div class="jx-grid jx-grid-3-1" style="gap:16px">
+                <div><div id="pn-map" class="jx-map" role="region" aria-label="Mapa con la ubicación de los radios"></div><p class="jx-map-note" id="pn-mp"></p></div>
+                <ol class="jx-places" id="pn-lugares" aria-label="Lugares con más radios"></ol>
+            </div>
+        </div>
+    </section>
+    <section class="jx-card" aria-labelledby="t-actividad">
+        <div class="jx-card-head"><div><h2 id="t-actividad">Actividad reciente</h2><p>Últimos registros</p></div></div>
+        <div class="jx-card-body" style="padding-top:8px">
+            <ul class="jx-list">
+                {% for a in actividad %}
+                <li><a href="{{ a.url }}">
+                    <span class="jx-list-ico jx-kpi-ico {% if a.clase == 'mant' %}soft-ok{% else %}soft-info{% endif %}"><svg class="jx-i"><use href="{% if a.clase == 'mant' %}#i-wrench{% else %}#i-handoff{% endif %}"/></svg></span>
+                    <span class="jx-list-txt"><b>{{ a.titulo }}</b><small>{{ a.detalle|default:"—" }}</small></span>
+                    <time datetime="{{ a.fecha|date:'c' }}">{{ a.fecha|date:"d M" }}</time></a></li>
+                {% empty %}
+                <li><div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Aún no hay actividad registrada.</p></div></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+</div>
+
 {{ grafico|json_script:"pn-datos" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
-<script src="{% static 'js/panel-inicio.js' %}?v=20261105b" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<script src="{% static 'js/panel-inicio.js' %}?v=20261112a" defer></script>
+<script src="{% static 'js/dashboard.js' %}?v=20261112a" defer></script>
 {% endblock %}
-
-
-
-
-

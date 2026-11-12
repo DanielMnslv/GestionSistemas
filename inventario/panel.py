@@ -1,6 +1,6 @@
 """Datos del panel de inicio: equipos por tipo, mantenimientos, radios por cliente."""
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.db.models import Count, Q
 from django.urls import reverse
@@ -8,7 +8,9 @@ from django.utils import timezone
 
 from .ubicaciones import Localizador
 from .models import (
+    AsignacionEquipo,
     AsignacionRadio,
+    DetalleComputador,
     Equipo,
     MantenimientoEquipo,
     MantenimientoProgramado,
@@ -16,7 +18,6 @@ from .models import (
     Radio,
 )
 
-SEMANAS = 18
 MAX_PUESTOS_POPUP = 12
 
 
@@ -62,20 +63,6 @@ def _tipos(activos):
             "pct_ok": w["ok"], "w_ok": w["ok"], "w_reg": w["reg"], "w_mal": w["mal"], "w_sin": w["sin"],
         })
     return sorted(tipos, key=lambda t: -t["total"])
-
-
-def _calor(tipos, hoy):
-    """Mantenimientos por tipo de equipo en las últimas SEMANAS semanas."""
-    desde = hoy - timedelta(days=hoy.weekday()) - timedelta(weeks=SEMANAS - 1)
-    cuentas = defaultdict(lambda: [0] * SEMANAS)
-    consulta = MantenimientoEquipo.objects.filter(
-        fecha_intervencion__date__gte=desde, equipo__activo=True
-    ).values_list("equipo__tipo", "fecha_intervencion")
-    for tipo, fecha in consulta:
-        i = (_dia(fecha) - desde).days // 7
-        if 0 <= i < SEMANAS:
-            cuentas[tipo][i] += 1
-    return [{"nombre": t["nombre"], "semanas": cuentas[t["tipo"]]} for t in tipos]
 
 
 def _mapa():
@@ -167,7 +154,130 @@ def _atencion(hoy):
     }
 
 
+MESES_TENDENCIA = 12
+DIAS_ANTIVIRUS = 30
+NOMBRES_MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _mantenimiento_estados(activos):
+    """Cuántos equipos activos hay en cada estado del semáforo de mantenimiento."""
+    from .estado_mantenimiento import ESTADOS, equipos_con_estado
+
+    conteo = {e: 0 for e, _ in ESTADOS}
+    for e in equipos_con_estado(activos):
+        conteo[e.estado_mantenimiento] += 1
+    return conteo
+
+
+def _tendencia(hoy):
+    """Mantenimientos registrados por mes (últimos 12), preventivos y el resto."""
+    inicio = date(hoy.year, hoy.month, 1)
+    for _ in range(MESES_TENDENCIA - 1):
+        inicio = (inicio - timedelta(days=1)).replace(day=1)
+    meses = []
+    m = inicio
+    for _ in range(MESES_TENDENCIA):
+        meses.append((m.year, m.month))
+        m = (m + timedelta(days=32)).replace(day=1)
+    indice = {ym: i for i, ym in enumerate(meses)}
+    preventivos = [0] * MESES_TENDENCIA
+    otros = [0] * MESES_TENDENCIA
+    consulta = MantenimientoEquipo.objects.filter(
+        fecha_intervencion__date__gte=inicio
+    ).values_list("tipo", "fecha_intervencion")
+    for tipo, fecha in consulta:
+        d = _dia(fecha)
+        i = indice.get((d.year, d.month))
+        if i is None:
+            continue
+        if tipo == MantenimientoEquipo.Tipo.PREVENTIVO:
+            preventivos[i] += 1
+        else:
+            otros[i] += 1
+    return {
+        "etiquetas": [f"{NOMBRES_MES[mes - 1]} {str(anio)[2:]}" for anio, mes in meses],
+        "preventivos": preventivos,
+        "otros": otros,
+    }
+
+
+def _entregados():
+    """Equipos activos con una entrega vigente (radios a vigilantes y equipos a funcionarios)."""
+    radios = AsignacionRadio.objects.filter(
+        estado=AsignacionRadio.Estado.ASIGNADO, radio__activo=True
+    ).values("radio_id").distinct().count()
+    equipos = AsignacionEquipo.objects.filter(
+        estado=AsignacionEquipo.Estado.ASIGNADO, equipo__activo=True
+    ).values("equipo_id").distinct().count()
+    return radios + equipos
+
+
+def _antivirus(hoy):
+    limite = hoy + timedelta(days=DIAS_ANTIVIRUS)
+    base = DetalleComputador.objects.filter(
+        equipo__activo=True, vencimiento_antivirus__isnull=False
+    )
+    return {
+        "antivirus_vencidos": base.filter(vencimiento_antivirus__lt=hoy).count(),
+        "antivirus_por_vencer": base.filter(
+            vencimiento_antivirus__gte=hoy, vencimiento_antivirus__lte=limite
+        ).count(),
+    }
+
+
+def _politica(hoy):
+    from . import politica
+    from .views_equipos import _equipos_con_estado_politica
+
+    conteo = defaultdict(int)
+    for e in _equipos_con_estado_politica(hoy):
+        conteo[e.estado_politica] += 1
+    return {
+        "politica_pendientes": conteo[politica.SIN_VERIFICAR] + conteo[politica.VENCIDA],
+        "politica_incumple": conteo[politica.INCUMPLE],
+    }
+
+
+def _actividad(limite=7):
+    """Últimas intervenciones y entregas, de la más reciente a la más antigua."""
+    items = []
+    for m in MantenimientoEquipo.objects.select_related("equipo").order_by(
+        "-fecha_intervencion", "-id"
+    )[:limite]:
+        items.append({
+            "fecha": m.fecha_intervencion,
+            "clase": "mant",
+            "titulo": m.equipo.placa,
+            "detalle": " · ".join(x for x in [m.get_tipo_display(), m.tecnico_responsable] if x),
+            "url": reverse("inventario:equipo_detalle", args=[m.equipo.placa]),
+        })
+    for a in AsignacionRadio.objects.select_related("radio").order_by(
+        "-fecha_entrega", "-id"
+    )[:limite]:
+        items.append({
+            "fecha": a.fecha_entrega,
+            "clase": "entrega",
+            "titulo": a.radio.placa,
+            "detalle": " · ".join(x for x in ["Entrega", a.cliente_asignado, a.puesto_asignado] if x),
+            "url": reverse("inventario:equipo_detalle", args=[a.radio.placa]),
+        })
+    for a in AsignacionEquipo.objects.select_related("equipo").order_by(
+        "-fecha_entrega", "-id"
+    )[:limite]:
+        items.append({
+            "fecha": a.fecha_entrega,
+            "clase": "entrega",
+            "titulo": a.equipo.placa,
+            "detalle": " · ".join(x for x in ["Entrega", a.nombre_recibe or a.area] if x),
+            "url": reverse("inventario:equipo_detalle", args=[a.equipo.placa]),
+        })
+    items.sort(key=lambda x: x["fecha"], reverse=True)
+    return items[:limite]
+
+
 def datos_inicio():
+    from .estado_mantenimiento import PROXIMO, SIN_MANTENIMIENTO, VENCIDO, VIGENTE
+
     hoy = timezone.localdate()
     activos = Equipo.objects.filter(activo=True)
     tipos = _tipos(activos)
@@ -175,7 +285,20 @@ def datos_inicio():
     c = {k: sum(t[k] for t in tipos) for k in ("ok", "reg", "mal", "sin")}
     w = _pcts(c, total)
     mapa = _mapa()
+    mant = _mantenimiento_estados(activos)
+    entregados = _entregados()
     return {
+        "hoy": hoy,
+        "mant_vencidos": mant[VENCIDO],
+        "mant_sin": mant[SIN_MANTENIMIENTO],
+        "mant_proximos": mant[PROXIMO],
+        "mant_vigentes": mant[VIGENTE],
+        "pct_al_dia": _pct(mant[VIGENTE] + mant[PROXIMO], total),
+        "entregados": entregados,
+        "en_bodega": max(total - entregados, 0),
+        "actividad": _actividad(),
+        **_antivirus(hoy),
+        **_politica(hoy),
         "total": total,
         "n_ok": c["ok"], "n_reg": c["reg"], "n_mal": c["mal"], "n_sin": c["sin"],
         "w_ok": w["ok"], "w_reg": w["reg"], "w_mal": w["mal"], "w_sin": w["sin"],
@@ -188,5 +311,14 @@ def datos_inicio():
             fecha_programada__year=hoy.year, fecha_programada__month=hoy.month,
         ).count(),
         **_atencion(hoy),
-        "grafico": {"calor": _calor(tipos, hoy), "mapa": mapa},
+        "grafico": {
+            "mapa": mapa,
+            "tendencia": _tendencia(hoy),
+            "tipos": [
+                {"tipo": t["tipo"], "nombre": t["nombre"], "ok": t["ok"],
+                 "reg": t["reg"], "mal": t["mal"], "sin": t["sin"]}
+                for t in tipos
+            ],
+            "mantenimiento": [mant[VENCIDO], mant[SIN_MANTENIMIENTO], mant[PROXIMO], mant[VIGENTE]],
+        },
     }

@@ -2101,15 +2101,15 @@ class InventarioEquiposVistasTests(TestCase):
         lista = self.client.get(reverse("inventario:equipos_lista"))
         contenido = lista.content.decode()
         self.assertIn(
-            '<span class="solo-lector">Buscar equipos por placa, serial, marca, responsable',
+            '<span class="sr-only">Buscar por placa, serial, marca, responsable',
             contenido,
         )
         self.assertLess(
-            contenido.index('class="eq-lista-cab"'),
-            contenido.index('class="eq-buscar"'),
+            contenido.index('id="eq-resumen"'),
+            contenido.index('class="jx-filterbar"'),
         )
         self.assertLess(
-            contenido.index('class="eq-buscar"'),
+            contenido.index('class="jx-filterbar"'),
             contenido.index('class="eq-lista eq-tabla-wrap"'),
         )
 
@@ -3812,3 +3812,108 @@ class TransferenciaComponentesRadioTests(TestCase):
             respuesta, reverse("inicio"), fetch_redirect_response=False
         )
         self.assertFalse(TransferenciaComponentesRadio.objects.exists())
+
+
+class RedisenoListaYDashboardTests(TestCase):
+    """Dashboard nuevo, buscador global y filtros visibles de la lista de equipos."""
+
+    def setUp(self):
+        Usuario = get_user_model()
+        self.usuario = Usuario.objects.create_user(username="ver", password="x")
+        self.usuario.groups.add(Group.objects.create(name="Consulta"))
+        self.client.force_login(self.usuario)
+        self.pc = Equipo.objects.create(
+            placa="PC--50", tipo=Equipo.Tipo.COMPUTADOR, serial="S-50",
+            marca="DELL", responsable_nombre="ANA RUIZ",
+        )
+        self.pc2 = Equipo.objects.create(
+            placa="PC--51", tipo=Equipo.Tipo.COMPUTADOR, serial="S-51", marca="HP",
+        )
+        self.impresora = Equipo.objects.create(
+            placa="IMP-01", tipo=Equipo.Tipo.IMPRESORA, serial="S-60", marca="EPSON",
+        )
+        self.url = reverse("inventario:equipos_lista")
+
+    def test_dashboard_trae_indicadores_y_graficos(self):
+        from inventario.panel import datos_inicio
+
+        datos = datos_inicio()
+        for clave in (
+            "mant_vencidos", "mant_sin", "mant_proximos", "mant_vigentes",
+            "pct_al_dia", "entregados", "en_bodega", "actividad", "grafico",
+        ):
+            self.assertIn(clave, datos)
+        self.assertEqual(
+            sum(datos["grafico"]["mantenimiento"]),
+            Equipo.objects.filter(activo=True).count(),
+        )
+        self.assertEqual(len(datos["grafico"]["tendencia"]["etiquetas"]), 12)
+
+        respuesta = self.client.get(reverse("inicio"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'id="g-semaforo"')
+
+    def test_buscador_global_agrupa_resultados(self):
+        respuesta = self.client.get(reverse("inventario:buscar"), {"q": "ana ruiz"})
+        datos = respuesta.json()
+        self.assertEqual(datos["q"], "ana ruiz")
+        equipos = [g for g in datos["grupos"] if g["titulo"] == "Equipos"]
+        self.assertEqual([i["titulo"] for i in equipos[0]["items"]], ["PC--50"])
+
+        vacio = self.client.get(reverse("inventario:buscar"), {"q": ""}).json()
+        self.assertEqual(vacio["grupos"], [])
+
+    def test_buscador_global_exige_sesion(self):
+        self.client.logout()
+        respuesta = self.client.get(reverse("inventario:buscar"), {"q": "PC"})
+        self.assertEqual(respuesta.status_code, 302)
+
+    def test_pestanas_cuentan_con_los_demas_filtros(self):
+        respuesta = self.client.get(self.url, {"tipo": "COMPUTADOR"})
+        pestanas = {p["valor"]: p for p in respuesta.context["pestanas"]}
+        self.assertEqual(pestanas[""]["total"], 3)
+        self.assertEqual(pestanas["COMPUTADOR"]["total"], 2)
+        self.assertEqual(pestanas["IMPRESORA"]["total"], 1)
+        self.assertTrue(pestanas["COMPUTADOR"]["activo"])
+        self.assertEqual(respuesta.context["total_resultados"], 2)
+
+    def test_filtro_de_mantenimiento_usa_el_semaforo(self):
+        respuesta = self.client.get(self.url, {"mantenimiento": "SIN_MANTENIMIENTO"})
+        self.assertEqual(respuesta.context["total_resultados"], 3)
+        respuesta = self.client.get(self.url, {"mantenimiento": "VIGENTE"})
+        self.assertEqual(respuesta.context["total_resultados"], 0)
+        respuesta = self.client.get(self.url, {"mantenimiento": "INVENTADO"})
+        self.assertEqual(respuesta.context["mantenimiento_seleccionado"], "")
+        self.assertEqual(respuesta.context["total_resultados"], 3)
+
+    def test_filtro_de_estado_operativo(self):
+        Equipo.objects.filter(pk=self.pc.pk).update(estado_operativo="OPERATIVO")
+        respuesta = self.client.get(self.url, {"estado_operativo": "OPERATIVO"})
+        self.assertEqual(
+            [e.placa for e in respuesta.context["equipos"]], ["PC--50"]
+        )
+
+    def test_chips_quitan_solo_su_filtro(self):
+        respuesta = self.client.get(
+            self.url, {"tipo": "COMPUTADOR", "mantenimiento": "SIN_MANTENIMIENTO", "q": "dell"}
+        )
+        chips = {c["texto"]: c["quitar"] for c in respuesta.context["filtros_activos"]}
+        self.assertIn("Búsqueda: dell", chips)
+        self.assertIn("Mantenimiento: Sin mantenimiento", chips)
+        quitar = chips["Mantenimiento: Sin mantenimiento"]
+        self.assertNotIn("mantenimiento=", quitar)
+        self.assertIn("tipo=COMPUTADOR", quitar)
+        self.assertIn("q=dell", quitar)
+        self.assertEqual(respuesta.context["url_limpiar"], self.url)
+
+    def test_exportar_trae_solo_lo_filtrado(self):
+        from io import BytesIO
+        from openpyxl import load_workbook
+
+        respuesta = self.client.get(self.url, {"tipo": "COMPUTADOR", "exportar": "xlsx"})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn("attachment", respuesta["Content-Disposition"])
+        hoja = load_workbook(BytesIO(respuesta.content)).active
+        placas = [fila[0] for fila in hoja.iter_rows(min_row=2, values_only=True)]
+        self.assertEqual(placas, ["PC--50", "PC--51"])
+        self.assertEqual(hoja["A1"].value, "Placa")

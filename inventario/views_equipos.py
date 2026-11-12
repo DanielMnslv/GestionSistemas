@@ -426,6 +426,186 @@ def entregas_ficha(equipo, limite=30):
     return filas
 
 
+def q_busqueda_equipos(texto):
+    """Placa, serial, marca, modelo, responsable, ubicación o placa del vehículo."""
+    return (
+        Q(placa__icontains=texto)
+        | Q(serial__icontains=texto)
+        | Q(marca__icontains=texto)
+        | Q(modelo__icontains=texto)
+        | Q(responsable_nombre__icontains=texto)
+        | Q(responsable_cedula__icontains=texto)
+        | Q(ubicacion__icontains=texto)
+        | Q(gps__placa_vehiculo__icontains=texto)
+    )
+
+
+@login_required
+def buscar_json(request):
+    """Buscador global de la barra superior: equipos, clientes y vigilantes."""
+    from .models import Cliente
+
+    texto = request.GET.get("q", "").strip()
+    if len(texto) < 2:
+        return JsonResponse({"q": texto, "grupos": []})
+
+    etiquetas = dict(Equipo.Tipo.choices)
+    equipos = (
+        Equipo.objects.select_related("gps")
+        .filter(q_busqueda_equipos(texto))
+        .order_by("-activo", "placa")[:8]
+    )
+    clientes = Cliente.objects.filter(
+        Q(nombre__icontains=texto) | Q(nit__icontains=texto)
+    ).order_by("-activo", "nombre")[:4]
+    vigilantes = Vigilante.objects.filter(
+        Q(nombre_completo__icontains=texto) | Q(cedula__icontains=texto)
+    ).order_by("nombre_completo")[:4]
+
+    grupos = []
+    if equipos:
+        grupos.append({"titulo": "Equipos", "items": [{
+            "titulo": e.placa,
+            "detalle": " · ".join(x for x in [
+                etiquetas.get(e.tipo, e.tipo),
+                " ".join(x for x in [e.marca, e.modelo] if x),
+                e.responsable_nombre,
+            ] if x),
+            "etiqueta": "" if e.activo else "De baja",
+            "url": reverse("inventario:equipo_detalle", args=[e.placa]),
+        } for e in equipos]})
+    if clientes:
+        grupos.append({"titulo": "Clientes", "items": [{
+            "titulo": c.nombre,
+            "detalle": f"NIT {c.nit}" if c.nit else "",
+            "etiqueta": "" if c.activo else "Inactivo",
+            "url": reverse("inventario:cliente_detalle", args=[c.pk]),
+        } for c in clientes]})
+    if vigilantes:
+        grupos.append({"titulo": "Vigilantes", "items": [{
+            "titulo": v.nombre_completo,
+            "detalle": f"C.C. {v.cedula}",
+            "etiqueta": "",
+            "url": reverse("inventario:vigilantes_lista") + "?" + urlencode({"q": v.cedula}),
+        } for v in vigilantes]})
+    return JsonResponse({
+        "q": texto,
+        "grupos": grupos,
+        "todos": reverse("inventario:equipos_lista") + "?" + urlencode({"q": texto, "estado": "todos"}),
+    })
+
+
+ETIQUETAS_FILTROS = {
+    "estado": ("Inventario", {"baja": "Dados de baja", "": "Activos y de baja"}),
+    "estado_operativo": ("Estado", {"OPERATIVO": "Operativos", "NO_OPERATIVO": "No operativos"}),
+    "mantenimiento": ("Mantenimiento", None),
+    "disponibilidad": ("Ubicación", {"en_inventario": "En bodega", "entregado": "Entregados"}),
+    "asignacion": ("Responsable", {"asignado": "Con responsable", "sin_asignar": "Sin responsable"}),
+    "revision": ("Revisión", {"si": "Por revisar", "no": "Sin revisión pendiente"}),
+    "accesorios": ("Accesorios", {"completos": "Completos", "incompletos": "Incompletos"}),
+    "datos": ("Datos", {"completos": "Completos", "pendientes": "Con datos pendientes"}),
+}
+
+
+def _url_lista(seleccion, **cambios):
+    """URL de la lista con la selección actual y los cambios indicados."""
+    valores = {**seleccion, **cambios}
+    params = {}
+    for clave, valor in valores.items():
+        if clave == "estado":
+            if valor != "activos":
+                params["estado"] = valor or "todos"
+        elif valor:
+            params[clave] = valor
+    url = reverse("inventario:equipos_lista")
+    return url + ("?" + urlencode(params) if params else "")
+
+
+def _chips_filtros(seleccion):
+    """Filtros activos, cada uno con el enlace que lo quita."""
+    chips = []
+    if seleccion["q"]:
+        chips.append({
+            "texto": "Búsqueda: " + seleccion["q"],
+            "quitar": _url_lista(seleccion, q=""),
+        })
+    etiquetas_mant = dict(ESTADOS)
+    for clave, (nombre, opciones) in ETIQUETAS_FILTROS.items():
+        valor = seleccion[clave]
+        if clave == "estado":
+            if valor == "activos":
+                continue
+            texto = opciones.get(valor, valor)
+            quitar = _url_lista(seleccion, estado="activos")
+        else:
+            if not valor:
+                continue
+            fuente = etiquetas_mant if opciones is None else opciones
+            texto = fuente.get(valor, valor)
+            quitar = _url_lista(seleccion, **{clave: ""})
+        chips.append({"texto": nombre + ": " + texto, "quitar": quitar})
+    return chips
+
+
+def _exportar_equipos(equipos, seleccion):
+    """Excel con exactamente los equipos que muestra la lista filtrada."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    etiquetas_tipo = dict(Equipo.Tipo.choices)
+    etiquetas_mant = dict(ESTADOS)
+    hoy = hoy_colombia()
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = "Equipos"
+    hoja.append([
+        "Placa", "Tipo", "Marca", "Modelo", "Serial", "Responsable", "Cédula",
+        "Ubicación", "Propiedad", "Estado", "Inventario", "Requiere revisión",
+        "Mantenimiento", "Último mantenimiento", "Próximo vencimiento",
+    ])
+    for celda in hoja[1]:
+        celda.font = Font(bold=True, color="FFFFFF")
+        celda.fill = PatternFill("solid", fgColor="2E3092")
+    filas = sorted(
+        equipos_con_estado(equipos.select_related("radio")),
+        key=lambda x: (x.tipo, x.placa),
+    )
+    for e in filas:
+        radio = getattr(e, "radio", None) if e.tipo == "RADIO" else None
+        if radio is not None and radio.estado_radio:
+            estado = radio.estado_radio
+        elif e.estado_operativo:
+            estado = e.get_estado_operativo_display()
+        else:
+            estado = ""
+        hoja.append([
+            e.placa, etiquetas_tipo.get(e.tipo, e.tipo), e.marca, e.modelo, e.serial,
+            e.responsable_nombre, e.responsable_cedula, e.ubicacion, e.propiedad,
+            estado, "Activo" if e.activo else "De baja",
+            "Sí" if e.requiere_revision else "No",
+            etiquetas_mant.get(e.estado_mantenimiento, ""),
+            e.ultimo_fecha, e.proximo_mantenimiento,
+        ])
+        fila = hoja[hoja.max_row]
+        for celda in fila:
+            if isinstance(celda.value, str):
+                celda.data_type = "s"
+        fila[13].number_format = "DD/MM/YYYY"
+        fila[14].number_format = "DD/MM/YYYY"
+    anchos = [14, 13, 16, 22, 20, 30, 14, 28, 14, 16, 11, 12, 20, 14, 14]
+    for indice, ancho in enumerate(anchos, start=1):
+        hoja.column_dimensions[get_column_letter(indice)].width = ancho
+    hoja.freeze_panes = "A2"
+    hoja.auto_filter.ref = hoja.dimensions
+    respuesta = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    respuesta["Content-Disposition"] = f'attachment; filename="equipos_{hoy:%Y%m%d}.xlsx"'
+    libro.save(respuesta)
+    return respuesta
+
+
 @login_required
 def equipos_lista(request):
     equipos = Equipo.objects.select_related("radio", "gps")
@@ -435,19 +615,8 @@ def equipos_lista(request):
     estado = request.GET.get("estado", "activos").strip()
 
     if busqueda:
-        equipos = equipos.filter(
-            Q(placa__icontains=busqueda)
-            | Q(serial__icontains=busqueda)
-            | Q(marca__icontains=busqueda)
-            | Q(modelo__icontains=busqueda)
-            | Q(responsable_nombre__icontains=busqueda)
-            | Q(responsable_cedula__icontains=busqueda)
-            | Q(ubicacion__icontains=busqueda)
-            | Q(gps__placa_vehiculo__icontains=busqueda)
-        )
-    if tipo in Equipo.Tipo.values:
-        equipos = equipos.filter(tipo=tipo)
-    else:
+        equipos = equipos.filter(q_busqueda_equipos(busqueda))
+    if tipo not in Equipo.Tipo.values:
         tipo = ""
     if estado == "baja":
         equipos = equipos.filter(activo=False)
@@ -455,6 +624,26 @@ def equipos_lista(request):
         equipos = equipos.filter(activo=True)
     else:
         estado = ""
+
+    # Estado operativo, con la misma regla del dashboard: en los radios manda
+    # su estado; en los demás, el estado operativo del equipo.
+    estado_operativo = request.GET.get("estado_operativo", "").strip()
+    sin_estado_radio = (
+        Q(radio__isnull=True) | Q(radio__estado_radio="")
+        | Q(radio__estado_radio__isnull=True)
+    )
+    if estado_operativo == Equipo.EstadoOperativo.OPERATIVO:
+        equipos = equipos.filter(
+            Q(radio__estado_radio=Radio.ESTADO_OPERATIVO)
+            | (sin_estado_radio & Q(estado_operativo=Equipo.EstadoOperativo.OPERATIVO))
+        )
+    elif estado_operativo == Equipo.EstadoOperativo.NO_OPERATIVO:
+        equipos = equipos.filter(
+            Q(radio__estado_radio__in=[Radio.ESTADO_DANADO, Radio.ESTADO_BAJA])
+            | (sin_estado_radio & Q(estado_operativo=Equipo.EstadoOperativo.NO_OPERATIVO))
+        )
+    else:
+        estado_operativo = ""
 
     # Filtros del desplegable de la búsqueda.
     asignacion = request.GET.get("asignacion", "").strip()
@@ -522,11 +711,49 @@ def equipos_lista(request):
     else:
         datos = ""
 
+    # Estado del mantenimiento preventivo (el mismo semáforo del panel).
+    mantenimiento = request.GET.get("mantenimiento", "").strip()
+    if mantenimiento in dict(ESTADOS):
+        ids = [
+            e.pk for e in equipos_con_estado(equipos)
+            if e.estado_mantenimiento == mantenimiento
+        ]
+        equipos = equipos.filter(pk__in=ids)
+    else:
+        mantenimiento = ""
+
+    # Pestañas por tipo: cuentan con los demás filtros aplicados.
+    conteo_tipos = dict(
+        equipos.order_by().values_list("tipo").annotate(n=Count("id"))
+    )
+    if tipo:
+        equipos = equipos.filter(tipo=tipo)
+
     n_filtros = sum([
         bool(tipo), estado != "activos", bool(asignacion), bool(disponibilidad),
-        bool(revision),
+        bool(revision), bool(estado_operativo), bool(mantenimiento),
         bool(accesorios), bool(datos),
     ])
+
+    seleccion = {
+        "q": busqueda, "tipo": tipo, "estado": estado,
+        "estado_operativo": estado_operativo, "mantenimiento": mantenimiento,
+        "asignacion": asignacion, "disponibilidad": disponibilidad,
+        "revision": revision, "accesorios": accesorios, "datos": datos,
+    }
+
+    if request.GET.get("exportar") == "xlsx":
+        return _exportar_equipos(equipos, seleccion)
+
+    filtros_activos = _chips_filtros(seleccion)
+    total_sin_tipo = sum(conteo_tipos.values())
+    pestanas = [{
+        "valor": "", "etiqueta": "Todos", "total": total_sin_tipo,
+        "url": _url_lista(seleccion, tipo=""), "activo": not tipo,
+    }] + [{
+        "valor": valor, "etiqueta": etiqueta, "total": conteo_tipos.get(valor, 0),
+        "url": _url_lista(seleccion, tipo=valor), "activo": tipo == valor,
+    } for valor, etiqueta in Equipo.Tipo.choices if conteo_tipos.get(valor) or tipo == valor]
 
     try:
         por_pagina = max(3, min(50, int(request.GET.get("pp", 8))))
@@ -601,7 +828,14 @@ def equipos_lista(request):
         "revision_seleccionada": revision,
         "accesorios_seleccionados": accesorios,
         "datos_seleccionados": datos,
+        "estado_operativo_seleccionado": estado_operativo,
+        "mantenimiento_seleccionado": mantenimiento,
+        "estados_mantenimiento": ESTADOS,
         "n_filtros": n_filtros,
+        "pestanas": pestanas,
+        "filtros_activos": filtros_activos,
+        "url_limpiar": reverse("inventario:equipos_lista"),
+        "url_exportar": _url_lista(seleccion, exportar="xlsx"),
         "tipos": [
             (valor, etiqueta, conteos.get(valor, 0))
             for valor, etiqueta in Equipo.Tipo.choices
