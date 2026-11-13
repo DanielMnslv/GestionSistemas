@@ -18,7 +18,7 @@
             </div>
             <div class="jx-head-actions">
                 <a class="jx-btn" href="{{ url_exportar }}" download><svg class="jx-i"><use href="#i-file"/></svg>Exportar a Excel</a>
-                {% if permisos.equipos %}<a class="jx-btn jx-btn-primary" href="{% url 'inventario:equipo_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar equipo</a>{% endif %}
+                {% if puede_registrar %}<a class="jx-btn jx-btn-primary" href="{{ url_registrar }}"><svg class="jx-i"><use href="#i-plus"/></svg>{{ texto_registrar }}</a>{% endif %}
             </div>
         </div>
 

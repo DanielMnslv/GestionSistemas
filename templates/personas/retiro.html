@@ -49,10 +49,11 @@
             <span class="jx-check-ico"><svg class="jx-i"><use href="#i-{% if it.resultado == 'PENDIENTE' %}clock{% elif it.bloquea %}alert{% else %}check{% endif %}"/></svg></span>
             <div class="jx-check-txt">
                 <strong><a href="{% url 'inventario:equipo_detalle' it.equipo.placa %}">{{ it.equipo.placa }}</a> · {{ it.equipo.get_tipo_display }}</strong>
-                <small>{{ it.equipo.marca }} {{ it.equipo.modelo }}{% if it.equipo.serial %} · serial {{ it.equipo.serial }}{% endif %}</small>
+                <small>{{ it.equipo.marca }} {{ it.equipo.modelo }}{% if it.equipo.serial %} · serial {{ it.equipo.serial }}{% endif %}{% if it.puesto_radio %} · en {{ it.puesto_radio }}{% endif %}</small>
                 {% if it.resultado != 'PENDIENTE' %}
-                <small class="jx-check-res">{{ it.get_resultado_display }}{% if it.reasignado_a %} → {{ it.reasignado_a.nombre_completo }}{% endif %} · {{ it.validado_por.get_full_name|default:it.validado_por.username }}, {{ it.validado_en|date:"d/m/Y H:i" }}{% if it.observaciones %} · “{{ it.observaciones }}”{% endif %}</small>
+                <small class="jx-check-res">{{ it.get_resultado_display }} · {{ it.validado_por.get_full_name|default:it.validado_por.username }}, {{ it.validado_en|date:"d/m/Y H:i" }}{% if it.observaciones %} · “{{ it.observaciones }}”{% endif %}</small>
                 {% endif %}
+                <small class="jx-queda"><svg class="jx-i"><use href="#i-handoff"/></svg>{{ it.queda_a_cargo }}</small>
             </div>
             {% if it.resultado == 'PENDIENTE' and retiro.estado == 'EN_PROCESO' %}
                 {% if puede_validar %}
@@ -64,8 +65,9 @@
                     </select>
                     <select name="reasignado_a" hidden aria-label="Persona que recibe">
                         <option value="">¿Quién lo recibe?</option>
-                        {% for o in personas %}<option value="{{ o.pk }}">{{ o.nombre_completo }}</option>{% endfor %}
+                        {% for o in personas %}<option value="{{ o.pk }}">{{ o.nombre_completo }} · C.C. {{ o.cedula }}</option>{% endfor %}
                     </select>
+                    <small class="jx-queda-previa" data-persona="{{ retiro.funcionario.nombre_completo }}" data-puesto="{{ it.puesto_radio }}" aria-live="polite"></small>
                     <input name="observaciones" type="text" placeholder="Observación (opcional)">
                     <button class="jx-btn jx-btn-primary jx-btn-sm" type="submit">Validar</button>
                 </form>
@@ -91,11 +93,27 @@
 
 <script>
 document.querySelectorAll("[data-jx-validar]").forEach(function (f) {
-    var res = f.querySelector('[name="resultado"]'), quien = f.querySelector('[name="reasignado_a"]');
-    res.addEventListener("change", function () {
-        var r = res.value === "REASIGNADO";
+    var res = f.querySelector('[name="resultado"]'), quien = f.querySelector('[name="reasignado_a"]'),
+        previa = f.querySelector(".jx-queda-previa");
+    function mostrar() {
+        var r = res.value === "REASIGNADO", txt = "";
         quien.hidden = !r; quien.required = r;
-    });
+        var nombre = quien.selectedIndex > 0 ? quien.options[quien.selectedIndex].text : "";
+        if (r) {
+            txt = !nombre ? "Elija la persona que recibe el equipo."
+                : previa.dataset.puesto ? "Seguirá en " + previa.dataset.puesto + ", a cargo de " + nombre + "."
+                : "Quedará a nombre de " + nombre + ".";
+        } else if (res.value === "DEVUELTO") {
+            txt = "Volverá a bodega TIC, sin responsable.";
+        } else if (res.value === "DEVUELTO_DANO") {
+            txt = "Volverá a bodega TIC, sin responsable, y quedará por revisar.";
+        } else if (res.value === "FALTANTE") {
+            txt = "Seguirá a nombre de " + previa.dataset.persona + " hasta resolver el faltante.";
+        }
+        previa.textContent = txt ? "→ " + txt : "";
+    }
+    res.addEventListener("change", mostrar);
+    quien.addEventListener("change", mostrar);
 });
 </script>
 {% endblock %}

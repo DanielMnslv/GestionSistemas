@@ -555,6 +555,10 @@ html[data-tema="dark"] .jx-tab.is-active span { color: #0d1020; }
 .jx-check-txt strong a { color: var(--jx-primary); text-decoration: none; }
 .jx-check-txt small { display: block; color: var(--jx-muted); font-size: 12px; }
 .jx-check-res { margin-top: 3px; color: var(--jx-text-2) !important; font-weight: 600; }
+.jx-queda { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: var(--jx-text) !important; font-weight: 600; }
+.jx-queda .jx-i { width: 14px; height: 14px; flex: none; }
+.jx-queda-previa { flex-basis: 100%; color: var(--jx-text-2); font-weight: 600; }
+.jx-queda-previa:empty { display: none; }
 .jx-check-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .jx-check-form select, .jx-check-form input, .jx-field input, .jx-field select, .jx-field textarea {
     height: 38px; padding: 0 12px; border: 1px solid var(--jx-line-strong); border-radius: 10px;
@@ -732,3 +736,17 @@ html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a
 .jx-tile p { font-size: 14.5px; line-height: 1.5; }
 .jx-tile-meta { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--jx-line); font-size: 13.5px; }
 .jx-tile-meta b { font-size: 15px; }
+
+/* Casillas de los formularios de mantenimiento (actividades y partes por tipo de equipo) */
+[data-mant-field] div.form-control:has(> div > label > input[type="checkbox"]) {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 18px;
+    height: auto; padding: 4px 0; border: 0; background: none; box-shadow: none;
+}
+[data-mant-field] div.form-control > div > label {
+    display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; cursor: pointer; line-height: 1.3;
+}
+[data-mant-field] input[type="checkbox"].form-control {
+    width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0; flex: none;
+    border-radius: 4px; box-shadow: none; accent-color: var(--jx-primary, #2E3092);
+}
+[data-mant-field] div.form-control > div[hidden] { display: none; }

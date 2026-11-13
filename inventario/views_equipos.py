@@ -820,8 +820,23 @@ def equipos_lista(request):
         titulo_lista = "Bodega" + (f" · {titulos[tipo]}" if tipo else "")
     else:
         titulo_lista = titulos.get(tipo, "Equipos")
+    # Dentro de un tipo, "Registrar" lleva directo al formulario de ese tipo;
+    # en la vista general muestra el selector de tipos.
+    if tipo == Equipo.Tipo.RADIO:
+        url_registrar, permiso_registrar = reverse("inventario:radio_crear"), "radios"
+    elif tipo in Equipo.Tipo.values:
+        url_registrar = f'{reverse("inventario:equipo_crear")}?tipo={tipo}'
+        permiso_registrar = "equipos"
+    else:
+        url_registrar, permiso_registrar = reverse("inventario:equipo_crear"), "equipos"
     return render(request, "inventario/equipos_lista.html", {
         "titulo_lista": titulo_lista,
+        "url_registrar": url_registrar,
+        "texto_registrar": (
+            f"Registrar {Equipo.Tipo(tipo).label.lower()}" if tipo in Equipo.Tipo.values
+            else "Registrar equipo"
+        ),
+        "puede_registrar": puede(request.user, permiso_registrar),
         "equipos": page_obj.object_list,
         "page_obj": page_obj,
         "parametros": parametros,

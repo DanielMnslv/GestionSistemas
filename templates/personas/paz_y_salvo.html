@@ -40,14 +40,15 @@
     {% if items %}
     <p class="cuerpo">Los equipos que tenía a su cargo fueron validados así:</p>
     <table>
-        <thead><tr><th>Placa</th><th>Equipo</th><th>Serial</th><th>Resultado</th><th>Validó</th></tr></thead>
+        <thead><tr><th>Placa</th><th>Equipo</th><th>Serial</th><th>Resultado</th><th>Queda a cargo de</th><th>Validó</th></tr></thead>
         <tbody>
         {% for it in items %}
         <tr>
             <td>{{ it.equipo.placa }}</td>
             <td>{{ it.equipo.get_tipo_display }} {{ it.equipo.marca }} {{ it.equipo.modelo }}</td>
             <td>{{ it.equipo.serial|default:"—" }}</td>
-            <td>{{ it.get_resultado_display }}{% if it.reasignado_a %} a {{ it.reasignado_a.nombre_completo }}{% endif %}</td>
+            <td>{{ it.get_resultado_display }}</td>
+            <td>{{ it.queda_a_cargo }}</td>
             <td>{{ it.validado_por.get_full_name|default:it.validado_por.username }} · {{ it.validado_en|date:"d/m/Y" }}</td>
         </tr>
         {% endfor %}

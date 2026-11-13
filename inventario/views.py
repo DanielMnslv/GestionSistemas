@@ -694,6 +694,15 @@ def mantenimiento_programado_completar(request, programacion_id):
             "tipo": programacion.tipo,
             "motivo": programacion.descripcion,
             "observaciones": programacion.observaciones,
+            # Lo que se marcó al programar queda marcado al completar.
+            "actividades_preventivas": (
+                programacion.actividades
+                if programacion.tipo == MantenimientoEquipo.Tipo.PREVENTIVO else []
+            ),
+            "componentes_intervenidos": (
+                programacion.actividades
+                if programacion.tipo == MantenimientoEquipo.Tipo.CORRECTIVO else []
+            ),
             "fecha_intervencion": timezone.localtime().strftime(
                 "%Y-%m-%dT%H:%M"
             ),
@@ -711,6 +720,7 @@ def mantenimiento_programado_completar(request, programacion_id):
 
         # El equipo y el tipo quedan fijados a la programación original.
         formulario.fields["equipo"].disabled = True
+        formulario.fields["tipo_equipo"].disabled = True
         formulario.fields["tipo"].disabled = True
 
         if request.method == "POST" and formulario.is_valid():

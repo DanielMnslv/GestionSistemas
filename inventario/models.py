@@ -287,7 +287,12 @@ class MantenimientoEquipo(models.Model):
         INSPECCION = "INSPECCION", "Inspección"
         DIAGNOSTICO = "DIAGNOSTICO", "Diagnóstico"
         REPARACION = "REPARACION", "Reparación"
+        CORRECCION = "CORRECCION", "Corrección"
         OTRO = "OTRO", "Otra operación"
+
+    # Los que se ofrecen al registrar o programar; los demás quedan solo
+    # para registros viejos e importaciones.
+    TIPOS_FORMULARIO = ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO", "CORRECCION"]
 
     class Resultado(models.TextChoices):
         SOLUCIONADO = "SOLUCIONADO", "Solucionado"
@@ -348,6 +353,8 @@ class MantenimientoEquipo(models.Model):
     trabajo_realizado = models.TextField()
     actividades_preventivas = models.JSONField(default=list, blank=True)
     actividad_preventiva_otros = models.TextField(blank=True)
+    # Partes intervenidas en un correctivo (claves de actividades_mantenimiento).
+    componentes_intervenidos = models.JSONField(default=list, blank=True)
     estados_entrega = models.JSONField(default=list, blank=True)
     repuestos_utilizados = models.TextField(blank=True)
 
@@ -445,6 +452,10 @@ class MantenimientoProgramado(models.Model):
     )
 
     descripcion = models.TextField()
+
+    # Lo que se va a revisar, según el tipo de equipo y de mantenimiento
+    # (claves de actividades_mantenimiento).
+    actividades = models.JSONField(default=list, blank=True)
 
     estado = models.CharField(
         max_length=15,
@@ -1261,3 +1272,29 @@ class ItemRetiro(models.Model):
     @property
     def bloquea(self):
         return self.resultado in self.BLOQUEAN
+
+    @property
+    def puesto_radio(self):
+        """Cliente · puesto donde está el radio según su entrega (si la hay)."""
+        a = self.asignacion_radio
+        if not a:
+            return ""
+        return " · ".join(x for x in (a.cliente_asignado, a.puesto_asignado) if x)
+
+    @property
+    def queda_a_cargo(self):
+        """A nombre de quién queda el equipo después de validarlo."""
+        R = self.Resultado
+        persona = self.retiro.funcionario.nombre_completo
+        if self.resultado == R.REASIGNADO and self.reasignado_a:
+            nuevo = f"{self.reasignado_a.nombre_completo} (C.C. {self.reasignado_a.cedula})"
+            if self.asignacion_radio_id and self.puesto_radio:
+                return f"Sigue en {self.puesto_radio}, ahora a cargo de {nuevo}"
+            return f"Queda a nombre de {nuevo}"
+        if self.resultado == R.DEVUELTO:
+            return "Vuelve a bodega TIC, sin responsable"
+        if self.resultado == R.DEVUELTO_DANO:
+            return "Vuelve a bodega TIC, sin responsable y marcado por revisar"
+        if self.resultado == R.FALTANTE:
+            return f"Sigue a nombre de {persona} hasta que se resuelva el faltante"
+        return f"Por ahora sigue a nombre de {persona}"

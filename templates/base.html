@@ -119,26 +119,88 @@
     form.dataset.mantReady = "1";
     const tipo = form.querySelector('[name="tipo"]');
     if (!tipo) return;
+    const tipoEquipo = form.querySelector('[name="tipo_equipo"]');
+    const equipo = form.querySelector('select[name="equipo"]');
     const campos = (nombre) => form.querySelector(`[data-mant-field="${nombre}"]`);
     const mostrar = (nombre, visible) => {
       const nodo = campos(nombre);
       if (nodo) nodo.hidden = !visible;
     };
+
+    // Desplegable de equipos: solo los del tipo elegido.
+    const opcionesEquipo = equipo ? Array.from(equipo.options).filter((o) => o.value) : [];
+    const vacio = equipo ? Array.from(equipo.options).find((o) => !o.value) : null;
+    function filtrarEquipos() {
+      if (!equipo || !tipoEquipo) return;
+      const te = tipoEquipo.value, actual = equipo.value;
+      const ts = equipo.tomselect;
+      if (ts) {
+        // El buscador (Tom Select) guarda su propia copia de las opciones.
+        const validas = opcionesEquipo.filter((o) => te && o.dataset.te === te);
+        ts.clear(true);
+        ts.clearOptions();
+        ts.addOptions(validas.map((o) => ({value: o.value, text: o.text})));
+        if (validas.some((o) => o.value === actual)) ts.setValue(actual, true);
+        ts.refreshOptions(false);
+        ts.close();
+        return;
+      }
+      equipo.innerHTML = "";
+      if (vacio) {
+        vacio.textContent = te ? "Seleccione el equipo" : "Primero elija el tipo de equipo";
+        equipo.appendChild(vacio);
+      }
+      opcionesEquipo.filter((o) => te && o.dataset.te === te).forEach((o) => equipo.appendChild(o));
+      equipo.value = opcionesEquipo.some((o) => o.value === actual && o.dataset.te === te) ? actual : "";
+    }
+
+    // Casillas: solo las del tipo de equipo (data-te) y de mantenimiento (data-tm).
+    function filtrarCasillas(te, tm) {
+      form.querySelectorAll('input[type="checkbox"][data-te]').forEach((c) => {
+        const ok = (c.dataset.te === "*" || c.dataset.te === te) &&
+          (!c.dataset.tm || c.dataset.tm === "*" || c.dataset.tm === tm);
+        const fila = c.closest("label") ? c.closest("label").parentElement : c.parentElement;
+        fila.hidden = !ok;
+        if (!ok) c.checked = false;
+      });
+    }
+
     function actualizar() {
       const valor = tipo.value;
+      const te = tipoEquipo ? tipoEquipo.value : "";
       const preventivo = valor === "PREVENTIVO";
       const correctivo = valor === "CORRECTIVO";
-      mostrar("actividades_preventivas", preventivo);
-      mostrar("actividad_preventiva_otros", preventivo && !!form.querySelector('[name="actividades_preventivas"][value="otros"]:checked'));
-      mostrar("causa_dano", correctivo);
-      mostrar("trabajo_realizado", correctivo || !preventivo);
-      mostrar("diagnostico", correctivo || !preventivo);
-      mostrar("motivo", !preventivo && !correctivo);
-      mostrar("estados_entrega", true);
-      const actividadOtros = form.querySelector('[name="actividades_preventivas"][value="otros"]');
-      if (actividadOtros) actividadOtros.addEventListener("change", () => mostrar("actividad_preventiva_otros", preventivo && actividadOtros.checked));
+      const conTipo = !tipoEquipo || !!te;
+      filtrarCasillas(te, valor);
+      const otros = form.querySelector('[name="actividades_preventivas"][value="otros"]:checked');
+      mostrar("actividades_preventivas", preventivo && conTipo);
+      mostrar("actividad_preventiva_otros", preventivo && !!otros);
+      mostrar("componentes_intervenidos", correctivo && conTipo);
+      mostrar("actividades", (preventivo || correctivo) && conTipo);
+      if (campos("diagnostico") && campos("motivo")) {
+        mostrar("causa_dano", correctivo);
+        mostrar("trabajo_realizado", correctivo || !preventivo);
+        mostrar("diagnostico", correctivo || !preventivo);
+        mostrar("motivo", !preventivo && !correctivo);
+        mostrar("estados_entrega", true);
+      }
+      const titulo = campos("actividades") && campos("actividades").querySelector("label");
+      if (titulo && !titulo.dataset.base) titulo.dataset.base = titulo.firstChild.textContent;
+      if (titulo) titulo.firstChild.textContent = correctivo ? "Partes que se van a revisar " : "Actividades que se van a realizar ";
+    }
+
+    if (tipoEquipo && equipo) {
+      if (!tipoEquipo.value && equipo.value) {
+        const sel = equipo.options[equipo.selectedIndex];
+        if (sel && sel.dataset.te) tipoEquipo.value = sel.dataset.te;
+      }
+      filtrarEquipos();
+      tipoEquipo.addEventListener("change", () => { filtrarEquipos(); actualizar(); });
     }
     tipo.addEventListener("change", actualizar);
+    form.addEventListener("change", (e) => {
+      if (e.target.name === "actividades_preventivas") actualizar();
+    });
     actualizar();
   }
   document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("[data-mant-form]").forEach(configurarFormularioMantenimiento));

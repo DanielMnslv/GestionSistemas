@@ -9,14 +9,14 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
 
 <div class="maintenance-form-grid">
     {% for field in formulario %}
-        {% if equipo_fijo and field.name == "equipo" %}
+        {% if equipo_fijo and field.name == "equipo" or equipo_fijo and field.name == "tipo_equipo" %}
             {{ field.as_hidden }}
             {% for error in field.errors %}
                 <div class="maintenance-form-errors maintenance-form-field-wide" role="alert">{{ error }}</div>
             {% endfor %}
         {% else %}
         <div data-mant-field="{{ field.name }}" class="maintenance-form-field mant-campo-{{ field.name }}
-            {% if field.name == 'trabajo_realizado' or field.name == 'descripcion' or field.name == 'observaciones' or field.name == 'causa_dano' or field.name == 'actividades_preventivas' or field.name == 'estados_entrega' %}maintenance-form-field-wide{% endif %}">
+            {% if field.name == 'trabajo_realizado' or field.name == 'descripcion' or field.name == 'observaciones' or field.name == 'causa_dano' or field.name == 'actividades_preventivas' or field.name == 'componentes_intervenidos' or field.name == 'actividades' or field.name == 'estados_entrega' %}maintenance-form-field-wide{% endif %}">
 
             <label for="{{ field.id_for_label }}">
                 {{ field.label }}

@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
+from . import actividades_mantenimiento as act
 from .google_sheet import normalizar_serial
 from .orden import orden_placa
 from .models import (
@@ -40,7 +41,96 @@ def configurar_campo_equipo(campo):
     )
 
 
-class MantenimientoEquipoForm(forms.ModelForm):
+class _OpcionesConDatos:
+    """Agrega atributos data-* a cada opción según su valor."""
+
+    def __init__(self, *args, datos_opcion=None, **kwargs):
+        self.datos_opcion = datos_opcion or {}
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        opcion = super().create_option(name, value, label, selected, index, subindex, attrs)
+        opcion["attrs"].update(self.datos_opcion.get(str(value), {}))
+        return opcion
+
+
+class SelectConDatos(_OpcionesConDatos, forms.Select):
+    pass
+
+
+class CasillasConDatos(_OpcionesConDatos, forms.CheckboxSelectMultiple):
+    pass
+
+
+def _datos_casillas(catalogo, tipo_mantenimiento="*"):
+    """data-te (tipo de equipo) y data-tm (tipo de mantenimiento) por clave."""
+    datos = {
+        clave: {"data-te": tipo, "data-tm": tipo_mantenimiento}
+        for clave, tipo in act.tipo_de_clave(catalogo).items()
+    }
+    datos[act.OTROS[0]] = {"data-te": "*", "data-tm": "*"}
+    return datos
+
+
+class MantenimientoPorTipoMixin:
+    """Primero el tipo de equipo; el equipo y las casillas dependen de él.
+
+    El campo "tipo_equipo" no se guarda: filtra el desplegable de equipos y
+    decide qué actividades se muestran. Si llega vacío (equipo fijo) se toma
+    del equipo.
+    """
+
+    def _preparar_tipos(self):
+        campo = self.fields["equipo"]
+        configurar_campo_equipo(campo)
+        campo.queryset = campo.queryset.filter(
+            tipo__in=[t for t, _ in act.TIPOS_EQUIPO]
+        )
+        campo.widget = SelectConDatos(datos_opcion={
+            str(pk): {"data-te": tipo}
+            for pk, tipo in campo.queryset.values_list("pk", "tipo")
+        })
+        campo.widget.choices = campo.choices
+        self.fields["tipo_equipo"] = forms.ChoiceField(
+            label="Tipo de equipo", required=False,
+            choices=[("", "Seleccione el tipo de equipo")] + act.TIPOS_EQUIPO,
+        )
+        orden = [f for f in self.fields if f != "tipo_equipo"]
+        orden.insert(orden.index("equipo"), "tipo_equipo")
+        self.order_fields(orden)
+
+        equipo = self.initial.get("equipo") or (
+            self.instance.equipo_id if self.instance and self.instance.pk else None
+        )
+        if equipo:
+            pk = getattr(equipo, "pk", equipo)
+            self.initial["tipo_equipo"] = (
+                Equipo.objects.filter(pk=pk).values_list("tipo", flat=True).first() or ""
+            )
+
+        actual = self.instance.tipo if self.instance and self.instance.pk else ""
+        inicial = self.initial.get("tipo") or ""
+        permitidos = set(MantenimientoEquipo.TIPOS_FORMULARIO) | {actual, inicial}
+        self.fields["tipo"].choices = [("", "Seleccione el tipo")] + [
+            (v, l) for v, l in MantenimientoEquipo.Tipo.choices if v in permitidos
+        ]
+
+    def _validar_tipo_equipo(self, cleaned):
+        equipo = cleaned.get("equipo")
+        tipo_equipo = cleaned.get("tipo_equipo")
+        if equipo is not None:
+            if tipo_equipo and tipo_equipo != equipo.tipo:
+                self.add_error("equipo", "El equipo no es del tipo seleccionado.")
+            cleaned["tipo_equipo"] = equipo.tipo
+        return cleaned.get("tipo_equipo") or ""
+
+    def _casillas_ajenas(self, cleaned, campo, catalogo, tipo_equipo):
+        sobran = set(cleaned.get(campo) or []) - act.claves_validas(catalogo, tipo_equipo)
+        if tipo_equipo and sobran:
+            self.add_error(campo, "Hay opciones que no corresponden a este tipo de equipo.")
+
+
+class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
     tecnico_responsable = forms.ChoiceField(
         label="Especialista asignado",
         choices=[
@@ -50,8 +140,13 @@ class MantenimientoEquipoForm(forms.ModelForm):
     )
     actividades_preventivas = forms.MultipleChoiceField(
         label="Actividades realizadas", required=False,
-        choices=MantenimientoEquipo.ACTIVIDADES_PREVENTIVAS,
-        widget=forms.CheckboxSelectMultiple,
+        choices=act.CHOICES_PREVENTIVAS,
+        widget=CasillasConDatos(datos_opcion=_datos_casillas(act.PREVENTIVAS)),
+    )
+    componentes_intervenidos = forms.MultipleChoiceField(
+        label="Partes intervenidas", required=False,
+        choices=act.CHOICES_CORRECTIVAS,
+        widget=CasillasConDatos(datos_opcion=_datos_casillas(act.CORRECTIVAS)),
     )
     estados_entrega = forms.MultipleChoiceField(
         label="Estado de entrega del equipo", required=False,
@@ -65,7 +160,8 @@ class MantenimientoEquipoForm(forms.ModelForm):
         fields = [
             "equipo", "fecha_intervencion", "tipo", "tecnico_responsable",
             "funcionario_responsable", "motivo", "diagnostico", "causa_dano",
-            "trabajo_realizado", "actividades_preventivas", "actividad_preventiva_otros",
+            "actividades_preventivas", "actividad_preventiva_otros", "componentes_intervenidos",
+            "trabajo_realizado",
             "repuestos_utilizados", "resultado", "estado_final", "estados_entrega",
             "observaciones",
         ]
@@ -96,9 +192,10 @@ class MantenimientoEquipoForm(forms.ModelForm):
         self.fields["motivo"].required = False
         self.fields["trabajo_realizado"].required = False
         self.fields["causa_dano"].required = False
-        configurar_campo_equipo(self.fields["equipo"])
+        self._preparar_tipos()
         if self.instance and self.instance.pk:
             self.initial["actividades_preventivas"] = self.instance.actividades_preventivas or []
+            self.initial["componentes_intervenidos"] = self.instance.componentes_intervenidos or []
             self.initial["estados_entrega"] = self.instance.estados_entrega or []
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
@@ -106,7 +203,16 @@ class MantenimientoEquipoForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         tipo = cleaned.get("tipo")
+        tipo_equipo = self._validar_tipo_equipo(cleaned)
+        if tipo != MantenimientoEquipo.Tipo.PREVENTIVO:
+            cleaned["actividades_preventivas"] = []
+            cleaned["actividad_preventiva_otros"] = ""
+        if tipo != MantenimientoEquipo.Tipo.CORRECTIVO:
+            cleaned["componentes_intervenidos"] = []
         if tipo == MantenimientoEquipo.Tipo.CORRECTIVO:
+            if not cleaned.get("componentes_intervenidos"):
+                self.add_error("componentes_intervenidos", "Seleccione al menos una parte intervenida.")
+            self._casillas_ajenas(cleaned, "componentes_intervenidos", act.CORRECTIVAS, tipo_equipo)
             if not cleaned.get("trabajo_realizado"):
                 self.add_error("trabajo_realizado", "Describa la actividad realizada.")
             if not cleaned.get("causa_dano"):
@@ -114,21 +220,33 @@ class MantenimientoEquipoForm(forms.ModelForm):
         elif tipo == MantenimientoEquipo.Tipo.PREVENTIVO:
             if not cleaned.get("actividades_preventivas"):
                 self.add_error("actividades_preventivas", "Seleccione al menos una actividad.")
+            self._casillas_ajenas(cleaned, "actividades_preventivas", act.PREVENTIVAS, tipo_equipo)
             if "otros" in (cleaned.get("actividades_preventivas") or []) and not cleaned.get("actividad_preventiva_otros"):
                 self.add_error("actividad_preventiva_otros", "Describa las otras actividades realizadas.")
         return cleaned
 
 
-class MantenimientoProgramadoForm(forms.ModelForm):
+class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
+    actividades = forms.MultipleChoiceField(
+        label="Qué se va a revisar", required=False,
+        choices=act.CHOICES_PREVENTIVAS[:-1] + act.CHOICES_CORRECTIVAS,
+        widget=CasillasConDatos(datos_opcion={
+            **_datos_casillas(act.PREVENTIVAS, "PREVENTIVO"),
+            **_datos_casillas(act.CORRECTIVAS, "CORRECTIVO"),
+        }),
+    )
+
     class Meta:
         model = MantenimientoProgramado
         fields = [
             "equipo",
             "fecha_programada",
             "tipo",
+            "actividades",
             "descripcion",
             "observaciones",
         ]
+        labels = {"descripcion": "Descripción"}
 
         widgets = {
             "fecha_programada": forms.DateInput(
@@ -142,10 +260,37 @@ class MantenimientoProgramadoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        configurar_campo_equipo(self.fields["equipo"])
+        self._preparar_tipos()
+        self.fields["descripcion"].required = False
+        self.fields["descripcion"].help_text = (
+            "Si la deja vacía, se arma con lo que marcó arriba."
+        )
+        if self.instance and self.instance.pk:
+            self.initial["actividades"] = self.instance.actividades or []
 
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get("tipo")
+        tipo_equipo = self._validar_tipo_equipo(cleaned)
+        catalogo = {
+            MantenimientoEquipo.Tipo.PREVENTIVO: act.PREVENTIVAS,
+            MantenimientoEquipo.Tipo.CORRECTIVO: act.CORRECTIVAS,
+        }.get(tipo)
+        if catalogo is None:
+            cleaned["actividades"] = []
+        else:
+            self._casillas_ajenas(cleaned, "actividades", catalogo, tipo_equipo)
+        if not (cleaned.get("descripcion") or "").strip():
+            if cleaned.get("actividades"):
+                cleaned["descripcion"] = "; ".join(act.textos(cleaned["actividades"])) + "."
+            else:
+                self.add_error(
+                    "descripcion", "Marque lo que se va a revisar o describa el mantenimiento."
+                )
+        return cleaned
 
     def clean_fecha_programada(self):
         fecha = self.cleaned_data["fecha_programada"]

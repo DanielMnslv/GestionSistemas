@@ -4115,3 +4115,100 @@ class SeccionEquiposTarjetasTests(TestCase):
         self.assertContains(self.client.get(lista, {"tipo": "RADIO"}), "<h1>Radios</h1>")
         self.assertContains(self.client.get(lista, {"disponibilidad": "en_inventario"}), "<h1>Bodega</h1>")
         self.assertContains(self.client.get(lista), "<h1>Equipos</h1>")
+
+
+class MantenimientoPorTipoDeEquipoTests(TestCase):
+    def setUp(self):
+        from inventario.models import Funcionario
+        Usuario = get_user_model()
+        self.usuario = Usuario.objects.create_superuser("admin_mant_tipo", "m@a.co", "PruebaTemporal123!")
+        self.client.force_login(self.usuario)
+        self.pc = Equipo.objects.create(placa="PC-MT1", tipo=Equipo.Tipo.COMPUTADOR)
+        self.ups = Equipo.objects.create(placa="UPS-MT1", tipo=Equipo.Tipo.UPS)
+
+    def _form_prog(self, **datos):
+        from inventario.forms import MantenimientoProgramadoForm
+        base = {"fecha_programada": timezone.localdate().isoformat(), "tipo": "PREVENTIVO"}
+        return MantenimientoProgramadoForm(data={**base, **datos})
+
+    def test_tipos_de_intervencion_del_formulario(self):
+        from inventario.forms import MantenimientoEquipoForm
+        valores = [v for v, _ in MantenimientoEquipoForm().fields["tipo"].choices if v]
+        self.assertEqual(valores, ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO", "CORRECCION"])
+
+    def test_programar_con_actividades_del_tipo(self):
+        form = self._form_prog(tipo_equipo="UPS", equipo=self.ups.pk,
+                               actividades=["ups_baterias", "ups_transferencia"])
+        self.assertTrue(form.is_valid(), form.errors)
+        prog = form.save(commit=False)
+        self.assertEqual(prog.actividades, ["ups_baterias", "ups_transferencia"])
+        self.assertIn("Revisión de baterías", prog.descripcion)
+
+    def test_programar_rechaza_actividades_de_otro_tipo(self):
+        form = self._form_prog(tipo_equipo="UPS", equipo=self.ups.pk, actividades=["radio_antena"])
+        self.assertFalse(form.is_valid())
+        self.assertIn("actividades", form.errors)
+
+    def test_equipo_debe_ser_del_tipo_elegido(self):
+        form = self._form_prog(tipo_equipo="UPS", equipo=self.pc.pk, descripcion="x")
+        self.assertFalse(form.is_valid())
+        self.assertIn("equipo", form.errors)
+
+    def test_correctivo_pide_partes_intervenidas(self):
+        from inventario.forms import MantenimientoEquipoForm
+        base = {"equipo": self.pc.pk, "tipo": "CORRECTIVO",
+                "fecha_intervencion": "2026-11-13T10:00",
+                "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
+                "trabajo_realizado": "Cambio", "causa_dano": "Golpe", "resultado": "SOLUCIONADO"}
+        form = MantenimientoEquipoForm(data=base)
+        self.assertFalse(form.is_valid())
+        self.assertIn("componentes_intervenidos", form.errors)
+        form = MantenimientoEquipoForm(data={**base, "componentes_intervenidos": ["pc_disco"]})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["tipo_equipo"], "COMPUTADOR")
+
+    def test_ventana_de_programar_muestra_tipos_y_casillas(self):
+        resp = self.client.get(reverse("inventario:mantenimiento_programado_crear"),
+                               HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        if resp.status_code == 302:
+            self.skipTest("La ventana solo se pide por fetch")
+        self.assertContains(resp, 'name="tipo_equipo"')
+        self.assertContains(resp, 'data-te="UPS"')
+
+
+class RegistrarSegunTipoYRetiroTests(TestCase):
+    def setUp(self):
+        Usuario = get_user_model()
+        self.usuario = Usuario.objects.create_superuser("admin_reg_tipo", "r@a.co", "PruebaTemporal123!")
+        self.client.force_login(self.usuario)
+
+    def test_boton_registrar_segun_el_tipo(self):
+        lista = reverse("inventario:equipos_lista")
+        crear = reverse("inventario:equipo_crear")
+        resp = self.client.get(lista, {"tipo": "COMPUTADOR"})
+        self.assertContains(resp, f'href="{crear}?tipo=COMPUTADOR"')
+        self.assertContains(resp, "Registrar computador")
+        resp = self.client.get(lista, {"tipo": "RADIO"})
+        self.assertContains(resp, f'href="{reverse("inventario:radio_crear")}"')
+        resp = self.client.get(lista)
+        self.assertContains(resp, f'href="{crear}"')
+        self.assertContains(resp, "Registrar equipo")
+
+    def test_retiro_dice_a_nombre_de_quien_queda(self):
+        from inventario.models import Funcionario, ItemRetiro, RetiroFuncionario
+        from inventario.personas import iniciar_retiro, validar_item
+        sale = Funcionario.objects.create(nombre_completo="PERSONA QUE SALE", cedula="111")
+        recibe = Funcionario.objects.create(nombre_completo="PERSONA QUE RECIBE", cedula="222")
+        pc1 = Equipo.objects.create(placa="PC-R1", tipo=Equipo.Tipo.COMPUTADOR, responsable_cedula="111")
+        Equipo.objects.create(placa="PC-R2", tipo=Equipo.Tipo.COMPUTADOR, responsable_cedula="111")
+        retiro = iniciar_retiro(sale, "RENUNCIA", timezone.localdate(), "", self.usuario)
+        item1 = retiro.items.get(equipo=pc1)
+        validar_item(item1, ItemRetiro.Resultado.REASIGNADO, self.usuario, "", recibe)
+        item1.refresh_from_db()
+        self.assertEqual(item1.queda_a_cargo, "Queda a nombre de PERSONA QUE RECIBE (C.C. 222)")
+        pc1.refresh_from_db()
+        self.assertEqual(pc1.responsable_cedula, "222")
+        item2 = retiro.items.exclude(pk=item1.pk).get()
+        self.assertIn("sigue a nombre de PERSONA QUE SALE", item2.queda_a_cargo)
+        resp = self.client.get(reverse("inventario:retiro_detalle", args=[retiro.pk]))
+        self.assertContains(resp, "Queda a nombre de PERSONA QUE RECIBE")
