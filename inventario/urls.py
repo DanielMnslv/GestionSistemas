@@ -184,9 +184,4 @@ urlpatterns = [
         views.asignacion_devolver,
         name="asignacion_devolver",
     ),
-    path(
-        "vigilantes/",
-        views.vigilantes_lista,
-        name="vigilantes_lista",
-    ),
 ]

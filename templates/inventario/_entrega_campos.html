@@ -1,25 +1,25 @@
 {% comment %}Pasos del registro de entrega de un radio (pestaña «Entregar» de la ficha). Espera "formulario_entrega" y "clausula".{% endcomment %}
-            <fieldset class="ficha-paso" data-paso="1" data-titulo="Vigilante">
+            <fieldset class="ficha-paso" data-paso="1" data-titulo="Cliente y puesto">
             <legend class="ficha-section-heading">
                 <span class="ficha-section-number">01</span>
-                Vigilante que recibe
+                Cliente y puesto
             </legend>
             <div class="ficha-form-grid">
-                {% include "inventario/_campo.html" with field=formulario_entrega.vigilante %}
-            </div>
-            </fieldset>
-
-            <fieldset class="ficha-paso" data-paso="2" data-titulo="Servicio y entrega">
-            <legend class="ficha-section-heading">
-                <span class="ficha-section-number">02</span>
-                Datos del servicio y entrega
-            </legend>
-            <div class="ficha-form-grid">
-                {% include "inventario/_campo.html" with field=formulario_entrega.coordinador_zona %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.cliente %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.puesto %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.cliente_asignado %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.puesto_asignado %}
+            </div>
+            </fieldset>
+
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Supervisor">
+            <legend class="ficha-section-heading">
+                <span class="ficha-section-number">02</span>
+                Supervisor que recibe
+            </legend>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario_entrega.coordinador_zona %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.cedula_funcionario %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.observaciones_entrega ancho_completo=True %}
             </div>
             </fieldset>
@@ -57,14 +57,14 @@
                 {% endfor %}
             </div>
 
-            {% include "inventario/_firma.html" with campo=formulario_entrega.firma etiqueta="Firma del vigilante" %}
+            {% include "inventario/_firma.html" with campo=formulario_entrega.firma etiqueta="Firma del supervisor" %}
 
             <aside class="ficha-responsibility-note">
                 <span aria-hidden="true">ⓘ</span>
                 <div>
                     <strong>Control y trazabilidad.</strong>
                     El sistema registra al usuario autenticado como responsable de la entrega.
-                    Verifica el vigilante, el cliente y el puesto antes de guardar.
+                    Verifica el cliente, el puesto y el supervisor antes de guardar.
                 </div>
             </aside>
             </fieldset>

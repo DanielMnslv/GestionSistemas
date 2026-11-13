@@ -1,15 +1,11 @@
 """Informes de entregas de radios y de equipos."""
 from ..estado_mantenimiento import fecha_local, hoy_colombia
-from ..models import AsignacionEquipo, AsignacionRadio, Equipo, TransferenciaComponentesRadio, Vigilante
+from ..models import AsignacionEquipo, AsignacionRadio, Equipo, TransferenciaComponentesRadio
 from .ayudas import contiene, opciones_con_todos, texto_componente
 from .base import Columna, Filtro, Informe
 
 CATEGORIA = "Entregas"
 ETIQUETA_TIPO = dict(Equipo.Tipo.choices)
-
-
-def _nombres_vigilantes():
-    return dict(Vigilante.objects.values_list("cedula", "nombre_completo"))
 
 
 def _usuario(u):
@@ -36,20 +32,19 @@ class RadiosEntregados(Informe):
     clave = "radios_entregados"
     titulo = "Radios entregados actualmente"
     categoria = CATEGORIA
-    descripcion = "Qué vigilante tiene cada radio hoy, en qué cliente y puesto y desde cuándo."
+    descripcion = "En qué cliente y puesto está cada radio hoy, qué supervisor lo recibió y desde cuándo."
     columnas = (
-        Columna("radio", "Radio (RJ)", 1), Columna("serial", "Serial", 1.3), Columna("vigilante", "Vigilante", 2),
-        Columna("cedula", "Cédula", 1.1), Columna("cliente", "Cliente", 2), Columna("puesto", "Puesto", 2),
-        Columna("coordinador", "Coordinador de zona", 1.6), Columna("fecha", "Entregado", 1.3, "der"),
+        Columna("radio", "Radio (RJ)", 1), Columna("serial", "Serial", 1.3),
+        Columna("cliente", "Cliente", 2), Columna("puesto", "Puesto", 2),
+        Columna("coordinador", "Supervisor", 1.8), Columna("cedula", "Cédula", 1.1), Columna("fecha", "Entregado", 1.3, "der"),
         Columna("dias", "Días", 0.7, "der"), Columna("firma", "Firma", 0.9, "centro", tono=True),
     )
-    columnas_pdf = ("radio", "vigilante", "cedula", "cliente", "puesto", "coordinador", "fecha", "dias")
+    columnas_pdf = ("radio", "cliente", "puesto", "coordinador", "fecha", "dias")
     filtros = (Filtro("cliente", "Cliente", ayuda="Parte del nombre del cliente."),
-               Filtro("q", "Buscar", ayuda="Radio, vigilante, cédula, puesto o coordinador."))
+               Filtro("q", "Buscar", ayuda="Radio, puesto, supervisor o cédula."))
 
     def obtener_filas(self, valores, usuario=None):
         hoy = hoy_colombia()
-        nombres = _nombres_vigilantes()
         consulta = AsignacionRadio.objects.filter(estado=AsignacionRadio.Estado.ASIGNADO).select_related("radio")
         if valores["cliente"]:
             consulta = consulta.filter(cliente_asignado__icontains=valores["cliente"])
@@ -57,21 +52,21 @@ class RadiosEntregados(Informe):
         for a in consulta:
             fila = {
                 "radio": a.radio.etiqueta, "serial": a.radio.serial,
-                "vigilante": nombres.get(a.cedula_funcionario, "No registrado"),
+                "supervisor": a.coordinador_zona,
                 "cedula": a.cedula_funcionario, "cliente": a.cliente_asignado,
                 "puesto": a.puesto_asignado, "coordinador": a.coordinador_zona,
                 "fecha": a.fecha_entrega, "dias": _dias_desde(a.fecha_entrega, hoy), "firma": _firma(a),
             }
             if valores["q"] and not any(contiene(fila[k], valores["q"])
-                                        for k in ("radio", "vigilante", "cedula", "puesto", "coordinador")):
+                                        for k in ("radio", "cedula", "puesto", "coordinador")):
                 continue
             filas.append(fila)
-        filas.sort(key=lambda f: (f["cliente"].lower(), f["puesto"].lower(), f["vigilante"].lower()))
+        filas.sort(key=lambda f: (f["cliente"].lower(), f["puesto"].lower(), f["radio"].lower()))
         return filas
 
     def resumen(self, filas):
         return [("Radios entregados", len(filas)),
-                ("Vigilantes con radio", len({f["cedula"] for f in filas})),
+                ("Puestos con radio", len({(f["cliente"], f["puesto"]) for f in filas})),
                 ("Clientes", len({f["cliente"] for f in filas})),
                 ("Sin firma", sum(1 for f in filas if f["firma"] == "Sin firma"))]
 
@@ -83,20 +78,19 @@ class RadiosHistorialEntregas(Informe):
     descripcion = "Todas las entregas de radios por rango de fechas, con su devolución."
     columnas = (
         Columna("fecha", "Entrega", 1.3, "der"), Columna("radio", "Radio (RJ)", 1),
-        Columna("vigilante", "Vigilante", 2), Columna("cedula", "Cédula", 1.1),
+        Columna("supervisor", "Supervisor", 2), Columna("cedula", "Cédula", 1.1),
         Columna("cliente", "Cliente", 2), Columna("puesto", "Puesto", 2),
         Columna("entregado_por", "Entregó", 1.3), Columna("estado", "Estado", 1, "centro", tono=True),
         Columna("devolucion", "Devolución", 1.3, "der"), Columna("recibido_por", "Recibió", 1.3),
     )
-    columnas_pdf = ("fecha", "radio", "vigilante", "cliente", "puesto", "estado", "devolucion")
+    columnas_pdf = ("fecha", "radio", "cliente", "puesto", "supervisor", "estado", "devolucion")
     filtros = (
         Filtro("desde", "Entregado desde", "date"), Filtro("hasta", "Entregado hasta", "date"),
         Filtro("estado", "Estado", "select", opciones_con_todos(AsignacionRadio.Estado.choices)),
-        Filtro("q", "Buscar", ayuda="Radio, vigilante, cédula, cliente o puesto."),
+        Filtro("q", "Buscar", ayuda="Radio, cliente, puesto o supervisor."),
     )
 
     def obtener_filas(self, valores, usuario=None):
-        nombres = _nombres_vigilantes()
         consulta = AsignacionRadio.objects.select_related("radio", "entregado_por", "recibido_por")
         if valores["desde"]:
             consulta = consulta.filter(fecha_entrega__date__gte=valores["desde"])
@@ -108,13 +102,13 @@ class RadiosHistorialEntregas(Informe):
         for a in consulta:
             fila = {
                 "fecha": a.fecha_entrega, "radio": a.radio.etiqueta,
-                "vigilante": nombres.get(a.cedula_funcionario, "No registrado"),
+                "supervisor": a.coordinador_zona,
                 "cedula": a.cedula_funcionario, "cliente": a.cliente_asignado, "puesto": a.puesto_asignado,
                 "entregado_por": _usuario(a.entregado_por), "estado": a.get_estado_display(),
                 "devolucion": a.fecha_devolucion, "recibido_por": _usuario(a.recibido_por),
             }
             if valores["q"] and not any(contiene(fila[k], valores["q"])
-                                        for k in ("radio", "vigilante", "cedula", "cliente", "puesto")):
+                                        for k in ("radio", "supervisor", "cedula", "cliente", "puesto")):
                 continue
             filas.append(fila)
         return filas
@@ -139,7 +133,6 @@ class EntregasSinFirma(Informe):
 
     def obtener_filas(self, valores, usuario=None):
         hoy = hoy_colombia()
-        nombres = _nombres_vigilantes()
         filas = []
 
         def faltas(a):
@@ -154,7 +147,7 @@ class EntregasSinFirma(Informe):
             if faltas(a):
                 filas.append({
                     "clase": "Radio", "equipo": a.radio.etiqueta,
-                    "recibe": nombres.get(a.cedula_funcionario, "No registrado"),
+                    "recibe": a.coordinador_zona or "Sin dato",
                     "cedula": a.cedula_funcionario,
                     "donde": f"{a.cliente_asignado} - {a.puesto_asignado}".strip(" -"),
                     "fecha": a.fecha_entrega, "dias": _dias_desde(a.fecha_entrega, hoy),

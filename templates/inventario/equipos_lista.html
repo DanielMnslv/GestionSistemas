@@ -22,11 +22,13 @@
             </div>
         </div>
 
+        {% if not tipo_seleccionado %}
         <nav class="jx-tabs" aria-label="Tipo de equipo">
             {% for p in pestanas %}
             <a class="jx-tab{% if p.activo %} is-active{% endif %}" href="{{ p.url }}" data-eq-ajax{% if p.activo %} aria-current="true"{% endif %}>{{ p.etiqueta }}<span>{{ p.total }}</span></a>
             {% endfor %}
         </nav>
+        {% endif %}
 
         {% if filtros_activos %}
         <div class="jx-chips" aria-label="Filtros aplicados">
@@ -118,7 +120,8 @@
                             <th scope="col">Placa</th>
                             <th scope="col">Equipo</th>
                             <th scope="col" class="col-extra">Responsable</th>
-                            <th scope="col" class="col-extra">Cliente · Puesto</th>
+                            {% if ver_cliente_puesto %}<th scope="col" class="col-extra">Cliente · Puesto</th>{% endif %}
+                            {% for titulo in columnas_tipo %}<th scope="col" class="col-extra">{{ titulo }}</th>{% endfor %}
                             <th scope="col">Estado</th>
                             <th scope="col" class="col-extra">Datos</th>
                         </tr>
@@ -129,7 +132,8 @@
                             <td class="eq-c-placa"><strong class="eq-placa">{{ equipo.placa }}</strong></td>
                             <td class="eq-c-equipo">{% if equipo.marca or equipo.modelo %}{{ equipo.marca }} {{ equipo.modelo }}{% else %}-{% endif %}</td>
                             <td class="col-extra">{% if equipo.ficha.responsable %}{{ equipo.ficha.responsable }}{% else %}<span class="eq-sin">Sin asignar</span>{% endif %}</td>
-                            <td class="col-extra">{{ equipo.ficha.cliente_puesto|default:"-" }}</td>
+                            {% if ver_cliente_puesto %}<td class="col-extra">{{ equipo.ficha.cliente_puesto|default:"-" }}</td>{% endif %}
+                            {% for valor in equipo.celdas_tipo %}<td class="col-extra eq-c-dato" title="{{ valor }}">{{ valor|default:"-" }}</td>{% endfor %}
                             <td class="eq-c-estado">
                                 {% if not equipo.activo %}<span class="badge badge-gray">De baja</span>
                                 {% elif equipo.estado_texto %}<span class="eq-estado eq-estado-{{ equipo.estado_tono }}">{{ equipo.estado_texto }}</span>
@@ -139,7 +143,7 @@
                             <td class="col-extra">{% if equipo.ficha.faltantes %}<span class="eq-datos eq-datos-falta">{{ equipo.ficha.faltantes }} falta{{ equipo.ficha.faltantes|pluralize:"n" }}</span>{% else %}<span class="eq-datos eq-datos-ok">Completo</span>{% endif %}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="6" class="empty">No hay equipos que coincidan con la búsqueda.</td></tr>
+                        <tr><td colspan="20" class="empty">No hay equipos que coincidan con la búsqueda.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

@@ -594,8 +594,9 @@ class AsignacionRadio(models.Model):
         verbose_name="Fecha y hora de entrega",
     )
 
+    # Supervisor del puesto que recibe y firma (antes: coordinador de zona).
     coordinador_zona = models.CharField(max_length=200)
-    cedula_funcionario = models.CharField(max_length=50)
+    cedula_funcionario = models.CharField(max_length=50, blank=True)
     cliente_asignado = models.CharField(max_length=200)
     puesto_asignado = models.CharField(max_length=200)
 
@@ -976,7 +977,7 @@ class AsignacionEquipo(models.Model):
     # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     """Entrega de un equipo (computador, impresora, tableta…) a un
-    funcionario. Las entregas de radios a vigilantes van en AsignacionRadio."""
+    funcionario. Las entregas de radios a puestos van en AsignacionRadio."""
 
     class Estado(models.TextChoices):
         ASIGNADO = "ASIGNADO", "Asignado"

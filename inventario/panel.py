@@ -275,7 +275,7 @@ def _tendencia(hoy):
 
 
 def _entregados():
-    """Equipos activos con una entrega vigente (radios a vigilantes y equipos a funcionarios)."""
+    """Equipos activos con una entrega vigente (radios a puestos y equipos a funcionarios)."""
     radios = AsignacionRadio.objects.filter(
         estado=AsignacionRadio.Estado.ASIGNADO, radio__activo=True
     ).values("radio_id").distinct().count()

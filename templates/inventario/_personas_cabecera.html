@@ -1,11 +1,10 @@
 {% comment %}
-Encabezado y pestañas de Clientes y vigilantes. Espera "pestana" (clientes o vigilantes),
-"total_clientes" y "total_vigilantes".
+Encabezado de Clientes y puestos. Espera "pestana" y "total_clientes".
 {% endcomment %}
 <div class="page-heading">
     <div>
-        <h1>Clientes y vigilantes</h1>
-        <p>{% if pestana == "vigilantes" %}Personal registrado, su estado y los registros importados desde Excel.{% else %}Catálogo de clientes y puestos para elegir al entregar un radio.{% endif %}</p>
+        <h1>Clientes y puestos</h1>
+        <p>Catálogo de clientes, sedes y puestos para saber qué equipos tiene cada uno.</p>
     </div>
     {% if pestana == "clientes" and permisos.entregas %}
     <div class="mant-heading-actions">
@@ -13,8 +12,3 @@ Encabezado y pestañas de Clientes y vigilantes. Espera "pestana" (clientes o vi
     </div>
     {% endif %}
 </div>
-
-<nav class="mant-tabs" aria-label="Vistas">
-    <a class="mant-tab{% if pestana == 'clientes' %} activa{% endif %}" href="{% url 'inventario:clientes_lista' %}"{% if pestana == 'clientes' %} aria-current="page"{% endif %}>Clientes y puestos{% if total_clientes %}<span class="mant-tab-n">{{ total_clientes }}</span>{% endif %}</a>
-    <a class="mant-tab{% if pestana == 'vigilantes' %} activa{% endif %}" href="{% url 'inventario:vigilantes_lista' %}"{% if pestana == 'vigilantes' %} aria-current="page"{% endif %}>Vigilantes{% if total_vigilantes %}<span class="mant-tab-n">{{ total_vigilantes }}</span>{% endif %}</a>
-</nav>

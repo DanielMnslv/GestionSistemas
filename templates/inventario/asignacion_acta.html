@@ -42,10 +42,9 @@
 
     <h2>Servicio</h2>
     <table class="acta-tabla">
-        <tr><th>Recibe</th><td>{{ vigilante.nombre_completo|default:"" }} · C.C. {{ asignacion.cedula_funcionario|default:"sin dato" }}</td></tr>
         <tr><th>Cliente</th><td>{{ asignacion.cliente_asignado|default:"Sin dato" }}</td></tr>
         <tr><th>Puesto</th><td>{{ asignacion.puesto_asignado|default:"Sin dato" }}</td></tr>
-        <tr><th>Coordinador de zona</th><td>{{ asignacion.coordinador_zona|default:"Sin dato" }}</td></tr>
+        <tr><th>Supervisor que recibe</th><td>{{ asignacion.coordinador_zona|default:"Sin dato" }}{% if asignacion.cedula_funcionario %} · C.C. {{ asignacion.cedula_funcionario }}{% endif %}</td></tr>
         <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}</td></tr>
         {% if asignacion.observaciones_entrega %}
         <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega|linebreaksbr }}</td></tr>
@@ -59,7 +58,7 @@
     <p>{{ clausula }}</p>
     <p>
         {% if asignacion.clausula_aceptada %}
-        <span class="acta-ok">✓ Aceptada por el vigilante.</span>
+        <span class="acta-ok">✓ Aceptada por quien recibe.</span>
         {% else %}
         <span class="acta-sin-firma">No consta la aceptación de la cláusula.</span>
         {% endif %}
@@ -68,7 +67,7 @@
     <h2>Firma de quien recibe</h2>
     <div class="acta-firma">
         {% if asignacion.firma %}
-        <img src="{{ asignacion.firma }}" alt="Firma del vigilante">
+        <img src="{{ asignacion.firma }}" alt="Firma de quien recibe">
         {% elif asignacion.enlace_firma %}
         <a href="{{ asignacion.enlace_firma }}" target="_blank" rel="noopener">Ver la firma adjunta en el formulario de Google</a>
         {% else %}

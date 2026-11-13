@@ -857,3 +857,8 @@ html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a
 .jx-form-2 > *, .jx-form > * { min-width: 0; }
 .jx-field input:not([type="checkbox"]):not([type="radio"]), .jx-field select, .jx-field textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
 .jx-field .ts-wrapper { width: 100%; min-width: 0; }
+
+/* Lista de equipos: usa todo el ancho para que la tabla muestre más columnas. */
+.lista-fija-page .jx-content { max-width: none; }
+.eq-tabla td.eq-c-dato { font-size: 12.5px; color: var(--jx-text-2, inherit); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-fija-page .eq-tabla td.eq-c-equipo, .lista-fija-page .eq-tabla td.col-extra { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -4,10 +4,9 @@ from datetime import timedelta
 from ..estado_mantenimiento import hoy_colombia
 from ..models import (
     AsignacionEquipo, AsignacionRadio, Cliente, Equipo, MantenimientoEquipo, MantenimientoProgramado,
-    Puesto, Radio, Vigilante,
+    Puesto, Radio,
 )
 from .base import Columna, Informe
-from .clientes import VigilantesConRadio
 from .entregas import EntregasSinFirma
 from .mantenimiento import SemaforoMantenimiento
 from .seguridad import AntivirusVencimientos, EstadoPolitica
@@ -78,16 +77,14 @@ class ResumenGeneral(Informe):
                 sum(1 for f in filas_a if f["estado"].startswith("Vence en")))
         agregar("Seguridad informática", "Computadores sin fecha de antivirus", _contar(filas_a, "estado", "Sin fecha registrada"))
 
-        agregar("Entregas", "Radios entregados a vigilantes",
+        agregar("Entregas", "Radios entregados a puestos",
                 AsignacionRadio.objects.filter(estado=AsignacionRadio.Estado.ASIGNADO).count())
         agregar("Entregas", "Equipos entregados a funcionarios",
                 AsignacionEquipo.objects.filter(estado=AsignacionEquipo.Estado.ASIGNADO).count())
         agregar("Entregas", "Entregas sin firma o sin cláusula aceptada", len(_filas(EntregasSinFirma())))
 
-        agregar("Clientes y vigilantes", "Clientes activos", Cliente.objects.filter(activo=True).count())
-        agregar("Clientes y vigilantes", "Puestos activos", Puesto.objects.filter(activo=True).count())
-        agregar("Clientes y vigilantes", "Vigilantes activos", Vigilante.objects.filter(activo=True).count())
-        agregar("Clientes y vigilantes", "Vigilantes activos sin radio", len(_filas(VigilantesConRadio(), tiene="sin")))
+        agregar("Clientes y puestos", "Clientes activos", Cliente.objects.filter(activo=True).count())
+        agregar("Clientes y puestos", "Puestos activos", Puesto.objects.filter(activo=True).count())
         return filas
 
     def resumen(self, filas):
@@ -97,7 +94,7 @@ class ResumenGeneral(Informe):
                 ("Radios en servicio", valor("Radios en servicio")),
                 ("Mantenimientos vencidos", valor("Equipos con mantenimiento vencido")),
                 ("Antivirus vencidos", valor("Antivirus vencidos")),
-                ("Radios entregados", valor("Radios entregados a vigilantes"))]
+                ("Radios entregados", valor("Radios entregados a puestos"))]
 
 
 INFORME = ResumenGeneral()

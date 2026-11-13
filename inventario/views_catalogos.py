@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Cliente, Puesto, Vigilante
+from .models import Cliente, Puesto
 from .permisos import requiere_permiso
 from .views import filas_por_pagina, paginar
 
@@ -79,7 +79,6 @@ def clientes_lista(request):
     return render(request, "inventario/clientes_lista.html", {
         "pestana": "clientes",
         "total_clientes": Cliente.objects.count(),
-        "total_vigilantes": Vigilante.objects.count(),
         "clientes": page_obj.object_list,
         "page_obj": page_obj,
         "parametros": parametros,

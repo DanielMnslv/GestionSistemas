@@ -35,7 +35,6 @@ from .models import (
     MantenimientoProgramado,
     AsignacionRadio,
     TransferenciaComponentesRadio,
-    Vigilante,
 )
 
 def _fecha_iso_valida(valor):
@@ -836,10 +835,8 @@ def asignacion_crear(request):
             try:
                 with transaction.atomic():
                     asignacion = formulario.save(commit=False)
-                    vigilante = formulario.cleaned_data["vigilante"]
                     asignacion.entregado_por = request.user
                     asignacion.estado = AsignacionRadio.Estado.ASIGNADO
-                    asignacion.cedula_funcionario = vigilante.cedula
                     asignacion.save()
 
                     radio.coordinador_zona = asignacion.coordinador_zona
@@ -887,12 +884,8 @@ def asignacion_acta(request, asignacion_id):
         AsignacionRadio.objects.select_related("radio", "entregado_por"),
         pk=asignacion_id,
     )
-    vigilante = Vigilante.objects.filter(
-        cedula=asignacion.cedula_funcionario
-    ).first()
     return render(request, "inventario/asignacion_acta.html", {
         "asignacion": asignacion,
-        "vigilante": vigilante,
         "clausula": CLAUSULA_CONFIDENCIALIDAD,
     })
 
@@ -962,72 +955,3 @@ def asignacion_devolver(request, asignacion_id):
     return _volver_a_equipos(radio.pk)
 
 
-@login_required
-def vigilantes_lista(request):
-    vigilantes = Vigilante.objects.all()
-
-    busqueda = request.GET.get("q", "").strip()
-    hoja = request.GET.get("hoja", "").strip()
-    estado = request.GET.get("estado", "activos").strip()
-    fecha_desde = request.GET.get("fecha_desde", "").strip()
-    fecha_hasta = request.GET.get("fecha_hasta", "").strip()
-
-    if busqueda:
-        vigilantes = vigilantes.filter(
-            Q(cedula__icontains=busqueda)
-            | Q(nombre_completo__icontains=busqueda)
-        )
-
-    hojas_disponibles = (
-        Vigilante.objects.order_by("hoja_origen")
-        .values_list("hoja_origen", flat=True)
-        .distinct()
-    )
-
-    if hoja:
-        vigilantes = vigilantes.filter(hoja_origen=hoja)
-    if fecha_desde and _fecha_iso_valida(fecha_desde):
-        vigilantes = vigilantes.filter(
-            ultima_actualizacion_excel__date__gte=fecha_desde
-        )
-    else:
-        fecha_desde = ""
-    if fecha_hasta and _fecha_iso_valida(fecha_hasta):
-        vigilantes = vigilantes.filter(
-            ultima_actualizacion_excel__date__lte=fecha_hasta
-        )
-    else:
-        fecha_hasta = ""
-
-    if estado == "activos":
-        vigilantes = vigilantes.filter(activo=True)
-    elif estado == "inactivos":
-        vigilantes = vigilantes.filter(activo=False)
-    else:
-        estado = "todos"
-
-    vigilantes = vigilantes.order_by("nombre_completo")
-
-    page_obj, parametros = paginar(
-        request, vigilantes, filas_por_pagina(request, 10)
-    )
-
-    contexto = {
-        "pestana": "vigilantes",
-        "total_clientes": Cliente.objects.count(),
-        "vigilantes": page_obj.object_list,
-        "page_obj": page_obj,
-        "parametros": parametros,
-        "busqueda": busqueda,
-        "hoja_seleccionada": hoja,
-        "hojas_disponibles": hojas_disponibles,
-        "estado_seleccionado": estado,
-        "fecha_desde": fecha_desde,
-        "fecha_hasta": fecha_hasta,
-        "total_resultados": page_obj.paginator.count,
-        "total_vigilantes": Vigilante.objects.count(),
-        "total_activos": Vigilante.objects.filter(activo=True).count(),
-        "total_inactivos": Vigilante.objects.filter(activo=False).count(),
-    }
-
-    return render(request, "inventario/vigilantes_lista.html", contexto)

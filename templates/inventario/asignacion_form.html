@@ -18,8 +18,8 @@
         <span class="eyebrow">GESTIÓN DE EQUIPOS</span>
         <h1>{{ titulo }}</h1>
         <p>
-            Registra la entrega del radio, identifica al vigilante responsable
-            y completa la información del cliente y puesto de servicio.
+            Registra la entrega del radio, indica el cliente y el puesto de servicio
+            y el supervisor que lo recibe.
         </p>
     </header>
 
@@ -56,12 +56,12 @@
 
             <h3 class="ficha-section-heading">
                 <span class="ficha-section-number">01</span>
-                Identificación del radio y del vigilante
+                Identificación del radio
             </h3>
 
             <div class="ficha-form-grid">
                 {% for field in formulario %}
-                    {% if field.name == "radio" or field.name == "vigilante" %}
+                    {% if field.name == "radio" %}
                         <div class="ficha-field">
                             <label for="{{ field.id_for_label }}">
                                 {{ field.label }}
@@ -97,6 +97,7 @@
 
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario.coordinador_zona %}
+                {% include "inventario/_campo.html" with field=formulario.cedula_funcionario %}
                 {% include "inventario/_campo.html" with field=formulario.cliente %}
                 {% include "inventario/_campo.html" with field=formulario.puesto %}
                 {% include "inventario/_campo.html" with field=formulario.cliente_asignado %}
@@ -139,14 +140,14 @@
                 {% endfor %}
             </div>
 
-            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del vigilante" %}
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del supervisor" %}
 
             <aside class="ficha-responsibility-note">
                 <span aria-hidden="true">ⓘ</span>
                 <div>
                     <strong>Control y trazabilidad.</strong>
                     El sistema registra al usuario autenticado como responsable
-                    de la entrega. Verifica el radio, el vigilante, el cliente
+                    de la entrega. Verifica el radio, el supervisor, el cliente
                     y el puesto antes de guardar. Si el radio ya tiene una
                     asignación activa, primero deberá registrarse su devolución.
                 </div>

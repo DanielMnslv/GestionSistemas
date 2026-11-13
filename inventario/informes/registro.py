@@ -11,7 +11,7 @@ ORDEN_CATEGORIAS = [
     "Mantenimiento",
     "Entregas",
     "Seguridad informática",
-    "Clientes y vigilantes",
+    "Clientes y puestos",
 ]
 
 

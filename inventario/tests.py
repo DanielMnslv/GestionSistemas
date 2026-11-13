@@ -526,7 +526,7 @@ class AsignacionRadioVistasTests(TestCase):
             {
                 "radio": self.radio.pk,
                 "coordinador_zona": "Coordinación de prueba",
-                "vigilante": self.vigilante.pk,
+                "cedula_funcionario": self.vigilante.cedula,
                 "cliente_asignado": "Cliente de prueba",
                 "puesto_asignado": "Puesto de prueba",
                 "observaciones_entrega": "Entrega de prueba",
@@ -590,7 +590,7 @@ class AsignacionRadioVistasTests(TestCase):
             reverse("inventario:asignacion_crear"),
             {
                 "radio": self.radio.pk,
-                "vigilante": self.vigilante.pk,
+                "cedula_funcionario": self.vigilante.cedula,
                 "coordinador_zona": "Zona nueva",
                 "cliente_asignado": "Cliente nuevo",
                 "puesto_asignado": "Puesto nuevo",
@@ -657,7 +657,7 @@ class AsignacionRadioVistasTests(TestCase):
             reverse("inventario:asignacion_crear"),
             {
                 "radio": self.radio.pk,
-                "vigilante": self.vigilante.pk,
+                "cedula_funcionario": self.vigilante.cedula,
                 "coordinador_zona": "Zona nueva",
                 "cliente_asignado": "Cliente nuevo",
                 "puesto_asignado": "Puesto nuevo",
@@ -1775,7 +1775,7 @@ class EntregaCompletaTests(TestCase):
     def datos(self, **cambios):
         datos = {
             "radio": self.radio.pk,
-            "vigilante": self.vigilante.pk,
+            "cedula_funcionario": self.vigilante.cedula,
             "coordinador_zona": "COORDINADOR",
             "cliente_asignado": "CLIENTE",
             "puesto_asignado": "PORTERIA",
@@ -3163,7 +3163,7 @@ class ClientesPuestosYAntivirusTests(TestCase):
 
     def entregar(self, **extra):
         datos = {
-            "radio": self.radio.pk, "vigilante": self.vigilante.pk,
+            "radio": self.radio.pk, "cedula_funcionario": self.vigilante.cedula,
             "coordinador_zona": "COORD", **ENTREGA_COMPLETA,
         }
         datos.update(extra)
@@ -3209,24 +3209,12 @@ class ClientesPuestosYAntivirusTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(list(respuesta.context["clientes"]), [sin_puestos])
 
-    def test_filtro_vigilantes_por_fecha_de_actualizacion_de_excel(self):
-        self.vigilante.ultima_actualizacion_excel = timezone.now()
-        self.vigilante.save(update_fields=["ultima_actualizacion_excel"])
-        antiguo = Vigilante.objects.create(
-            cedula="11223344",
-            nombre_completo="VIGILANTE ANTIGUO",
-            ultima_actualizacion_excel=timezone.now() - timedelta(days=10),
-        )
-        self.client.force_login(self.encargado)
-
-        respuesta = self.client.get(
-            reverse("inventario:vigilantes_lista"),
-            {"fecha_desde": timezone.localdate().isoformat()},
-        )
-
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertEqual(list(respuesta.context["vigilantes"]), [self.vigilante])
-        self.assertNotIn(antiguo, respuesta.context["vigilantes"])
+    def test_entrega_al_puesto_sin_cedula_del_supervisor(self):
+        self.entregar(cliente=self.cliente.pk, puesto=self.puesto.pk,
+                      cedula_funcionario="")
+        asignacion = AsignacionRadio.objects.get()
+        self.assertEqual(asignacion.cedula_funcionario, "")
+        self.assertEqual(asignacion.puesto, self.puesto)
 
     def test_importa_catalogo_y_actualiza_estado(self):
         import tempfile

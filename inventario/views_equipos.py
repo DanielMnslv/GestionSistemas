@@ -44,7 +44,6 @@ from .models import (
     Radio,
     RenovacionAntivirus,
     VerificacionPolitica,
-    Vigilante,
 )
 from .permisos import puede, requiere_permiso
 from .orden import orden_placa
@@ -442,7 +441,7 @@ def q_busqueda_equipos(texto):
 
 @login_required
 def buscar_json(request):
-    """Buscador global de la barra superior: equipos, clientes y vigilantes."""
+    """Buscador global de la barra superior: equipos y clientes."""
     from .models import Cliente
 
     texto = request.GET.get("q", "").strip()
@@ -458,9 +457,6 @@ def buscar_json(request):
     clientes = Cliente.objects.filter(
         Q(nombre__icontains=texto) | Q(nit__icontains=texto)
     ).order_by("-activo", "nombre")[:4]
-    vigilantes = Vigilante.objects.filter(
-        Q(nombre_completo__icontains=texto) | Q(cedula__icontains=texto)
-    ).order_by("nombre_completo")[:4]
 
     grupos = []
     if equipos:
@@ -481,13 +477,6 @@ def buscar_json(request):
             "etiqueta": "" if c.activo else "Inactivo",
             "url": reverse("inventario:cliente_detalle", args=[c.pk]),
         } for c in clientes]})
-    if vigilantes:
-        grupos.append({"titulo": "Vigilantes", "items": [{
-            "titulo": v.nombre_completo,
-            "detalle": f"C.C. {v.cedula}",
-            "etiqueta": "",
-            "url": reverse("inventario:vigilantes_lista") + "?" + urlencode({"q": v.cedula}),
-        } for v in vigilantes]})
     return JsonResponse({
         "q": texto,
         "grupos": grupos,
@@ -606,9 +595,82 @@ def _exportar_equipos(equipos, seleccion):
     return respuesta
 
 
+def _junto(*partes):
+    """Une los textos sin repetir uno que ya está dentro del anterior."""
+    texto = ""
+    for parte in partes:
+        parte = (parte or "").strip()
+        if parte and parte.lower() not in texto.lower():
+            texto = f"{texto} {parte}".strip()
+    return texto
+
+
+def _rel(equipo, nombre):
+    try:
+        return getattr(equipo, nombre)
+    except Exception:
+        return None
+
+
+# Columnas propias de cada tipo cuando la lista muestra un solo tipo de equipo.
+# Cada entrada: (título, función que recibe el equipo y devuelve el texto).
+COLUMNAS_POR_TIPO = {
+    Equipo.Tipo.COMPUTADOR: [
+        ("Clase", lambda e: getattr(_rel(e, "computador"), "clase", "")),
+        ("Procesador", lambda e: _junto(getattr(_rel(e, "computador"), "procesador", ""),
+                                        getattr(_rel(e, "computador"), "velocidad_procesador", ""))),
+        ("RAM", lambda e: _junto(getattr(_rel(e, "computador"), "capacidad_ram", ""),
+                                 getattr(_rel(e, "computador"), "tipo_ram", ""))),
+        ("Disco", lambda e: _junto(getattr(_rel(e, "computador"), "capacidad_disco", ""),
+                                   getattr(_rel(e, "computador"), "tipo_disco", ""))),
+        ("Sistema operativo", lambda e: getattr(_rel(e, "computador"), "sistema_operativo", "")),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+    Equipo.Tipo.TABLETA: [
+        ("Serial", lambda e: e.serial),
+        ("Sistema operativo", lambda e: getattr(_rel(e, "computador"), "sistema_operativo", "")),
+        ("Línea", lambda e: getattr(_rel(e, "computador"), "linea_celular", "")),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+    Equipo.Tipo.RADIO: [
+        ("Serial", lambda e: getattr(_rel(e, "radio"), "serial", "") or e.serial),
+        ("Frecuencia", lambda e: getattr(_rel(e, "radio"), "tipo_frecuencia", "")),
+        ("Modalidad", lambda e: getattr(_rel(e, "radio"), "modalidad_servicio", "")),
+    ],
+    Equipo.Tipo.IMPRESORA: [
+        ("Serial", lambda e: e.serial),
+        ("Clase", lambda e: getattr(_rel(e, "impresora"), "clase", "")),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+    Equipo.Tipo.ESCANER: [
+        ("Serial", lambda e: e.serial),
+        ("Clase", lambda e: getattr(_rel(e, "impresora"), "clase", "")),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+    Equipo.Tipo.GPS: [
+        ("IMEI", lambda e: getattr(_rel(e, "gps"), "imei", "")),
+        ("Línea", lambda e: _junto(getattr(_rel(e, "gps"), "linea", ""),
+                                   getattr(_rel(e, "gps"), "operador", ""))),
+        ("Vehículo", lambda e: _junto(getattr(_rel(e, "gps"), "placa_vehiculo", ""),
+                                      getattr(_rel(e, "gps"), "nombre_vehiculo", ""))),
+        ("Plataforma", lambda e: getattr(_rel(e, "gps"), "plataforma", "")),
+    ],
+    Equipo.Tipo.ALARMA: [
+        ("Serial", lambda e: e.serial),
+        ("Clase", lambda e: getattr(_rel(e, "alarma"), "clase", "")),
+        ("Reporta a central", lambda e: getattr(_rel(e, "alarma"), "reporta_central", "")),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+    Equipo.Tipo.UPS: [
+        ("Serial", lambda e: e.serial),
+        ("Ubicación", lambda e: e.ubicacion),
+    ],
+}
+
+
 @login_required
 def equipos_lista(request):
-    equipos = Equipo.objects.select_related("radio", "gps")
+    equipos = Equipo.objects.select_related("radio", "gps", "computador", "impresora", "alarma")
 
     busqueda = request.GET.get("q", "").strip()
     tipo = request.GET.get("tipo", "").strip()
@@ -793,8 +855,10 @@ def equipos_lista(request):
         radios_activos = list(
             Radio.objects.filter(activo=True).order_by("placa", "id")
         )
+    columnas_tipo = COLUMNAS_POR_TIPO.get(tipo, [])
     for equipo in page_obj.object_list:
         equipo.ficha = ficha_modal(equipo, request.user)
+        equipo.celdas_tipo = [(valor(equipo) or "") for _, valor in columnas_tipo]
         equipo.entregas = entregas_ficha(equipo)
         if equipo.pk in radios_equipo:
             equipo.entregas_radio_count = entregas_radio_por_equipo.get(
@@ -843,6 +907,9 @@ def equipos_lista(request):
         "total_resultados": page_obj.paginator.count,
         "busqueda": busqueda,
         "tipo_seleccionado": tipo,
+        "columnas_tipo": [titulo for titulo, _ in columnas_tipo],
+        # Cliente · Puesto solo aplica a radios (y a la vista con todos los tipos).
+        "ver_cliente_puesto": tipo in ("", Equipo.Tipo.RADIO),
         "estado_seleccionado": estado,
         "asignacion_seleccionada": asignacion,
         "disponibilidad_seleccionada": disponibilidad,
@@ -886,17 +953,6 @@ def equipo_pestanas(request, placa):
             asignaciones = list(radio.asignaciones.select_related(
                 "entregado_por", "recibido_por"
             ).order_by("-fecha_entrega", "-id"))
-            cedulas = {
-                asignacion.cedula_funcionario for asignacion in asignaciones
-            }
-            vigilantes = {
-                vigilante.cedula: vigilante
-                for vigilante in Vigilante.objects.filter(cedula__in=cedulas)
-            }
-            for asignacion in asignaciones:
-                asignacion.vigilante = vigilantes.get(
-                    asignacion.cedula_funcionario
-                )
             return render(request, "inventario/radio_pestanas.html", {
                 "radio": radio,
                 "asignaciones": asignaciones,
@@ -1855,7 +1911,7 @@ def equipo_renovar_antivirus(request, placa):
 # Tarjetas de la sección Equipos: (tipo, título, icono, descripción).
 TARJETAS_TIPO = [
     (Equipo.Tipo.COMPUTADOR, "Computadores", "monitor", "Portátiles y de escritorio de las áreas administrativas"),
-    (Equipo.Tipo.RADIO, "Radios", "radio", "Radios de comunicación entregados a los puestos y vigilantes"),
+    (Equipo.Tipo.RADIO, "Radios", "radio", "Radios de comunicación entregados a los puestos"),
     (Equipo.Tipo.TABLETA, "Tabletas", "tablet", "Tabletas para supervisión y registro en campo"),
     (Equipo.Tipo.IMPRESORA, "Impresoras", "printer", "Impresoras y multifuncionales"),
     (Equipo.Tipo.ESCANER, "Escáneres", "scan", "Escáneres de documentos"),
@@ -1869,7 +1925,7 @@ TIPOS_SIEMPRE_VISIBLES = {Equipo.Tipo.COMPUTADOR, Equipo.Tipo.RADIO, Equipo.Tipo
 
 
 def _ids_entregados():
-    """Equipos activos con una entrega vigente (a funcionarios o radios a vigilantes)."""
+    """Equipos activos con una entrega vigente (a funcionarios o radios a puestos)."""
     ids = set(AsignacionEquipo.objects.filter(
         estado=AsignacionEquipo.Estado.ASIGNADO, equipo__activo=True
     ).values_list("equipo_id", flat=True))

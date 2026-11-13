@@ -27,7 +27,6 @@ from .models import (
     Puesto,
     Radio,
     Ticket,
-    Vigilante,
 )
 
 
@@ -304,7 +303,7 @@ class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         return fecha
 
 
-# Texto que acepta el vigilante al recibir el radio. Reemplázalo por el
+# Texto que acepta el supervisor al recibir el radio. Reemplázalo por el
 # texto oficial de la empresa cuando esté disponible.
 CLAUSULA_CONFIDENCIALIDAD = (
     "Declaro que recibo el radio y sus accesorios en el estado indicado. "
@@ -345,19 +344,12 @@ class AsignacionRadioForm(forms.ModelForm):
         "estado_baterias_entrega",
     ]
 
-    vigilante = forms.ModelChoiceField(
-        queryset=Vigilante.objects.none(),
-        label="Vigilante",
-        required=True,
-        empty_label="Seleccione un vigilante",
-        help_text="Busca por cédula o nombre en la lista de vigilantes activos.",
-    )
-
     class Meta:
         model = AsignacionRadio
         fields = [
             "radio",
             "coordinador_zona",
+            "cedula_funcionario",
             "cliente_asignado",
             "puesto_asignado",
             "observaciones_entrega",
@@ -372,7 +364,8 @@ class AsignacionRadioForm(forms.ModelForm):
         ]
         labels = {
             "radio": "Radio",
-            "coordinador_zona": "Coordinador de zona",
+            "coordinador_zona": "Supervisor que recibe",
+            "cedula_funcionario": "Cédula del supervisor",
             "cliente_asignado": "Cliente",
             "puesto_asignado": "Puesto asignado",
             "observaciones_entrega": "Observaciones de entrega",
@@ -382,7 +375,7 @@ class AsignacionRadioForm(forms.ModelForm):
             "estado_cargador_entrega": "Cargador",
             "estado_antena_entrega": "Antena",
             "estado_baterias_entrega": "Baterías",
-            "clausula_aceptada": "El vigilante acepta la cláusula",
+            "clausula_aceptada": "El supervisor acepta la cláusula",
         }
         widgets = {
             "observaciones_entrega": forms.Textarea(
@@ -401,12 +394,12 @@ class AsignacionRadioForm(forms.ModelForm):
         self.fields["clausula_aceptada"] = forms.BooleanField(
             label=self.Meta.labels["clausula_aceptada"],
             error_messages={
-                "required": "El vigilante debe aceptar la cláusula.",
+                "required": "El supervisor debe aceptar la cláusula.",
             },
         )
         self.fields["firma"] = forms.CharField(
             widget=forms.HiddenInput,
-            error_messages={"required": "Falta la firma del vigilante."},
+            error_messages={"required": "Falta la firma del supervisor."},
         )
 
         # Solo radios activos y sin una entrega vigente.
@@ -424,16 +417,7 @@ class AsignacionRadioForm(forms.ModelForm):
             )
         )
 
-        self.fields["vigilante"].queryset = (
-            Vigilante.objects.filter(activo=True).order_by(
-                "nombre_completo"
-            )
-        )
-        self.fields["vigilante"].label_from_instance = (
-            lambda vigilante: (
-                f"{vigilante.cedula} - {vigilante.nombre_completo}"
-            )
-        )
+        self.fields["cedula_funcionario"].required = False
 
         # Cliente y puesto se eligen del catálogo; los textos solo se
         # escriben a mano si el puesto no está en el catálogo.
@@ -495,10 +479,6 @@ class AsignacionRadioForm(forms.ModelForm):
 
     def save(self, commit=True):
         asignacion = super().save(commit=False)
-        vigilante = self.cleaned_data["vigilante"]
-
-        asignacion.cedula_funcionario = vigilante.cedula
-
         if commit:
             asignacion.save()
 
