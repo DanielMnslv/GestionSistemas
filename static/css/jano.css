@@ -722,3 +722,13 @@ html[data-tema="dark"] .jx a.jx-btn-primary, html[data-tema="dark"] .jx a.jx-btn
 .jx a.jx-btn { color: var(--jx-text); }
 .jx a.jx-btn.jx-btn-primary, .jx a.jx-btn.jx-btn-lime { color: #fff; }
 html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a.jx-btn.jx-btn-lime { color: #0d1020; }
+
+/* Tarjetas de sección más grandes (4 por fila en pantallas de escritorio) */
+.jx-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 20px; }
+.jx-tile { min-height: 210px; padding: 26px 26px 22px; gap: 8px; border-radius: 14px; }
+.jx-tile .jx-tile-ico { width: 52px; height: 52px; border-radius: 12px; margin-bottom: 14px; }
+.jx-tile .jx-tile-ico svg.jx-i { width: 26px; height: 26px; }
+.jx-tile strong { font-size: 18px; }
+.jx-tile p { font-size: 14.5px; line-height: 1.5; }
+.jx-tile-meta { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--jx-line); font-size: 13.5px; }
+.jx-tile-meta b { font-size: 15px; }
