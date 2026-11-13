@@ -817,7 +817,7 @@ def equipos_lista(request):
 
     titulos = {t: titulo for t, titulo, _, _ in TARJETAS_TIPO}
     if disponibilidad == "en_inventario":
-        titulo_lista = "Inventario" + (f" · {titulos[tipo]}" if tipo else "")
+        titulo_lista = "Bodega" + (f" · {titulos[tipo]}" if tipo else "")
     else:
         titulo_lista = titulos.get(tipo, "Equipos")
     return render(request, "inventario/equipos_lista.html", {

@@ -4106,10 +4106,10 @@ class SeccionEquiposTarjetasTests(TestCase):
         self.assertEqual(tarjetas["Computadores"]["revision"], 1)
         self.assertEqual(resp.context["total"], 3)
         self.assertContains(resp, "?tipo=RADIO")
-        self.assertContains(resp, '<span class="jx-nav-text">Inventario</span>')
+        self.assertContains(resp, '<span class="jx-nav-text">Bodega</span>')
 
     def test_lista_toma_el_titulo_de_la_seccion(self):
         lista = reverse("inventario:equipos_lista")
         self.assertContains(self.client.get(lista, {"tipo": "RADIO"}), "<h1>Radios</h1>")
-        self.assertContains(self.client.get(lista, {"disponibilidad": "en_inventario"}), "<h1>Inventario</h1>")
+        self.assertContains(self.client.get(lista, {"disponibilidad": "en_inventario"}), "<h1>Bodega</h1>")
         self.assertContains(self.client.get(lista), "<h1>Equipos</h1>")
