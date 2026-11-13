@@ -94,4 +94,6 @@ def permisos(request):
     datos = {accion: puede(usuario, accion) for accion in ACCIONES}
     # Menú de Inventario y Mantenimiento: todos menos Talento humano.
     datos["tecnico"] = not solo_talento(usuario)
+    # Funcionarios con rol Solicitante: solo el portal Mi soporte.
+    datos["solo_portal"] = solo_solicitante(usuario)
     return {"permisos": datos}

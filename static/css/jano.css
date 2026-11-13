@@ -839,9 +839,9 @@ html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a
 /* Portal Mi soporte */
 .jx-public-user { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; }
 .jx-public-user form { margin: 0; }
-.jx-public-user button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; font: inherit; cursor: pointer; }
-.jx-public-user button:hover { background: rgba(255,255,255,.12); }
-.jx-public-user svg.jx-i { width: 16px; height: 16px; }
+.jx-public-link, .jx-public-user button { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.jx-public-link:hover, .jx-public-user button:hover { background: rgba(255,255,255,.12); }
+.jx-public-link svg.jx-i, .jx-public-user svg.jx-i { width: 16px; height: 16px; }
 .jx-portal-main { width: min(980px, 100%); }
 .jx-equipos-mios { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .jx-equipo-mio { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--jx-line); border-radius: 14px; background: var(--jx-surface); }

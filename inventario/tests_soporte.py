@@ -317,3 +317,13 @@ class PortalSolicitanteTests(TestCase):
         tec.groups.add(Group.objects.get_or_create(name="Técnico de mantenimiento")[0])
         self.client.force_login(tec)
         self.assertEqual(self.client.get("/inventario/solicitudes/").status_code, 200)
+
+
+class VolverDesdeSoporteTests(TestCase):
+    def test_boton_para_volver_segun_quien_entra(self):
+        self.assertContains(self.client.get("/soporte/"), "Ingresar")
+        tic = get_user_model().objects.create_superuser("tic", password="x-prueba-1")
+        self.client.force_login(tic)
+        r = self.client.get("/soporte/")
+        self.assertContains(r, "Volver a JANO")
+        self.assertContains(r, 'href="/"')

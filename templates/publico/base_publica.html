@@ -16,12 +16,19 @@
             <strong>MESA DE AYUDA TI</strong>
             <small>Seguridad Jano · Área de Tecnología</small>
         </div>
-        {% if user.is_authenticated %}
         <div class="jx-public-user">
+        {% if user.is_authenticated %}
             <span>{{ user.get_full_name|default:user.username }}</span>
+            {% if permisos.solo_portal %}
+            <a class="jx-public-link" href="{% url 'portal:inicio' %}"><svg class="jx-i"><use href="#i-home"/></svg>Mi soporte</a>
+            {% else %}
+            <a class="jx-public-link" href="{% url 'inicio' %}"><svg class="jx-i"><use href="#i-home"/></svg>Volver a JANO</a>
+            {% endif %}
             <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"><svg class="jx-i"><use href="#i-logout"/></svg>Salir</button></form>
-        </div>
+        {% else %}
+            <a class="jx-public-link" href="{% url 'login' %}"><svg class="jx-i"><use href="#i-users"/></svg>Ingresar</a>
         {% endif %}
+        </div>
     </header>
     <main class="jx-public-main{% block main_class %}{% endblock %}">
         {% for message in messages %}<div class="jx-alert jx-alert-{{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
