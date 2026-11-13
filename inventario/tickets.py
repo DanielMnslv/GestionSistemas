@@ -64,9 +64,12 @@ def crear(usuario=None, **datos):
 
 
 @transaction.atomic
-def asignar(ticket, tecnico, usuario, fecha_programada=None, franja=""):
+def asignar(ticket, tecnico, usuario, fecha_programada=None, franja="",
+            prioridad=None):
     _validar(ticket, E.ASIGNADO)
     reprogramacion = ticket.estado == E.ASIGNADO
+    if prioridad:
+        ticket.prioridad = prioridad
     ticket.tecnico = tecnico
     ticket.fecha_programada = fecha_programada
     ticket.franja = franja

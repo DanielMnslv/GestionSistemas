@@ -1,0 +1,7 @@
+{% comment %}Campo de formulario con el diseño nuevo. Sirve también para opciones (radios y casillas).{% endcomment %}
+<div class="jx-field{% if ancho %} jx-field-wide{% endif %}{% if field.errors %} has-error{% endif %}" data-campo="{{ field.name }}">
+    <span>{% if field.id_for_label and field.widget_type != "radioselect" and field.widget_type != "checkboxselectmultiple" %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% else %}{{ field.label }}{% endif %}{% if field.field.required %} <b class="jx-req" aria-hidden="true">*</b>{% endif %}</span>
+    {% if field.widget_type == "radioselect" %}<div class="jx-opciones">{{ field }}</div>{% else %}{{ field }}{% endif %}
+    {% if field.help_text %}<small class="jx-help">{{ field.help_text }}</small>{% endif %}
+    {% for e in field.errors %}<small class="jx-error" role="alert">{{ e }}</small>{% endfor %}
+</div>

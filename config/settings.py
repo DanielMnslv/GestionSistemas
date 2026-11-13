@@ -195,6 +195,10 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
+# Dirección con la que se abre JANO desde otros equipos (enlaces de los
+# correos de soporte).
+SITIO_URL = os.getenv('DJANGO_SITIO_URL', 'http://127.0.0.1:8080')
+
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "inicio"
@@ -203,3 +207,8 @@ LOGOUT_REDIRECT_URL = "login"
 # Integración saliente: URL y secreto HMAC configurados fuera del repositorio.
 INTEGRACION_GESTION_TIC_URL = os.getenv("INTEGRACION_GESTION_TIC_URL", "")
 INTEGRACION_GESTION_TIC_SECRET = os.getenv("INTEGRACION_GESTION_TIC_SECRET", "")
+
+# Fotos de las solicitudes de soporte. No son públicas: se sirven solo a
+# usuarios con sesión (ver inventario/views_tickets.py, ticket_foto).
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

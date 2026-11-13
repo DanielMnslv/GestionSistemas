@@ -26,6 +26,7 @@ from .models import (
     Cliente,
     Puesto,
     Radio,
+    Ticket,
     Vigilante,
 )
 
@@ -990,3 +991,248 @@ class RenovacionAntivirusForm(forms.Form):
             field.widget.attrs["class"] = "form-control"
 
 
+# ---------------------------------------------------------------------------
+# Solicitudes de soporte (tickets)
+# ---------------------------------------------------------------------------
+
+FOTO_MAX_BYTES = 5 * 1024 * 1024
+FOTOS_MAXIMAS = 3
+# Primeros bytes de cada formato de imagen permitido.
+FIRMAS_IMAGEN = {
+    b"\xff\xd8\xff": "jpg",
+    b"\x89PNG\r\n\x1a\n": "png",
+}
+
+
+def validar_foto(archivo):
+    """Solo imágenes JPG, PNG o WEBP de hasta 5 MB (se revisa el contenido,
+    no solo la extensión)."""
+    if archivo.size > FOTO_MAX_BYTES:
+        raise forms.ValidationError(f"La foto {archivo.name} pesa más de 5 MB.")
+    inicio = archivo.read(12)
+    archivo.seek(0)
+    es_webp = inicio[:4] == b"RIFF" and inicio[8:12] == b"WEBP"
+    if not es_webp and not any(inicio.startswith(m) for m in FIRMAS_IMAGEN):
+        raise forms.ValidationError(f"{archivo.name} no es una foto JPG, PNG o WEBP.")
+    return archivo
+
+
+def tecnicos():
+    """Usuarios activos que pueden atender solicitudes."""
+    return get_user_model().objects.filter(is_active=True).filter(
+        Q(is_superuser=True) | Q(groups__name="Técnico de mantenimiento")
+    ).distinct().order_by("first_name", "username")
+
+
+class TicketForm(forms.ModelForm):
+    """Solicitud registrada por el área de TI (por teléfono, en persona…)."""
+
+    class Meta:
+        model = Ticket
+        fields = [
+            "tipo", "categoria", "prioridad", "equipo", "descripcion",
+            "solicitante_nombre", "solicitante_cedula", "solicitante_correo",
+            "solicitante_telefono", "ubicacion",
+        ]
+        labels = {
+            "categoria": "Categoría",
+            "descripcion": "Descripción de la falla o del trabajo",
+            "solicitante_nombre": "Solicitante",
+            "solicitante_cedula": "Cédula del solicitante",
+            "solicitante_correo": "Correo del solicitante",
+            "solicitante_telefono": "Teléfono del solicitante",
+            "ubicacion": "Sede o lugar",
+        }
+        widgets = {"descripcion": forms.Textarea(attrs={"rows": 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        configurar_campo_equipo(self.fields["equipo"])
+        self.fields["equipo"].required = False
+        self.fields["equipo"].empty_label = "Sin equipo (por ejemplo, correo o red)"
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control"
+
+
+class AsignarTicketForm(forms.Form):
+    tecnico = forms.ModelChoiceField(
+        queryset=get_user_model().objects.none(), label="Técnico",
+        empty_label="Seleccione un técnico",
+    )
+    prioridad = forms.ChoiceField(label="Prioridad", choices=Ticket.Prioridad.choices)
+    fecha_programada = forms.DateField(
+        label="Fecha de la visita", required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        input_formats=["%Y-%m-%d"],
+    )
+    franja = forms.ChoiceField(
+        label="Horario", required=False,
+        choices=[("", "Sin horario")] + list(Ticket.Franja.choices),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tecnico"].queryset = tecnicos()
+        self.fields["tecnico"].label_from_instance = (
+            lambda u: u.get_full_name() or u.username
+        )
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control"
+
+
+class AtencionTicketForm(forms.Form):
+    solucion = forms.CharField(
+        label="Solución (la verá el solicitante)",
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    firma_nombre = forms.CharField(
+        label="Nombre de quien recibe", max_length=200, required=False,
+    )
+    firma = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nombre, field in self.fields.items():
+            if nombre != "firma":
+                field.widget.attrs["class"] = "form-control"
+
+    def clean_firma(self):
+        firma = self.cleaned_data["firma"]
+        return validar_firma(firma) if firma else ""
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("firma") and not datos.get("firma_nombre"):
+            self.add_error("firma_nombre", "Indica quién firma.")
+        return datos
+
+
+class IntervencionTicketForm(MantenimientoEquipoForm):
+    """La intervención de una solicitud: el equipo es el de la solicitud y se
+    usan las mismas casillas por tipo de equipo que en mantenimiento."""
+
+    def __init__(self, *args, equipo=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if equipo is not None:
+            self.fields["equipo"].initial = equipo.pk
+            self.fields["tipo_equipo"].initial = equipo.tipo
+        self.fields["equipo"].disabled = True
+        self.fields["tipo_equipo"].disabled = True
+
+
+class TextoTicketForm(forms.Form):
+    texto = forms.CharField(
+        label="Texto", widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
+        max_length=2000,
+    )
+    publico = forms.BooleanField(label="Visible para el solicitante", required=False)
+
+
+class CedulaSoporteForm(forms.Form):
+    """Paso 1 de la solicitud pública: quién la pide."""
+
+    cedula = forms.CharField(label="Número de cédula", max_length=20)
+    # Campo trampa: las personas no lo ven; los robots lo llenan.
+    sitio_web = forms.CharField(required=False, label="Sitio web")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.funcionario = None
+        self.fields["cedula"].widget.attrs.update({
+            "inputmode": "numeric", "autocomplete": "off", "class": "form-control",
+        })
+        self.fields["sitio_web"].widget.attrs.update({"tabindex": "-1", "autocomplete": "off"})
+
+    def clean_cedula(self):
+        cedula = re.sub(r"\D", "", self.cleaned_data["cedula"])
+        funcionario = Funcionario.objects.filter(cedula=cedula, activo=True).first()
+        if funcionario is None:
+            raise forms.ValidationError(
+                "La cédula no está en el listado de personal activo. "
+                "Comunícate con el área de TI."
+            )
+        self.funcionario = funcionario
+        return cedula
+
+    def clean_sitio_web(self):
+        if self.cleaned_data["sitio_web"]:
+            raise forms.ValidationError("Solicitud no válida.")
+        return ""
+
+
+class SoporteForm(forms.Form):
+    """Paso 2: qué pasa y con cuál de sus equipos.
+
+    Se muestran los equipos que la persona tiene a cargo según el inventario;
+    si el equipo no está en la lista, puede escribir la placa.
+    """
+
+    CATEGORIAS = [
+        (Ticket.Categoria.EQUIPO_OFICINA, "Daño en equipo de oficina"),
+        (Ticket.Categoria.SOFTWARE, "Soporte de correo, Novasoft, SEIF, servidor o internet"),
+        (Ticket.Categoria.OPERACION, "Daño en elementos de operación (radios, repetidora, cámaras)"),
+    ]
+    OTRO = "otro"
+    NINGUNO = "ninguno"
+
+    categoria = forms.ChoiceField(
+        label="Tipo de soporte que necesita", choices=CATEGORIAS, widget=forms.RadioSelect,
+    )
+    equipo = forms.ChoiceField(label="Equipo con la falla", required=False, widget=forms.RadioSelect)
+    placa = forms.CharField(
+        label="Placa del equipo", max_length=50, required=False,
+        help_text="Está en la etiqueta del equipo, por ejemplo PC--21 o RJ-2022.",
+    )
+    descripcion = forms.CharField(
+        label="Describa la falla", widget=forms.Textarea(attrs={"rows": 4}), max_length=3000,
+    )
+    ubicacion = forms.CharField(label="¿Dónde está? (sede, oficina o puesto)", max_length=200)
+    correo = forms.EmailField(label="Correo para avisarle del avance")
+    telefono = forms.CharField(label="Teléfono o celular", max_length=50, required=False)
+
+    def __init__(self, *args, funcionario=None, equipos=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.funcionario = funcionario
+        self.equipo = None
+        self.equipos = {str(e.pk): e for e in equipos}
+        self.fields["equipo"].choices = [
+            (str(e.pk), f"{e.placa} · {e.get_tipo_display()} {e.marca} {e.modelo}".strip())
+            for e in equipos
+        ] + [
+            (self.OTRO, "Otro equipo (escribir la placa)"),
+            (self.NINGUNO, "No es de un equipo (correo, programas, internet…)"),
+        ]
+        if funcionario is not None and not self.is_bound:
+            self.initial.setdefault("correo", funcionario.correo)
+        for nombre, field in self.fields.items():
+            if nombre not in ("categoria", "equipo"):
+                field.widget.attrs["class"] = "form-control"
+
+    def clean(self):
+        datos = super().clean()
+        eleccion = datos.get("equipo") or ""
+        self.equipo = None
+        if eleccion in self.equipos:
+            self.equipo = self.equipos[eleccion]
+        elif eleccion == self.OTRO:
+            placa = re.sub(r"\s+", "", datos.get("placa") or "").upper()
+            if not placa:
+                self.add_error("placa", "Escriba la placa del equipo.")
+            else:
+                self.equipo = Equipo.objects.filter(placa__iexact=placa, activo=True).first()
+                if self.equipo is None:
+                    self.add_error("placa", "No encontramos un equipo activo con esa placa.")
+        elif eleccion == self.NINGUNO:
+            if datos.get("categoria") != Ticket.Categoria.SOFTWARE:
+                self.add_error("equipo", "Elija el equipo que presenta la falla.")
+        else:
+            self.add_error("equipo", "Elija el equipo o indique que no es de un equipo.")
+        return datos
+
+
+class ReabrirForm(forms.Form):
+    motivo = forms.CharField(
+        label="¿Qué sigue fallando?",
+        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        max_length=2000,
+    )

@@ -1,64 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Indicadores de tickets | JANO Inventario{% endblock %}
+{% block title %}Indicadores de solicitudes | JANO Inventario{% endblock %}
 
 {% block content %}
-<div class="radios-page">
-    <div class="page-heading">
-        <div>
-            <h1>Indicadores de tickets</h1>
-            <p>Carga de trabajo actual y tiempos de respuesta de los últimos 90 días (solicitudes y preventivos).</p>
-        </div>
-        <a class="btn btn-light" href="{% url 'inventario:tickets_lista' %}">Ver tickets</a>
+<a class="jx-back" href="{% url 'inventario:tickets_lista' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Solicitudes</a>
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Indicadores de solicitudes</h1>
+        <p>Carga de trabajo actual y tiempos de respuesta de los últimos 90 días (sin contar el histórico importado).</p>
     </div>
-
-    <section class="equipos-tipos">
-        {% for etiqueta, n in por_estado %}
-        <div class="equipos-tipo"><span>{{ etiqueta }}</span><strong>{{ n }}</strong></div>
-        {% endfor %}
-        <a class="equipos-tipo" href="{% url 'inventario:tickets_lista' %}?estado=vencidos"><span>Visitas atrasadas</span><strong>{{ atrasados }}</strong></a>
-    </section>
-
-    <section class="panel">
-        <div class="panel-heading"><div><h2>Por técnico</h2></div></div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Técnico</th><th>Activos</th><th>Resueltos (90 días)</th><th>Respuesta promedio</th></tr></thead>
-                <tbody>
-                    {% for nombre, activos, resueltos, promedio in por_tecnico %}
-                    <tr><td>{{ nombre }}</td><td>{{ activos }}</td><td>{{ resueltos }}</td><td>{% if promedio is not None %}{{ promedio }} h{% else %}—{% endif %}</td></tr>
-                    {% empty %}<tr><td colspan="4">Sin datos todavía.</td></tr>{% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="panel-heading"><div><h2>Por tipo de equipo</h2></div></div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Tipo</th><th>Activos</th><th>Resueltos (90 días)</th><th>Respuesta promedio</th></tr></thead>
-                <tbody>
-                    {% for nombre, activos, resueltos, promedio in por_tipo %}
-                    <tr><td>{{ nombre }}</td><td>{{ activos }}</td><td>{{ resueltos }}</td><td>{% if promedio is not None %}{{ promedio }} h{% else %}—{% endif %}</td></tr>
-                    {% empty %}<tr><td colspan="4">Sin datos todavía.</td></tr>{% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="panel-heading"><div><h2>Últimos seis meses</h2><p>Sin contar los tickets importados del Sheet.</p></div></div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Mes</th><th>Creados</th><th>Resueltos</th></tr></thead>
-                <tbody>
-                    {% for mes, creados, resueltos in meses %}
-                    <tr><td>{{ mes|date:"F Y"|capfirst }}</td><td>{{ creados }}</td><td>{{ resueltos }}</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
 </div>
+
+<div class="jx-kpis">
+    {% for etiqueta, n in por_estado %}
+    <div class="jx-kpi"><div class="jx-kpi-top"><span class="jx-kpi-label">{{ etiqueta }}</span><span class="jx-kpi-ico soft-primary"><svg class="jx-i"><use href="#i-inbox"/></svg></span></div><div class="jx-kpi-value">{{ n }}</div></div>
+    {% endfor %}
+    <a class="jx-kpi" href="{% url 'inventario:tickets_lista' %}?estado=vencidos"><div class="jx-kpi-top"><span class="jx-kpi-label">Visitas atrasadas</span><span class="jx-kpi-ico soft-bad"><svg class="jx-i"><use href="#i-alert"/></svg></span></div><div class="jx-kpi-value">{{ atrasados }}</div></a>
+</div>
+
+<div class="jx-grid jx-grid-2">
+    {% for titulo, filas in tablas %}
+    <section class="jx-card jx-card-flush">
+        <div class="jx-card-head" style="padding-bottom:12px"><h2>{{ titulo }}</h2></div>
+        <div class="jx-table-wrap">
+            <table class="jx-table">
+                <thead><tr><th>{% if forloop.first %}Técnico{% else %}Tipo de equipo{% endif %}</th><th class="num">Activas</th><th class="num">Resueltas 90 d</th><th class="num">Respuesta prom.</th></tr></thead>
+                <tbody>
+                {% for nombre, activos, resueltos, promedio in filas %}
+                    <tr><td>{{ nombre }}</td><td class="num">{{ activos }}</td><td class="num">{{ resueltos }}</td><td class="num">{% if promedio is not None %}{{ promedio }} h{% else %}—{% endif %}</td></tr>
+                {% empty %}<tr><td colspan="4" class="muted">Sin datos todavía.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endfor %}
+</div>
+
+<section class="jx-card jx-card-flush" style="margin-top:18px">
+    <div class="jx-card-head" style="padding-bottom:12px"><h2>Últimos seis meses</h2></div>
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Mes</th><th class="num">Recibidas</th><th class="num">Resueltas</th></tr></thead>
+            <tbody>
+            {% for mes, creados, resueltos in meses %}
+                <tr><td>{{ mes|date:"F Y"|capfirst }}</td><td class="num">{{ creados }}</td><td class="num">{{ resueltos }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

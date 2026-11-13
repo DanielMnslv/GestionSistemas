@@ -31,6 +31,13 @@ def conteos_menu():
         except DatabaseError:
             # Base sin la migración del módulo de Usuarios: el resto del menú sigue.
             datos["retiros"] = 0
+        try:
+            from .models import Ticket
+            datos["solicitudes"] = Ticket.objects.filter(
+                estado=Ticket.Estado.ABIERTO, tecnico__isnull=True
+            ).count()
+        except DatabaseError:
+            datos["solicitudes"] = 0
         datos["bodega"] = max(datos["equipos"] - _entregados(), 0)
         cache.set(CLAVE_MENU, datos, SEGUNDOS_MENU)
     return datos

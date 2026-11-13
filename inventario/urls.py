@@ -1,6 +1,9 @@
 
 from django.urls import include, path
-from . import views, views_auditoria, views_catalogos, views_equipos, views_personas
+from . import (
+    views, views_auditoria, views_catalogos, views_equipos, views_personas,
+    views_tickets,
+)
 
 app_name = "inventario"
 
@@ -48,6 +51,17 @@ urlpatterns = [
     ),
     path("equipos/nuevo/", views_equipos.equipo_crear, name="equipo_crear"),
     path("auditoria/", views_auditoria.auditoria_lista, name="auditoria"),
+    # Solicitudes de soporte (mesa de ayuda)
+    path("solicitudes/", views_tickets.tickets_lista, name="tickets_lista"),
+    path("solicitudes/nueva/", views_tickets.ticket_crear, name="ticket_crear"),
+    path("solicitudes/indicadores/", views_tickets.tickets_indicadores, name="tickets_indicadores"),
+    path("solicitudes/fotos/<int:pk>/", views_tickets.ticket_foto, name="ticket_foto"),
+    path("solicitudes/<str:numero>/", views_tickets.ticket_detalle, name="ticket_detalle"),
+    path("solicitudes/<str:numero>/asignar/", views_tickets.ticket_asignar, name="ticket_asignar"),
+    path("solicitudes/<str:numero>/iniciar/", views_tickets.ticket_iniciar, name="ticket_iniciar"),
+    path("solicitudes/<str:numero>/atender/", views_tickets.ticket_atender, name="ticket_atender"),
+    path("solicitudes/<str:numero>/cancelar/", views_tickets.ticket_cancelar, name="ticket_cancelar"),
+    path("solicitudes/<str:numero>/comentar/", views_tickets.ticket_comentar, name="ticket_comentar"),
     path(
         "equipos/<str:placa>/",
         views_equipos.equipo_detalle,

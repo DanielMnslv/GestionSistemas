@@ -1,39 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Nuevo ticket | JANO Inventario{% endblock %}
+{% block title %}Registrar solicitud | JANO Inventario{% endblock %}
 
 {% block content %}
-<section class="ficha-form-page">
-    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
-        <a href="{% url 'inventario:tickets_lista' %}">Tickets</a>
-        <span aria-hidden="true">/</span>
-        <span>Nuevo ticket</span>
-    </nav>
-    <header class="ficha-form-heading">
-        <span class="eyebrow">TICKETS</span>
-        <h1>Nuevo ticket</h1>
-        <p>Registra un daño, una solicitud de soporte o un trabajo programado.</p>
-    </header>
-    <section class="ficha-form-card">
-        <form method="post" class="ficha-form-content" novalidate>
-            {% csrf_token %}
-            {% if formulario.errors %}
-            <div class="ficha-form-errors" role="alert"><strong>Revisa los campos marcados.</strong></div>
-            {% endif %}
-            <div class="ficha-form-grid">
-                {% for field in formulario %}
-                    {% if field.widget_type == "textarea" %}
-                        {% include "inventario/_campo.html" with ancho_completo=True %}
-                    {% else %}
-                        {% include "inventario/_campo.html" %}
-                    {% endif %}
-                {% endfor %}
-            </div>
-            <div class="ficha-form-actions">
-                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:tickets_lista' %}">Cancelar</a>
-                <button class="ficha-form-button" type="submit">Crear ticket</button>
-            </div>
-        </form>
-    </section>
+<a class="jx-back" href="{% url 'inventario:tickets_lista' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Solicitudes</a>
+<section class="jx-card" style="max-width:860px">
+    <div class="jx-card-head"><div><h1 style="margin:0;font-size:20px">Registrar solicitud</h1><p>Para lo que llega por teléfono, chat o en persona. Si el solicitante tiene correo, le llega el número de caso.</p></div></div>
+    <form method="post" class="jx-card-body" novalidate>
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}<div class="jx-alert jx-alert-error">{{ formulario.non_field_errors }}</div>{% endif %}
+        <div class="jx-form-2">
+            {% for field in formulario %}
+                {% if field.widget_type == "textarea" or field.name == "equipo" %}
+                    {% include "inventario/_jx_campo.html" with ancho=True %}
+                {% else %}
+                    {% include "inventario/_jx_campo.html" %}
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="jx-dialog-actions">
+            <a class="jx-btn" href="{% url 'inventario:tickets_lista' %}">Cancelar</a>
+            <button class="jx-btn jx-btn-primary" type="submit">Registrar solicitud</button>
+        </div>
+    </form>
 </section>
 {% endblock %}

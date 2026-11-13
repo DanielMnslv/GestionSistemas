@@ -7,12 +7,17 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from . import personas
 from . import tickets as flujo
-from .forms import ReabrirForm, SoporteForm
-from .models import Ticket
+from .forms import (
+    FOTOS_MAXIMAS, CedulaSoporteForm, ReabrirForm, SoporteForm, validar_foto,
+)
+from .models import FotoTicket, Ticket
 
 MAXIMO_POR_CEDULA_HORA = 5
 MAXIMO_POR_IP_HORA = 15
@@ -39,45 +44,100 @@ def contar_ip(request):
     cache.set(clave, cache.get(clave, 0) + 1, 3600)
 
 
+MAXIMO_CONSULTAS_IP_HORA = 30
+
+
+def consultas_excedidas(request):
+    """Evita que alguien pruebe cédulas una tras otra."""
+    clave = f"soporte-cedula-ip-{ip_de(request)}"
+    veces = cache.get(clave, 0)
+    cache.set(clave, veces + 1, 3600)
+    return veces >= MAXIMO_CONSULTAS_IP_HORA
+
+
+def _paso_equipo(request, cedula_form, datos=None, archivos=None):
+    funcionario = cedula_form.funcionario
+    equipos = [d["equipo"] for d in personas.equipos_a_cargo(funcionario)]
+    formulario = SoporteForm(datos, funcionario=funcionario, equipos=equipos)
+    return funcionario, formulario
+
+
 def soporte_formulario(request):
-    formulario = SoporteForm(request.POST or None)
-    if request.method == "POST" and formulario.is_valid():
-        datos = formulario.cleaned_data
-        if supera_limite(request, datos["cedula"]):
-            formulario.add_error(
-                None,
-                "Ya recibimos varias solicitudes en la última hora. "
-                "Intenta más tarde o comunícate con el área de TI.",
-            )
-        else:
-            funcionario = formulario.funcionario
-            categoria = datos["categoria"]
-            ticket = flujo.crear(
-                origen=Ticket.Origen.FORMULARIO,
-                tipo=(
-                    Ticket.Tipo.SOPORTE
-                    if categoria == Ticket.Categoria.SOFTWARE
-                    else Ticket.Tipo.CORRECTIVO
-                ),
-                categoria=categoria,
-                equipo=formulario.equipo,
-                descripcion=datos["descripcion"],
-                funcionario=funcionario,
-                solicitante_nombre=funcionario.nombre_completo,
-                solicitante_cedula=funcionario.cedula,
-                solicitante_correo=datos["correo"],
-                solicitante_telefono=datos["telefono"],
-                ubicacion=datos["ubicacion"],
-            )
-            contar_ip(request)
-            messages.success(
-                request,
-                f"Recibimos tu solicitud. Tu número de caso es {ticket.numero}.",
-            )
-            return redirect("soporte_caso", ticket.token)
+    """Paso 1: la cédula. Paso 2: qué falla y en cuál de sus equipos."""
+    paso = request.POST.get("paso", "1") if request.method == "POST" else "1"
+
+    if request.method == "POST" and paso == "1":
+        cedula_form = CedulaSoporteForm(request.POST)
+        if consultas_excedidas(request):
+            cedula_form.add_error(None, "Demasiadas consultas desde este equipo. Intenta en una hora.")
+        elif cedula_form.is_valid():
+            funcionario, formulario = _paso_equipo(request, cedula_form)
+            return render(request, "publico/soporte_formulario.html", {
+                "paso": 2, "funcionario": funcionario, "formulario": formulario,
+                "cedula": cedula_form.cleaned_data["cedula"],
+            })
+        return render(request, "publico/soporte_formulario.html", {"paso": 1, "formulario": cedula_form})
+
+    if request.method == "POST" and paso == "2":
+        cedula_form = CedulaSoporteForm({"cedula": request.POST.get("cedula", "")})
+        if not cedula_form.is_valid():
+            return render(request, "publico/soporte_formulario.html", {"paso": 1, "formulario": cedula_form})
+        cedula = cedula_form.cleaned_data["cedula"]
+        funcionario, formulario = _paso_equipo(request, cedula_form, request.POST)
+        fotos = request.FILES.getlist("fotos")
+        errores_fotos = []
+        if len(fotos) > FOTOS_MAXIMAS:
+            errores_fotos.append(f"Puedes adjuntar máximo {FOTOS_MAXIMAS} fotos.")
+        for foto in fotos[:FOTOS_MAXIMAS]:
+            try:
+                validar_foto(foto)
+            except ValidationError as error:
+                errores_fotos.extend(error.messages)
+
+        if formulario.is_valid() and not errores_fotos:
+            if supera_limite(request, cedula):
+                formulario.add_error(
+                    None,
+                    "Ya recibimos varias solicitudes tuyas en la última hora. "
+                    "Intenta más tarde o comunícate con el área de TI.",
+                )
+            else:
+                datos = formulario.cleaned_data
+                categoria = datos["categoria"]
+                with transaction.atomic():
+                    ticket = flujo.crear(
+                        origen=Ticket.Origen.FORMULARIO,
+                        tipo=(
+                            Ticket.Tipo.SOPORTE
+                            if categoria == Ticket.Categoria.SOFTWARE
+                            else Ticket.Tipo.CORRECTIVO
+                        ),
+                        categoria=categoria,
+                        equipo=formulario.equipo,
+                        descripcion=datos["descripcion"],
+                        funcionario=funcionario,
+                        solicitante_nombre=funcionario.nombre_completo,
+                        solicitante_cedula=funcionario.cedula,
+                        solicitante_correo=datos["correo"],
+                        solicitante_telefono=datos["telefono"],
+                        ubicacion=datos["ubicacion"],
+                    )
+                    for foto in fotos:
+                        FotoTicket.objects.create(ticket=ticket, archivo=foto, descripcion="Enviada por el solicitante")
+                contar_ip(request)
+                messages.success(
+                    request,
+                    f"Recibimos tu solicitud. Tu número de caso es {ticket.numero}.",
+                )
+                return redirect("soporte_caso", ticket.token)
+
+        return render(request, "publico/soporte_formulario.html", {
+            "paso": 2, "funcionario": funcionario, "formulario": formulario,
+            "cedula": cedula, "errores_fotos": errores_fotos,
+        })
 
     return render(request, "publico/soporte_formulario.html", {
-        "formulario": formulario,
+        "paso": 1, "formulario": CedulaSoporteForm(),
     })
 
 

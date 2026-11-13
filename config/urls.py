@@ -27,6 +27,9 @@ urlpatterns = [
     ),
 
     # Módulos actuales de JANO
+    # Mesa de ayuda pública (sin inicio de sesión)
+    path("soporte/", include("inventario.urls_publicas")),
+
     path("inventario/", include("inventario.urls")),
     path("", include("usuarios.urls")),
 ]

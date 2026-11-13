@@ -1,64 +1,56 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Atender {{ ticket.numero }} | JANO Inventario{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/paginas/mantenimiento-form.css' %}?v=20261029c">
+{% endblock %}
+
 {% block content %}
-<section class="ficha-form-page">
-    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
-        <a href="{% url 'inventario:tickets_lista' %}">Tickets</a>
-        <span aria-hidden="true">/</span>
-        <a href="{% url 'inventario:ticket_detalle' ticket.numero %}">{{ ticket.numero }}</a>
-        <span aria-hidden="true">/</span>
-        <span>Visita</span>
-    </nav>
-    <header class="ficha-form-heading">
-        <span class="eyebrow">VISITA Y ACTA</span>
+<a class="jx-back" href="{% url 'inventario:ticket_detalle' ticket.numero %}"><svg class="jx-i"><use href="#i-arrow"/></svg>{{ ticket.numero }}</a>
+
+<div class="jx-head jx-head-compact">
+    <div>
         <h1>Atender {{ ticket.numero }}</h1>
-        <p>{{ ticket.descripcion|truncatechars:200 }}</p>
-    </header>
+        <p>{{ ticket.descripcion|truncatechars:220 }}</p>
+    </div>
+</div>
 
-    <section class="ficha-form-card">
-        <form method="post" enctype="multipart/form-data" class="ficha-form-content" novalidate>
-            {% csrf_token %}
-            {% if formulario.errors or intervencion.errors or errores_fotos %}
-            <div class="ficha-form-errors" role="alert">
-                <strong>Revisa los campos marcados.</strong>
-                {% if errores_fotos %}<ul>{% for e in errores_fotos %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </div>
-            {% endif %}
+<form method="post" enctype="multipart/form-data" novalidate class="jx-stack" data-mant-form>
+    {% csrf_token %}
+    {% if formulario.errors or intervencion.errors or errores_fotos %}
+    <div class="jx-alert jx-alert-error" role="alert"><div>Revisa los campos marcados.{% for e in errores_fotos %}<p style="margin:4px 0 0">{{ e }}</p>{% endfor %}</div></div>
+    {% endif %}
 
-            {% if intervencion %}
-            <h3 class="ficha-section-heading"><span class="ficha-section-number">01</span> Intervención en {{ ticket.equipo.placa }}</h3>
-            <div class="ficha-form-grid">
-                {% for field in intervencion %}
-                    {% if field.widget_type == "textarea" %}
-                        {% include "inventario/_campo.html" with ancho_completo=True %}
-                    {% else %}
-                        {% include "inventario/_campo.html" %}
-                    {% endif %}
-                {% endfor %}
-            </div>
-            <hr class="ficha-divider">
-            {% endif %}
-
-            <h3 class="ficha-section-heading"><span class="ficha-section-number">{% if intervencion %}02{% else %}01{% endif %}</span> Solución y evidencias</h3>
-            <div class="ficha-form-grid">
-                {% include "inventario/_campo.html" with field=formulario.solucion ancho_completo=True %}
-                <div class="ficha-field full-width">
-                    <label for="fotos">Fotos de la visita</label>
-                    <input id="fotos" type="file" name="fotos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple class="form-control">
-                    <small class="ficha-field-help">JPG, PNG o WEBP de hasta 5 MB. En el celular abre la cámara.</small>
-                </div>
-                {% include "inventario/_campo.html" with field=formulario.firma_nombre %}
-            </div>
-
-            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el servicio" opcional=True %}
-
-            <div class="ficha-form-actions">
-                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:ticket_detalle' ticket.numero %}">Cancelar</a>
-                <button class="ficha-form-button" type="submit">Resolver ticket</button>
-            </div>
-        </form>
+    {% if intervencion %}
+    <section class="jx-card">
+        <div class="jx-card-head"><div><h2>1 · Intervención en {{ ticket.equipo.placa }}</h2><p>{{ ticket.equipo.get_tipo_display }} {{ ticket.equipo.marca }} {{ ticket.equipo.modelo }}. Queda en la hoja de vida del equipo.</p></div></div>
+        <div class="jx-card-body">
+            {% include "inventario/_mant_form_campos.html" with formulario=intervencion %}
+        </div>
     </section>
-</section>
+    {% endif %}
+
+    <section class="jx-card">
+        <div class="jx-card-head"><h2>{% if intervencion %}2{% else %}1{% endif %} · Solución y evidencias</h2></div>
+        <div class="jx-card-body">
+            <div class="jx-form-2">
+                {% include "inventario/_jx_campo.html" with field=formulario.solucion ancho=True %}
+                <div class="jx-field jx-field-wide">
+                    <span><label for="fotos">Fotos de la visita</label></span>
+                    <input id="fotos" type="file" name="fotos" accept="image/jpeg,image/png,image/webp" capture="environment" multiple>
+                    <small class="jx-help">JPG, PNG o WEBP de hasta 5 MB. En el celular abre la cámara.</small>
+                </div>
+                {% include "inventario/_jx_campo.html" with field=formulario.firma_nombre ancho=True %}
+            </div>
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el servicio" opcional=True %}
+        </div>
+    </section>
+
+    <div class="jx-dialog-actions">
+        <a class="jx-btn" href="{% url 'inventario:ticket_detalle' ticket.numero %}">Cancelar</a>
+        <button class="jx-btn jx-btn-primary" type="submit"><svg class="jx-i"><use href="#i-check"/></svg>Resolver solicitud</button>
+    </div>
+</form>
 {% endblock %}

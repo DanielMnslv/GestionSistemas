@@ -372,6 +372,15 @@ class MantenimientoEquipo(models.Model):
 
     observaciones = models.TextField(blank=True)
 
+    # Solicitud (ticket) que originó la intervención, si la hay.
+    ticket = models.ForeignKey(
+        "Ticket",
+        on_delete=models.SET_NULL,
+        related_name="intervenciones",
+        null=True,
+        blank=True,
+    )
+
     registrado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -1337,3 +1346,190 @@ class RegistroAuditoria(models.Model):
     def __str__(self):
         return f"{self.fecha:%d/%m/%Y %H:%M} {self.usuario_nombre} {self.get_accion_display()} {self.modelo}"
 
+
+class Ticket(models.Model):
+    """Caso de mantenimiento o soporte: lo pide un funcionario (formulario
+    público), lo crea el área de TI o sale de un mantenimiento preventivo.
+    Flujo: abierto → asignado → en atención → resuelto → cerrado."""
+
+    class Origen(models.TextChoices):
+        FORMULARIO = "FORMULARIO", "Formulario público"
+        INTERNO = "INTERNO", "Registrado por TI"
+        PREVENTIVO = "PREVENTIVO", "Mantenimiento preventivo"
+        IMPORTADO = "IMPORTADO", "Importado del Sheet"
+
+    class Tipo(models.TextChoices):
+        CORRECTIVO = "CORRECTIVO", "Correctivo (daño o falla)"
+        PREVENTIVO = "PREVENTIVO", "Mantenimiento preventivo"
+        SOPORTE = "SOPORTE", "Soporte (correo, programas, red)"
+
+    class Categoria(models.TextChoices):
+        SOFTWARE = "SOFTWARE", "Correo, Novasoft, SEIF, servidor o internet"
+        EQUIPO_OFICINA = "EQUIPO_OFICINA", "Daño en equipo de oficina"
+        OPERACION = "OPERACION", (
+            "Daño en elementos de operación (radios, repetidora, cámaras)"
+        )
+        MANTENIMIENTO = "MANTENIMIENTO", "Mantenimiento preventivo"
+        OTRA = "OTRA", "Otra"
+
+    class Prioridad(models.TextChoices):
+        BAJA = "BAJA", "Baja"
+        MEDIA = "MEDIA", "Media"
+        ALTA = "ALTA", "Alta"
+
+    class Estado(models.TextChoices):
+        ABIERTO = "ABIERTO", "Abierto"
+        ASIGNADO = "ASIGNADO", "Asignado"
+        EN_ATENCION = "EN_ATENCION", "En atención"
+        RESUELTO = "RESUELTO", "Resuelto"
+        CERRADO = "CERRADO", "Cerrado"
+        CANCELADO = "CANCELADO", "Cancelado"
+
+    class Franja(models.TextChoices):
+        MANANA = "MANANA", "8:00 a 12:00"
+        TARDE = "TARDE", "2:00 a 5:00"
+
+    ACTIVOS = [Estado.ABIERTO, Estado.ASIGNADO, Estado.EN_ATENCION, Estado.RESUELTO]
+
+    numero = models.CharField(max_length=20, unique=True, editable=False)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    origen = models.CharField(max_length=15, choices=Origen.choices)
+    tipo = models.CharField(max_length=15, choices=Tipo.choices)
+    categoria = models.CharField(
+        max_length=20, choices=Categoria.choices, default=Categoria.OTRA
+    )
+    prioridad = models.CharField(
+        max_length=10, choices=Prioridad.choices, default=Prioridad.MEDIA
+    )
+    estado = models.CharField(
+        max_length=15, choices=Estado.choices, default=Estado.ABIERTO,
+        db_index=True,
+    )
+    equipo = models.ForeignKey(
+        "Equipo", on_delete=models.PROTECT, related_name="tickets",
+        null=True, blank=True,
+    )
+    descripcion = models.TextField()
+
+    # Quién pide el servicio.
+    funcionario = models.ForeignKey(
+        "Funcionario", on_delete=models.SET_NULL, related_name="tickets",
+        null=True, blank=True,
+    )
+    solicitante_nombre = models.CharField(max_length=200, blank=True)
+    solicitante_cedula = models.CharField(max_length=50, blank=True)
+    solicitante_correo = models.EmailField(blank=True)
+    solicitante_telefono = models.CharField(max_length=50, blank=True)
+    ubicacion = models.CharField("Sede o lugar", max_length=200, blank=True)
+
+    # Asignación.
+    tecnico = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="tickets_asignados", null=True, blank=True,
+    )
+    fecha_programada = models.DateField(null=True, blank=True, db_index=True)
+    franja = models.CharField(max_length=10, choices=Franja.choices, blank=True)
+
+    # Resultado.
+    solucion = models.TextField(blank=True)
+    firma = models.TextField(blank=True)
+    firma_nombre = models.CharField(max_length=200, blank=True)
+    cierre_automatico = models.BooleanField(default=False)
+
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="tickets_creados", null=True, blank=True,
+    )
+    creado_en = models.DateTimeField(default=timezone.now, db_index=True)
+    asignado_en = models.DateTimeField(null=True, blank=True)
+    atencion_en = models.DateTimeField(null=True, blank=True)
+    resuelto_en = models.DateTimeField(null=True, blank=True)
+    cerrado_en = models.DateTimeField(null=True, blank=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ticket"
+        verbose_name_plural = "Tickets"
+        ordering = ["-creado_en", "-id"]
+
+    def __str__(self):
+        return f"{self.numero} - {self.get_estado_display()}"
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self.siguiente_numero(self.creado_en)
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def siguiente_numero(fecha):
+        anio = timezone.localtime(fecha).year if timezone.is_aware(fecha) else fecha.year
+        prefijo = f"TK-{anio}-"
+        ultimo = (
+            Ticket.objects.filter(numero__startswith=prefijo)
+            .order_by("-numero").values_list("numero", flat=True).first()
+        )
+        siguiente = int(ultimo.rsplit("-", 1)[1]) + 1 if ultimo else 1
+        return f"{prefijo}{siguiente:04d}"
+
+    @property
+    def activo(self):
+        return self.estado in self.ACTIVOS
+
+    @property
+    def tiempo_respuesta(self):
+        """Tiempo desde la creación hasta la resolución."""
+        if self.resuelto_en:
+            return self.resuelto_en - self.creado_en
+        return None
+
+
+class EventoTicket(models.Model):
+    """Bitácora del ticket."""
+
+    class Tipo(models.TextChoices):
+        CREADO = "CREADO", "Creado"
+        ASIGNADO = "ASIGNADO", "Asignado"
+        ATENCION = "ATENCION", "En atención"
+        RESUELTO = "RESUELTO", "Resuelto"
+        CONFIRMADO = "CONFIRMADO", "Confirmado por el solicitante"
+        REABIERTO = "REABIERTO", "Reabierto"
+        CERRADO = "CERRADO", "Cerrado"
+        CANCELADO = "CANCELADO", "Cancelado"
+        COMENTARIO = "COMENTARIO", "Comentario"
+        CORREO = "CORREO", "Correo"
+
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE, related_name="eventos"
+    )
+    fecha = models.DateTimeField(default=timezone.now)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="eventos_ticket",
+    )
+    tipo = models.CharField(max_length=15, choices=Tipo.choices)
+    texto = models.TextField(blank=True)
+    # Los comentarios internos no se muestran en la página pública del caso.
+    publico = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Evento de ticket"
+        verbose_name_plural = "Eventos de tickets"
+        ordering = ["fecha", "id"]
+
+
+class FotoTicket(models.Model):
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE, related_name="fotos"
+    )
+    archivo = models.FileField(upload_to="tickets/%Y/%m/")
+    descripcion = models.CharField(max_length=200, blank=True)
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="fotos_ticket",
+    )
+    subido_en = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = "Foto de ticket"
+        verbose_name_plural = "Fotos de tickets"
+        ordering = ["subido_en", "id"]

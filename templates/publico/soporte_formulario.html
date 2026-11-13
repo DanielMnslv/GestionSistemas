@@ -3,38 +3,73 @@
 {% block title %}Pedir soporte{% endblock %}
 
 {% block content %}
-<section class="ficha-form-page">
-    <header class="ficha-form-heading">
-        <span class="eyebrow">MESA DE AYUDA</span>
+<div class="jx-head jx-head-compact">
+    <div>
         <h1>Pedir soporte técnico</h1>
-        <p>Reporta daños en computadores, impresoras, radios, GPS o alarmas, o problemas con el correo, Novasoft, SEIF, el servidor o internet. Te enviaremos un número de caso a tu correo.</p>
-    </header>
+        {% if paso == 1 %}
+        <p>Daños en computadores, impresoras, radios o GPS, y problemas con el correo, Novasoft, SEIF, el servidor o internet.</p>
+        {% else %}
+        <p>Hola, <strong>{{ funcionario.nombre_completo }}</strong>. Cuéntanos qué pasa; te enviaremos el número de caso al correo.</p>
+        {% endif %}
+    </div>
+</div>
 
-    <section class="ficha-form-card">
-        <form method="post" class="ficha-form-content" novalidate>
-            {% csrf_token %}
-            {% if formulario.errors %}
-            <div class="ficha-form-errors" role="alert">
-                <strong>Revisa los campos marcados.</strong>
-                {{ formulario.non_field_errors }}
+<ol class="jx-pasos" aria-label="Pasos">
+    <li class="is-on"><b>1</b>Tu cédula</li>
+    <li class="{% if paso == 2 %}is-on{% endif %}"><b>2</b>La falla</li>
+</ol>
+
+<section class="jx-card">
+    <form method="post" class="jx-card-body" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="paso" value="{{ paso }}">
+        {% if formulario.non_field_errors or errores_fotos %}
+        <div class="jx-alert jx-alert-error" role="alert"><div>{% for e in formulario.non_field_errors %}<p style="margin:0">{{ e }}</p>{% endfor %}{% for e in errores_fotos %}<p style="margin:0">{{ e }}</p>{% endfor %}</div></div>
+        {% endif %}
+
+        {% if paso == 1 %}
+        <div class="jx-form">
+            {% include "inventario/_jx_campo.html" with field=formulario.cedula %}
+        </div>
+        <div class="jx-trampa" aria-hidden="true">{{ formulario.sitio_web.label_tag }} {{ formulario.sitio_web }}</div>
+        <div class="jx-dialog-actions">
+            <button class="jx-btn jx-btn-primary" type="submit">Continuar<svg class="jx-i"><use href="#i-arrow"/></svg></button>
+        </div>
+        {% else %}
+        <input type="hidden" name="cedula" value="{{ cedula }}">
+        <div class="jx-form-2">
+            {% include "inventario/_jx_campo.html" with field=formulario.categoria ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.equipo ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.placa ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.descripcion ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.ubicacion ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.correo %}
+            {% include "inventario/_jx_campo.html" with field=formulario.telefono %}
+            <div class="jx-field jx-field-wide">
+                <span><label for="id_fotos">Fotos de la falla (opcional, máximo 3)</label></span>
+                <input id="id_fotos" type="file" name="fotos" accept="image/jpeg,image/png,image/webp" multiple>
+                <small class="jx-help">JPG, PNG o WEBP de hasta 5 MB cada una.</small>
             </div>
-            {% endif %}
-            <div class="ficha-form-grid">
-                {% include "inventario/_campo.html" with field=formulario.cedula %}
-                {% include "inventario/_campo.html" with field=formulario.correo %}
-                {% include "inventario/_campo.html" with field=formulario.telefono %}
-                {% include "inventario/_campo.html" with field=formulario.ubicacion %}
-                {% include "inventario/_campo.html" with field=formulario.categoria %}
-                {% include "inventario/_campo.html" with field=formulario.placa %}
-                {% include "inventario/_campo.html" with field=formulario.descripcion ancho_completo=True %}
-            </div>
-            <div class="campo-trampa" aria-hidden="true">
-                {{ formulario.sitio_web.label_tag }} {{ formulario.sitio_web }}
-            </div>
-            <div class="ficha-form-actions">
-                <button class="ficha-form-button" type="submit">Enviar solicitud</button>
-            </div>
-        </form>
-    </section>
+        </div>
+        <div class="jx-dialog-actions">
+            <a class="jx-btn" href="{% url 'soporte' %}">Cambiar cédula</a>
+            <button class="jx-btn jx-btn-primary" type="submit">Enviar solicitud</button>
+        </div>
+        {% endif %}
+    </form>
 </section>
+
+{% if paso == 2 %}
+<script>
+(function () {
+    var placa = document.querySelector('[data-campo="placa"]');
+    function actualizar() {
+        var elegido = document.querySelector('input[name="equipo"]:checked');
+        placa.hidden = !(elegido && elegido.value === "otro");
+    }
+    document.querySelectorAll('input[name="equipo"]').forEach(function (r) { r.addEventListener("change", actualizar); });
+    actualizar();
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -30,6 +30,10 @@ ACCIONES = {
     "personas": {ENCARGADO, TALENTO},
     # Ver la auditoría (quién hizo qué y cuándo).
     "auditoria": {ENCARGADO},
+    # Solicitudes de soporte: registrar, repartir y atender.
+    "tickets_crear": {ENCARGADO, TECNICO},
+    "tickets_asignar": {ENCARGADO},
+    "tickets_atender": {TECNICO},
 }
 
 

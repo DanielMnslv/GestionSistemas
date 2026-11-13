@@ -1,123 +1,93 @@
 {% extends "base.html" %}
 
-{% block title %}Tickets | JANO Inventario{% endblock %}
+{% block title %}Solicitudes | JANO Inventario{% endblock %}
 
 {% block content %}
-<div class="radios-page">
-    <div class="page-heading">
-        <div>
-            <h1>Tickets de mantenimiento y soporte</h1>
-            <p>Solicitudes, asignaciones, visitas y cierres de todos los equipos.</p>
-        </div>
-        <div>
-            <a class="btn btn-light" href="{% url 'inventario:tickets_indicadores' %}">Indicadores</a>
-            {% if permisos.tickets_crear or permisos.tickets_asignar %}
-            <a class="btn btn-primary" href="{% url 'inventario:ticket_crear' %}">Nuevo ticket</a>
-            {% endif %}
-        </div>
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Solicitudes de soporte</h1>
+        <p>Lo que piden los funcionarios y lo que registra TIC: asignación, visita, intervención y cierre. {{ total_resultados }} resultado{{ total_resultados|pluralize }}.</p>
     </div>
-
-    <section class="equipos-tipos" aria-label="Accesos rápidos">
-        <a class="equipos-tipo{% if estado_seleccionado == 'activos' and not tecnico_seleccionado %} activo{% endif %}" href="?estado=activos"><span>Activos</span></a>
-        <a class="equipos-tipo{% if tecnico_seleccionado == 'sin' %} activo{% endif %}" href="?estado=ABIERTO&amp;tecnico=sin"><span>Sin técnico</span><strong>{{ abiertos_sin_tecnico }}</strong></a>
-        {% if permisos.tickets_atender %}
-        <a class="equipos-tipo{% if tecnico_seleccionado == 'mios' %} activo{% endif %}" href="?estado=activos&amp;tecnico=mios"><span>Mis tickets</span></a>
+    <div class="jx-head-actions">
+        <a class="jx-btn" href="{% url 'soporte' %}" target="_blank" rel="noopener"><svg class="jx-i"><use href="#i-file"/></svg>Formulario público</a>
+        <a class="jx-btn" href="{% url 'inventario:tickets_indicadores' %}"><svg class="jx-i"><use href="#i-chart"/></svg>Indicadores</a>
+        {% if permisos.tickets_crear or permisos.tickets_asignar %}
+        <a class="jx-btn jx-btn-primary" href="{% url 'inventario:ticket_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar solicitud</a>
         {% endif %}
-        <a class="equipos-tipo{% if estado_seleccionado == 'vencidos' %} activo{% endif %}" href="?estado=vencidos"><span>Visitas atrasadas</span></a>
-        <a class="equipos-tipo{% if estado_seleccionado == 'RESUELTO' %} activo{% endif %}" href="?estado=RESUELTO"><span>Por confirmar</span></a>
-    </section>
-
-    <section class="panel">
-        <div class="filter-body">
-            <form method="get" data-lista-filtros>
-                <div class="filters">
-                    <div class="field">
-                        <label for="q">Búsqueda</label>
-                        <input id="q" type="search" name="q" value="{{ busqueda }}" placeholder="Número, solicitante, placa o falla">
-                    </div>
-                    <div class="field">
-                        <label for="estado">Estado</label>
-                        <select id="estado" name="estado">
-                            <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activos</option>
-                            <option value="vencidos" {% if estado_seleccionado == "vencidos" %}selected{% endif %}>Visitas atrasadas</option>
-                            {% for valor, etiqueta in estados %}
-                            <option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                            <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="tipo_equipo">Tipo de equipo</label>
-                        <select id="tipo_equipo" name="tipo_equipo">
-                            <option value="">Todos</option>
-                            {% for valor, etiqueta in tipos_equipo %}
-                            <option value="{{ valor }}" {% if tipo_equipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="origen">Origen</label>
-                        <select id="origen" name="origen">
-                            <option value="">Todos</option>
-                            {% for valor, etiqueta in origenes %}
-                            <option value="{{ valor }}" {% if origen_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="prioridad">Prioridad</label>
-                        <select id="prioridad" name="prioridad">
-                            <option value="">Todas</option>
-                            {% for valor, etiqueta in prioridades %}
-                            <option value="{{ valor }}" {% if prioridad_seleccionada == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="actions">
-                        <button class="btn btn-primary" type="submit">Buscar</button>
-                        <a class="btn btn-light" href="{% url 'inventario:tickets_lista' %}">Limpiar</a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="panel-heading">
-            <div><h2>Tickets</h2></div>
-            <span class="result-pill">{{ total_resultados }} resultado{{ total_resultados|pluralize }}</span>
-        </div>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr><th>Ticket</th><th>Equipo</th><th>Solicitante</th><th>Técnico / Visita</th><th>Estado</th></tr>
-                </thead>
-                <tbody>
-                    {% for t in tickets %}
-                    <tr>
-                        <td>
-                            <a class="radio-link" href="{% url 'inventario:ticket_detalle' t.numero %}">{{ t.numero }}</a>
-                            <span class="subtext">{{ t.get_tipo_display }} · {{ t.creado_en|date:"d/m/Y" }}</span>
-                            <span class="subtext">{{ t.descripcion|truncatechars:70 }}</span>
-                        </td>
-                        <td>{% if t.equipo %}{% include "inventario/_equipo_enlace.html" with equipo=t.equipo %}{% else %}<span class="subtext">Sin equipo</span>{% endif %}</td>
-                        <td>{{ t.solicitante_nombre|default:"—" }}<span class="subtext">{{ t.ubicacion }}</span></td>
-                        <td>
-                            {% if t.tecnico %}{{ t.tecnico.get_full_name|default:t.tecnico.username }}{% else %}<span class="subtext">Sin asignar</span>{% endif %}
-                            {% if t.fecha_programada %}<span class="subtext">{{ t.fecha_programada|date:"d/m/Y" }} {{ t.get_franja_display }}</span>{% endif %}
-                        </td>
-                        <td>
-                            <span class="badge badge-{% if t.estado == 'CERRADO' %}green{% elif t.estado == 'CANCELADO' %}gray{% elif t.estado == 'RESUELTO' %}green{% elif t.estado == 'ABIERTO' %}amber{% else %}gray{% endif %}">{{ t.get_estado_display }}</span>
-                            {% if t.prioridad == "ALTA" %}<span class="badge badge-red">Alta</span>{% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5">No hay tickets que coincidan.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="table-footer">{% include "inventario/_paginacion.html" %}</div>
-    </section>
+    </div>
 </div>
+
+<nav class="jx-tabs" aria-label="Bandejas">
+    <a class="jx-tab{% if estado_seleccionado == 'activos' and not tecnico_seleccionado %} is-active{% endif %}" href="?estado=activos">Activas<span>{{ conteos.activos }}</span></a>
+    <a class="jx-tab{% if tecnico_seleccionado == 'sin' %} is-active{% endif %}" href="?estado=ABIERTO&amp;tecnico=sin">Sin técnico<span>{{ abiertos_sin_tecnico }}</span></a>
+    {% if permisos.tickets_atender %}
+    <a class="jx-tab{% if tecnico_seleccionado == 'mios' %} is-active{% endif %}" href="?estado=activos&amp;tecnico=mios">Mis solicitudes<span>{{ conteos.mios }}</span></a>
+    {% endif %}
+    <a class="jx-tab{% if estado_seleccionado == 'vencidos' %} is-active{% endif %}" href="?estado=vencidos">Visitas atrasadas<span>{{ conteos.vencidos }}</span></a>
+    <a class="jx-tab{% if estado_seleccionado == 'RESUELTO' %} is-active{% endif %}" href="?estado=RESUELTO">Por confirmar<span>{{ conteos.por_confirmar }}</span></a>
+    <a class="jx-tab{% if not estado_seleccionado %} is-active{% endif %}" href="?estado=todos">Todas</a>
+</nav>
+
+<form method="get" class="jx-filterbar" aria-label="Filtros">
+    {% if tecnico_seleccionado %}<input type="hidden" name="tecnico" value="{{ tecnico_seleccionado }}">{% endif %}
+    <label class="jx-filter-search">
+        <svg class="jx-i"><use href="#i-search"/></svg>
+        <span class="sr-only">Buscar</span>
+        <input type="search" name="q" value="{{ busqueda }}" placeholder="Número, solicitante, cédula, placa o falla…">
+    </label>
+    <label class="jx-select"><span>Estado</span>
+        <select name="estado" onchange="this.form.submit()">
+            <option value="activos" {% if estado_seleccionado == "activos" %}selected{% endif %}>Activas</option>
+            <option value="vencidos" {% if estado_seleccionado == "vencidos" %}selected{% endif %}>Visitas atrasadas</option>
+            {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if estado_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+            <option value="todos" {% if not estado_seleccionado %}selected{% endif %}>Todas</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Equipo</span>
+        <select name="tipo_equipo" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for valor, etiqueta in tipos_equipo %}<option value="{{ valor }}" {% if tipo_equipo_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="jx-select"><span>Prioridad</span>
+        <select name="prioridad" onchange="this.form.submit()">
+            <option value="">Todas</option>
+            {% for valor, etiqueta in prioridades %}<option value="{{ valor }}" {% if prioridad_seleccionada == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+        </select>
+    </label>
+    <label class="jx-select"><span>Origen</span>
+        <select name="origen" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for valor, etiqueta in origenes %}<option value="{{ valor }}" {% if origen_seleccionado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+        </select>
+    </label>
+    <button class="jx-btn jx-btn-primary" type="submit">Buscar</button>
+    <a class="jx-chip-clear" href="?">Limpiar</a>
+</form>
+
+<section class="jx-card jx-card-flush">
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Solicitud</th><th>Equipo</th><th>Solicitante</th><th>Técnico y visita</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for t in tickets %}
+                <tr class="jx-row-link" onclick="location.href='{% url 'inventario:ticket_detalle' t.numero %}'">
+                    <td><a class="jx-ticket-num" href="{% url 'inventario:ticket_detalle' t.numero %}">{{ t.numero }}</a>
+                        <small class="jx-sub">{{ t.get_tipo_display }} · {{ t.creado_en|date:"d/m/Y H:i" }}</small>
+                        <small class="jx-sub">{{ t.descripcion|truncatechars:70 }}</small></td>
+                    <td>{% if t.equipo %}<strong>{{ t.equipo.placa }}</strong><small class="jx-sub">{{ t.equipo.get_tipo_display }}</small>{% else %}<span class="muted">Sin equipo</span>{% endif %}</td>
+                    <td>{{ t.solicitante_nombre|default:"—" }}<small class="jx-sub">{{ t.ubicacion }}</small></td>
+                    <td>{% if t.tecnico %}{{ t.tecnico.get_full_name|default:t.tecnico.username }}{% else %}<span class="muted">Sin asignar</span>{% endif %}
+                        {% if t.fecha_programada %}<small class="jx-sub">{{ t.fecha_programada|date:"d/m/Y" }} {{ t.get_franja_display }}</small>{% endif %}</td>
+                    <td><span class="jx-badge {% if t.estado == 'CERRADO' or t.estado == 'RESUELTO' %}jx-badge-ok{% elif t.estado == 'CANCELADO' %}jx-badge-bad{% elif t.estado == 'ABIERTO' %}jx-badge-warn{% else %}jx-badge-primary{% endif %}">{{ t.get_estado_display }}</span>
+                        {% if t.prioridad == "ALTA" %}<span class="jx-badge jx-badge-bad">Alta</span>{% endif %}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>No hay solicitudes en esta bandeja.</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% include "inventario/_paginacion.html" %}
 {% endblock %}

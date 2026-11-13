@@ -1,6 +1,9 @@
+"""Mesa de ayuda pública: pedir soporte y consultar el caso."""
 from django.urls import path
 
-# El formulario público de soporte se eliminó junto con los tickets.
-# Este archivo queda vacío para que el include del urls.py del proyecto
-# siga funcionando; puedes quitar esa línea cuando quieras.
-urlpatterns: list = []
+from . import views_publicas
+
+urlpatterns = [
+    path("", views_publicas.soporte_formulario, name="soporte"),
+    path("caso/<uuid:token>/", views_publicas.soporte_caso, name="soporte_caso"),
+]

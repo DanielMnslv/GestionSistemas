@@ -102,6 +102,15 @@ def tickets_lista(request):
         "abiertos_sin_tecnico": Ticket.objects.filter(
             estado=Ticket.Estado.ABIERTO, tecnico__isnull=True
         ).count(),
+        "conteos": {
+            "activos": Ticket.objects.filter(estado__in=Ticket.ACTIVOS).count(),
+            "mios": Ticket.objects.filter(estado__in=Ticket.ACTIVOS, tecnico=request.user).count(),
+            "vencidos": Ticket.objects.filter(
+                estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.ASIGNADO, Ticket.Estado.EN_ATENCION],
+                fecha_programada__lt=timezone.localdate(),
+            ).count(),
+            "por_confirmar": Ticket.objects.filter(estado=Ticket.Estado.RESUELTO).count(),
+        },
     })
 
 
@@ -139,6 +148,7 @@ def ticket_detalle(request, numero):
             "tecnico": ticket.tecnico_id,
             "fecha_programada": ticket.fecha_programada,
             "franja": ticket.franja,
+            "prioridad": ticket.prioridad,
         }),
         "form_texto": TextoTicketForm(),
         "puede_asignar": puede(request.user, "tickets_asignar")
@@ -165,6 +175,7 @@ def ticket_asignar(request, numero):
                 ticket, formulario.cleaned_data["tecnico"], request.user,
                 formulario.cleaned_data["fecha_programada"],
                 formulario.cleaned_data["franja"],
+                formulario.cleaned_data["prioridad"],
             )
             messages.success(request, "El ticket quedó asignado.")
         except flujo.TransicionInvalida as error:
@@ -201,9 +212,13 @@ def ticket_atender(request, numero):
     formulario = AtencionTicketForm(datos)
     intervencion = None
     if ticket.equipo_id:
-        intervencion = IntervencionTicketForm(datos, prefix="mant", initial={
+        tipo = {
+            Ticket.Tipo.PREVENTIVO: "PREVENTIVO",
+            Ticket.Tipo.SOPORTE: "DIAGNOSTICO",
+        }.get(ticket.tipo, "CORRECTIVO")
+        intervencion = IntervencionTicketForm(datos, equipo=ticket.equipo, initial={
             "fecha_intervencion": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
-            "tipo": ticket.tipo if ticket.tipo != Ticket.Tipo.SOPORTE else "OTRO",
+            "tipo": tipo,
             "tecnico_responsable": request.user.get_full_name() or request.user.username,
             "motivo": ticket.descripcion,
         })
@@ -245,6 +260,7 @@ def ticket_atender(request, numero):
         "formulario": formulario,
         "intervencion": intervencion,
         "errores_fotos": errores_fotos,
+        "equipo_fijo": True,
     })
 
 
@@ -286,49 +302,6 @@ def ticket_foto(request, pk):
         return FileResponse(foto.archivo.open("rb"))
     except FileNotFoundError:
         raise Http404("La foto ya no existe.")
-
-
-@login_required
-@requiere_permiso("tickets_asignar")
-def tickets_preventivos_vencidos(request):
-    """Crea un ticket preventivo por cada equipo con el mantenimiento vencido
-    que no tenga ya un ticket activo."""
-    from .estado_mantenimiento import VENCIDO, equipos_con_estado
-
-    if request.method != "POST":
-        return redirect("inventario:panel_mantenimientos")
-    tipo = request.POST.get("tipo", "")
-    equipos = Equipo.objects.filter(activo=True)
-    if tipo in Equipo.Tipo.values:
-        equipos = equipos.filter(tipo=tipo)
-    con_ticket = set(
-        Ticket.objects.filter(estado__in=Ticket.ACTIVOS, equipo__isnull=False)
-        .values_list("equipo_id", flat=True)
-    )
-    creados = 0
-    for equipo in equipos_con_estado(equipos):
-        if equipo.estado_mantenimiento != VENCIDO or equipo.pk in con_ticket:
-            continue
-        flujo.crear(
-            usuario=request.user,
-            origen=Ticket.Origen.PREVENTIVO,
-            tipo=Ticket.Tipo.PREVENTIVO,
-            categoria=Ticket.Categoria.MANTENIMIENTO,
-            equipo=equipo,
-            descripcion=(
-                "Mantenimiento preventivo semestral vencido el "
-                f"{equipo.proximo_mantenimiento:%d/%m/%Y}."
-            ),
-            solicitante_nombre="Área de TI",
-            ubicacion=equipo.ubicacion,
-        )
-        creados += 1
-    messages.success(
-        request,
-        f"Se crearon {creados} tickets preventivos. "
-        "Asígnalos desde la bandeja (filtro Sin técnico).",
-    )
-    return redirect(f"{reverse('inventario:tickets_lista')}?origen=PREVENTIVO&tecnico=sin&estado=ABIERTO")
 
 
 def horas(delta):
@@ -401,5 +374,6 @@ def tickets_indicadores(request):
         "atrasados": atrasados,
         "por_tecnico": filas(por_tecnico),
         "por_tipo": filas(por_tipo),
+        "tablas": [("Por técnico", filas(por_tecnico)), ("Por tipo de equipo", filas(por_tipo))],
         "meses": meses,
     })
