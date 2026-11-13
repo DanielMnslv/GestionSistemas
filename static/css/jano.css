@@ -825,3 +825,14 @@ html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a
     .jx-form-2 { grid-template-columns: minmax(0, 1fr); }
     .jx-public-main { padding-top: 18px; }
 }
+/* Agenda de visitas */
+.jx-agenda td { vertical-align: top; min-width: 200px; }
+.jx-agenda tr.is-hoy td { background: var(--jx-primary-soft); }
+.jx-agenda tr.is-festivo td { background: var(--jx-surface-2); color: var(--jx-muted); }
+.jx-cita { display: block; margin: 0 0 6px; padding: 7px 10px; border-radius: 10px; border-left: 3px solid var(--jx-primary); background: var(--jx-surface-2); color: var(--jx-text); text-decoration: none; font-size: 12.5px; }
+.jx-cita:hover { background: var(--jx-primary-soft); }
+.jx-cita b { color: var(--jx-primary); }
+.jx-cita small { display: block; color: var(--jx-muted); font-size: 11.5px; }
+.jx-cita.is-warn { border-left-color: var(--jx-warn); }
+.jx-cita.is-ok { border-left-color: var(--jx-ok); }
+@media (max-width: 600px) { .jx-agenda th:nth-child(2), .jx-agenda td:nth-child(2) { display: table-cell; } }

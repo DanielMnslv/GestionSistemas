@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda de visitas | JANO Inventario{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'inventario:tickets_lista' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Solicitudes</a>
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Agenda de visitas</h1>
+        <p>Las visitas que eligen los funcionarios en el formulario y las que programa TIC. {{ cupos }} cupo{{ cupos|pluralize }} por franja; no se ofrecen fines de semana ni festivos.</p>
+    </div>
+    <div class="jx-head-actions">
+        <a class="jx-btn" href="?desde={{ anterior }}">← Anteriores</a>
+        {% if not es_actual %}<a class="jx-btn" href="?">Hoy</a>{% endif %}
+        <a class="jx-btn" href="?desde={{ siguiente }}">Siguientes →</a>
+    </div>
+</div>
+
+<section class="jx-card jx-card-flush">
+    <div class="jx-table-wrap">
+        <table class="jx-table jx-agenda">
+            <thead><tr><th>Día</th>{% for v, t in franjas %}<th>{{ t }}</th>{% endfor %}</tr></thead>
+            <tbody>
+            {% for f in filas %}
+                <tr class="{% if f.hoy %}is-hoy{% endif %}{% if f.festivo %} is-festivo{% endif %}">
+                    <td><strong>{{ f.nombre }}</strong>{% if f.hoy %} <span class="jx-badge jx-badge-primary">Hoy</span>{% endif %}{% if f.festivo %}<small class="jx-sub">Festivo</small>{% endif %}
+                        {% for t in f.sin_franja %}<a class="jx-cita" href="{% url 'inventario:ticket_detalle' t.numero %}">{{ t.numero }} · sin franja</a>{% endfor %}</td>
+                    {% for c in f.celdas %}
+                    <td>
+                        {% for t in c.tickets %}
+                        <a class="jx-cita{% if t.estado == 'RESUELTO' or t.estado == 'CERRADO' %} is-ok{% elif not t.tecnico %} is-warn{% endif %}" href="{% url 'inventario:ticket_detalle' t.numero %}">
+                            <b>{{ t.numero }}</b> {% if t.equipo %}{{ t.equipo.placa }}{% else %}{{ t.get_categoria_display|truncatechars:22 }}{% endif %}
+                            <small>{{ t.solicitante_nombre|truncatechars:28 }} · {% if t.tecnico %}{{ t.tecnico.get_full_name|default:t.tecnico.username }}{% else %}sin técnico{% endif %}</small>
+                        </a>
+                        {% endfor %}
+                        {% if not f.festivo %}<small class="jx-sub">{% if c.libres %}{{ c.libres }} cupo{{ c.libres|pluralize }} libre{{ c.libres|pluralize }}{% else %}Sin cupos{% endif %}</small>{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="jx-card" style="margin-top:18px">
+    <div class="jx-card-head"><div><h2>Por programar</h2><p>Solicitudes abiertas o asignadas que aún no tienen fecha de visita.</p></div></div>
+    <div class="jx-card-body">
+        {% for t in sin_fecha %}
+        <a class="jx-cita is-warn" href="{% url 'inventario:ticket_detalle' t.numero %}"><b>{{ t.numero }}</b> {% if t.equipo %}{{ t.equipo.placa }} · {% endif %}{{ t.descripcion|truncatechars:60 }}<small>{{ t.solicitante_nombre }} · {{ t.creado_en|date:"d/m/Y H:i" }}</small></a>
+        {% empty %}<p class="muted" style="margin:0">Todas las solicitudes activas tienen fecha.</p>{% endfor %}
+    </div>
+</section>
+{% endblock %}

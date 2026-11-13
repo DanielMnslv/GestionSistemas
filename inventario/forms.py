@@ -1189,11 +1189,22 @@ class SoporteForm(forms.Form):
     ubicacion = forms.CharField(label="¿Dónde está? (sede, oficina o puesto)", max_length=200)
     correo = forms.EmailField(label="Correo para avisarle del avance")
     telefono = forms.CharField(label="Teléfono o celular", max_length=50, required=False)
+    visita = forms.ChoiceField(
+        label="¿Cuándo podemos atenderte?", required=False,
+        help_text="Elige el día y la franja. TIC confirma la visita al asignar el técnico.",
+    )
 
     def __init__(self, *args, funcionario=None, equipos=(), **kwargs):
+        from . import agenda
+
         super().__init__(*args, **kwargs)
         self.funcionario = funcionario
         self.equipo = None
+        self.fecha_visita, self.franja_visita = None, ""
+        self.fields["visita"].choices = [("", "Que TIC me contacte para acordar la visita")] + [
+            (c["valor"], f"{c['etiqueta']} ({c['libres']} cupo{'s' if c['libres'] != 1 else ''})")
+            for c in agenda.cupos_disponibles()
+        ]
         self.equipos = {str(e.pk): e for e in equipos}
         self.fields["equipo"].choices = [
             (str(e.pk), f"{e.placa} · {e.get_tipo_display()} {e.marca} {e.modelo}".strip())
@@ -1227,6 +1238,10 @@ class SoporteForm(forms.Form):
                 self.add_error("equipo", "Elija el equipo que presenta la falla.")
         else:
             self.add_error("equipo", "Elija el equipo o indique que no es de un equipo.")
+        if datos.get("visita"):
+            from . import agenda
+
+            self.fecha_visita, self.franja_visita = agenda.leer_valor(datos["visita"])
         return datos
 
 

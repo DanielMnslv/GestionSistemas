@@ -377,3 +377,49 @@ def tickets_indicadores(request):
         "tablas": [("Por técnico", filas(por_tecnico)), ("Por tipo de equipo", filas(por_tipo))],
         "meses": meses,
     })
+
+
+@login_required
+def tickets_agenda(request):
+    """Agenda de visitas: dos semanas hábiles por franja, con cupos."""
+    from datetime import datetime, timedelta
+
+    from . import agenda
+
+    hoy = timezone.localdate()
+    try:
+        desde = datetime.strptime(request.GET.get("desde", ""), "%Y-%m-%d").date()
+    except ValueError:
+        desde = hoy
+    desde -= timedelta(days=desde.weekday())  # lunes de esa semana
+    dias = [desde + timedelta(days=i) for i in range(14) if (desde + timedelta(days=i)).weekday() < 5]
+    tickets = (
+        Ticket.objects.filter(fecha_programada__range=(dias[0], dias[-1]))
+        .exclude(estado=Ticket.Estado.CANCELADO)
+        .select_related("equipo", "tecnico").order_by("creado_en")
+    )
+    por_celda = {}
+    for t in tickets:
+        por_celda.setdefault((t.fecha_programada, t.franja or ""), []).append(t)
+    filas = []
+    for dia in dias:
+        celdas = []
+        for valor, texto in agenda.franjas():
+            lista = por_celda.get((dia, valor), [])
+            celdas.append({"franja": texto, "tickets": lista,
+                           "libres": max(agenda.CUPOS_POR_FRANJA - len(lista), 0)})
+        filas.append({
+            "dia": dia, "nombre": agenda.nombre_dia(dia), "hoy": dia == hoy,
+            "festivo": not agenda.es_habil(dia), "celdas": celdas,
+            "sin_franja": por_celda.get((dia, ""), []),
+        })
+    sin_fecha = Ticket.objects.filter(
+        estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.ASIGNADO], fecha_programada__isnull=True,
+    ).select_related("equipo").order_by("creado_en")[:30]
+    return render(request, "inventario/tickets_agenda.html", {
+        "filas": filas, "franjas": agenda.franjas(), "cupos": agenda.CUPOS_POR_FRANJA,
+        "anterior": (desde - timedelta(days=14)).isoformat(),
+        "siguiente": (desde + timedelta(days=14)).isoformat(),
+        "es_actual": desde <= hoy < desde + timedelta(days=14),
+        "sin_fecha": sin_fecha,
+    })

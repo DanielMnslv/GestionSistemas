@@ -54,6 +54,7 @@ urlpatterns = [
     # Solicitudes de soporte (mesa de ayuda)
     path("solicitudes/", views_tickets.tickets_lista, name="tickets_lista"),
     path("solicitudes/nueva/", views_tickets.ticket_crear, name="ticket_crear"),
+    path("solicitudes/agenda/", views_tickets.tickets_agenda, name="tickets_agenda"),
     path("solicitudes/indicadores/", views_tickets.tickets_indicadores, name="tickets_indicadores"),
     path("solicitudes/fotos/<int:pk>/", views_tickets.ticket_foto, name="ticket_foto"),
     path("solicitudes/<str:numero>/", views_tickets.ticket_detalle, name="ticket_detalle"),

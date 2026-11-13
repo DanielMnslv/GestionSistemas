@@ -144,3 +144,60 @@ class ColaTicTests(TestCase):
         self.assertEqual(self.ticket.estado, Ticket.Estado.RESUELTO)
         intervencion = self.ticket.intervenciones.get()
         self.assertEqual(intervencion.equipo, self.pc)
+
+
+class AgendaTests(TestCase):
+    def test_festivos_de_colombia_2026(self):
+        from datetime import date
+
+        from inventario.agenda import es_habil, festivos
+
+        f = festivos(2026)
+        for dia in [date(2026, 1, 12), date(2026, 4, 2), date(2026, 4, 3), date(2026, 5, 18),
+                    date(2026, 6, 8), date(2026, 6, 15), date(2026, 11, 2), date(2026, 11, 16)]:
+            self.assertIn(dia, f)
+        self.assertFalse(es_habil(date(2026, 11, 14)))  # sábado
+        self.assertTrue(es_habil(date(2026, 11, 17)))
+
+    def test_cupos_se_agotan(self):
+        from datetime import date, datetime
+
+        from inventario import agenda
+        from inventario import tickets as flujo
+
+        ahora = timezone.make_aware(datetime(2026, 11, 13, 9, 0))
+        valores = [c["valor"] for c in agenda.cupos_disponibles(ahora)]
+        self.assertIn("2026-11-13|TARDE", valores)
+        self.assertNotIn("2026-11-13|MANANA", valores)
+        self.assertFalse(any(v.startswith("2026-11-16") for v in valores))  # festivo
+        for _ in range(agenda.CUPOS_POR_FRANJA):
+            flujo.crear(origen=Ticket.Origen.INTERNO, tipo=Ticket.Tipo.SOPORTE,
+                        categoria=Ticket.Categoria.SOFTWARE, descripcion="x",
+                        fecha_programada=date(2026, 11, 17), franja="MANANA")
+        valores = [c["valor"] for c in agenda.cupos_disponibles(ahora)]
+        self.assertNotIn("2026-11-17|MANANA", valores)
+        self.assertFalse(agenda.hay_cupo(date(2026, 11, 17), "MANANA"))
+
+
+class SolicitudConVisitaTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        Funcionario.objects.create(cedula="1075000222", nombre_completo="Luis Prueba")
+
+    def test_la_visita_elegida_queda_en_la_solicitud_y_en_la_agenda(self):
+        from inventario import agenda
+
+        cupo = agenda.cupos_disponibles()[0]
+        self.client.post(reverse("soporte"), {
+            "paso": "2", "cedula": "1075000222", "categoria": Ticket.Categoria.SOFTWARE,
+            "equipo": "ninguno", "descripcion": "Sin internet", "ubicacion": "Sede",
+            "correo": "luis@example.com", "visita": cupo["valor"],
+        })
+        ticket = Ticket.objects.get()
+        self.assertEqual(ticket.fecha_programada, cupo["fecha"])
+        self.assertEqual(ticket.franja, cupo["franja"])
+        User = get_user_model()
+        admin = User.objects.create_superuser("adm", password="x-prueba-1")
+        self.client.force_login(admin)
+        r = self.client.get(reverse("inventario:tickets_agenda"), {"desde": cupo["fecha"].isoformat()})
+        self.assertContains(r, ticket.numero)

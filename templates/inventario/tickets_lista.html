@@ -10,6 +10,7 @@
     </div>
     <div class="jx-head-actions">
         <a class="jx-btn" href="{% url 'soporte' %}" target="_blank" rel="noopener"><svg class="jx-i"><use href="#i-file"/></svg>Formulario público</a>
+        <a class="jx-btn" href="{% url 'inventario:tickets_agenda' %}"><svg class="jx-i"><use href="#i-calendar"/></svg>Agenda</a>
         <a class="jx-btn" href="{% url 'inventario:tickets_indicadores' %}"><svg class="jx-i"><use href="#i-chart"/></svg>Indicadores</a>
         {% if permisos.tickets_crear or permisos.tickets_asignar %}
         <a class="jx-btn jx-btn-primary" href="{% url 'inventario:ticket_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar solicitud</a>

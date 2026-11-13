@@ -34,6 +34,11 @@ def resumen(ticket):
         lineas.append(
             f"Equipo: {ticket.equipo.placa} ({ticket.equipo.get_tipo_display()})"
         )
+    if ticket.fecha_programada:
+        lineas.append(
+            f"Visita: {ticket.fecha_programada:%d/%m/%Y}"
+            + (f", {ticket.get_franja_display()}" if ticket.franja else "")
+        )
     lineas.append(f"Descripción: {ticket.descripcion}")
     return "\n".join(lineas)
 

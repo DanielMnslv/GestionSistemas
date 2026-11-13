@@ -12,7 +12,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from . import personas
+from . import agenda, personas
 from . import tickets as flujo
 from .forms import (
     FOTOS_MAXIMAS, CedulaSoporteForm, ReabrirForm, SoporteForm, validar_foto,
@@ -104,8 +104,18 @@ def soporte_formulario(request):
             else:
                 datos = formulario.cleaned_data
                 categoria = datos["categoria"]
+                fecha, franja = formulario.fecha_visita, formulario.franja_visita
+                if fecha and not agenda.hay_cupo(fecha, franja):
+                    formulario = SoporteForm(request.POST, funcionario=funcionario, equipos=formulario.equipos.values())
+                    formulario.is_valid()
+                    formulario.add_error("visita", "Esa franja se acaba de llenar. Elige otra.")
+                    return render(request, "publico/soporte_formulario.html", {
+                        "paso": 2, "funcionario": funcionario, "formulario": formulario, "cedula": cedula,
+                    })
                 with transaction.atomic():
                     ticket = flujo.crear(
+                        fecha_programada=fecha,
+                        franja=franja,
                         origen=Ticket.Origen.FORMULARIO,
                         tipo=(
                             Ticket.Tipo.SOPORTE
