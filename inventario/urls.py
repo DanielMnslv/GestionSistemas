@@ -6,6 +6,7 @@ app_name = "inventario"
 
 urlpatterns = [
     path("informes/", include("inventario.informes.urls")),
+    path("equipos/tipos/", views_equipos.equipos_inicio, name="equipos_inicio"),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
     path("buscar/", views_equipos.buscar_json, name="buscar"),
     # Módulo de Usuarios: personas, equipos a cargo y paz y salvo.

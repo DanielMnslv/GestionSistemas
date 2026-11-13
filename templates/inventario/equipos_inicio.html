@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Equipos | JANO Inventario{% endblock %}
+{% block page_heading %}Equipos{% endblock %}
+
+{% block content %}
+<div class="jx-pagehead">
+    <span class="jx-tile-ico jx-tile-ico-lg"><svg class="jx-i"><use href="#i-grid"/></svg></span>
+    <div>
+        <h1>Equipos</h1>
+        <p>Infraestructura tecnológica de Seguridad JANO por tipo de equipo</p>
+    </div>
+    <div class="jx-head-actions">
+        {% if permisos.equipos or request.user.is_superuser %}<a class="jx-btn jx-btn-primary" href="{% url 'inventario:equipo_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar equipo</a>{% endif %}
+    </div>
+</div>
+
+<div class="jx-tiles">
+    <a class="jx-tile" href="{{ url_todos }}">
+        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-list"/></svg></span>
+        <strong>Todos los equipos</strong>
+        <p>Lista completa con búsqueda, filtros y exportación a Excel</p>
+        <span class="jx-tile-meta"><b>{{ total }}</b> activo{{ total|pluralize }} · {{ total_entregados }} entregado{{ total_entregados|pluralize }}</span>
+    </a>
+    {% for t in tarjetas %}
+    <div class="jx-tile">
+        <a class="jx-tile-cover" href="{{ t.url }}" aria-label="Ver {{ t.titulo|lower }}"></a>
+        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-{{ t.icono }}"/></svg></span>
+        <strong>{{ t.titulo }}</strong>
+        <p>{{ t.descripcion }}</p>
+        <span class="jx-tile-meta">
+            <b>{{ t.total }}</b> activo{{ t.total|pluralize }} · {{ t.entregados }} entregado{{ t.entregados|pluralize }} ·
+            <a href="{{ t.url_bodega }}">{{ t.bodega }} en bodega</a>{% if t.revision %} ·
+            <a class="is-warn" href="{{ t.url_revision }}">{{ t.revision }} por revisar</a>{% endif %}
+        </span>
+    </div>
+    {% empty %}
+    <div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Todavía no hay equipos registrados.</p></div>
+    {% endfor %}
+</div>
+{% endblock %}

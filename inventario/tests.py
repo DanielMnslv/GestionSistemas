@@ -4039,7 +4039,7 @@ class ModuloUsuariosPazYSalvoTests(TestCase):
         inicio = self.client.get(reverse("inicio"))
         self.assertRedirects(inicio, reverse("inventario:personas_lista"))
         lista = self.client.get(reverse("inventario:personas_lista"))
-        self.assertNotContains(lista, "Equipos y radios</span>")
+        self.assertNotContains(lista, '<span class="jx-nav-text">Equipos</span>')
         self.assertContains(lista, "Paz y salvo")
 
     def test_reasignar_exige_persona_y_un_solo_retiro_abierto(self):
@@ -4083,3 +4083,33 @@ class RetiroEntregaSinCedulaTests(ModuloUsuariosPazYSalvoTests):
         self.assertEqual(retiro.items.get(equipo__placa="IMP-70").resultado, "REASIGNADO")
         vigente = AsignacionEquipo.objects.get(equipo=imp, estado="ASIGNADO")
         self.assertEqual(vigente.funcionario, self.luis)
+
+
+class SeccionEquiposTarjetasTests(TestCase):
+    def setUp(self):
+        Usuario = get_user_model()
+        self.usuario = Usuario.objects.create_superuser("admin_tarjetas", "a@a.co", "PruebaTemporal123!")
+        self.client.force_login(self.usuario)
+        Radio.objects.create(placa="RAD-T1")
+        Radio.objects.create(placa="RAD-T2")
+        Equipo.objects.create(placa="PC-T1", tipo=Equipo.Tipo.COMPUTADOR, requiere_revision=True)
+        Equipo.objects.create(placa="PC-T2", tipo=Equipo.Tipo.COMPUTADOR, activo=False)
+
+    def test_una_tarjeta_por_tipo_con_conteos(self):
+        resp = self.client.get(reverse("inventario:equipos_inicio"))
+        self.assertEqual(resp.status_code, 200)
+        tarjetas = {t["titulo"]: t for t in resp.context["tarjetas"]}
+        self.assertEqual(set(tarjetas), {"Computadores", "Radios"})
+        self.assertEqual(tarjetas["Radios"]["total"], 2)
+        self.assertEqual(tarjetas["Radios"]["bodega"], 2)
+        self.assertEqual(tarjetas["Computadores"]["total"], 1)
+        self.assertEqual(tarjetas["Computadores"]["revision"], 1)
+        self.assertEqual(resp.context["total"], 3)
+        self.assertContains(resp, "?tipo=RADIO")
+        self.assertContains(resp, '<span class="jx-nav-text">Inventario</span>')
+
+    def test_lista_toma_el_titulo_de_la_seccion(self):
+        lista = reverse("inventario:equipos_lista")
+        self.assertContains(self.client.get(lista, {"tipo": "RADIO"}), "<h1>Radios</h1>")
+        self.assertContains(self.client.get(lista, {"disponibilidad": "en_inventario"}), "<h1>Inventario</h1>")
+        self.assertContains(self.client.get(lista), "<h1>Equipos</h1>")

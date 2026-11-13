@@ -815,7 +815,13 @@ def equipos_lista(request):
         .annotate(n=Count("id")).values_list("tipo", "n")
     )
 
+    titulos = {t: titulo for t, titulo, _, _ in TARJETAS_TIPO}
+    if disponibilidad == "en_inventario":
+        titulo_lista = "Inventario" + (f" · {titulos[tipo]}" if tipo else "")
+    else:
+        titulo_lista = titulos.get(tipo, "Equipos")
     return render(request, "inventario/equipos_lista.html", {
+        "titulo_lista": titulo_lista,
         "equipos": page_obj.object_list,
         "page_obj": page_obj,
         "parametros": parametros,
@@ -1828,4 +1834,66 @@ def equipo_renovar_antivirus(request, placa):
         })
     return render(request, "inventario/equipo_renovar_antivirus.html", {
         "formulario": formulario, "equipo": equipo,
+    })
+
+
+# Tarjetas de la sección Equipos: (tipo, título, icono, descripción).
+TARJETAS_TIPO = [
+    (Equipo.Tipo.COMPUTADOR, "Computadores", "monitor", "Portátiles y de escritorio de las áreas administrativas"),
+    (Equipo.Tipo.RADIO, "Radios", "radio", "Radios de comunicación entregados a los puestos y vigilantes"),
+    (Equipo.Tipo.TABLETA, "Tabletas", "tablet", "Tabletas para supervisión y registro en campo"),
+    (Equipo.Tipo.IMPRESORA, "Impresoras", "printer", "Impresoras y multifuncionales"),
+    (Equipo.Tipo.ESCANER, "Escáneres", "scan", "Escáneres de documentos"),
+    (Equipo.Tipo.GPS, "GPS", "map", "Dispositivos de rastreo satelital"),
+    (Equipo.Tipo.ALARMA, "Alarmas", "bell", "Paneles y sistemas de alarma"),
+    (Equipo.Tipo.UPS, "UPS", "battery", "Respaldo de energía"),
+    (Equipo.Tipo.OTRO, "Otros equipos", "box", "Equipos que no encajan en las demás categorías"),
+]
+
+
+def _ids_entregados():
+    """Equipos activos con una entrega vigente (a funcionarios o radios a vigilantes)."""
+    ids = set(AsignacionEquipo.objects.filter(
+        estado=AsignacionEquipo.Estado.ASIGNADO, equipo__activo=True
+    ).values_list("equipo_id", flat=True))
+    ids.update(AsignacionRadio.objects.filter(
+        estado=AsignacionRadio.Estado.ASIGNADO, radio__activo=True
+    ).values_list("radio__equipo_id", flat=True))
+    return ids
+
+
+@login_required
+def equipos_inicio(request):
+    """Sección Equipos: una tarjeta por tipo que lleva a la lista ya filtrada."""
+    activos = Equipo.objects.filter(activo=True)
+    por_tipo = {
+        f["tipo"]: f for f in activos.values("tipo").annotate(
+            total=Count("id"), revision=Count("id", filter=Q(requiere_revision=True))
+        )
+    }
+    entregados = {}
+    for tipo in activos.filter(pk__in=_ids_entregados()).values_list("tipo", flat=True):
+        entregados[tipo] = entregados.get(tipo, 0) + 1
+
+    lista = reverse("inventario:equipos_lista")
+    tarjetas = []
+    for tipo, titulo, icono, descripcion in TARJETAS_TIPO:
+        datos = por_tipo.get(tipo)
+        if not datos:
+            continue
+        entregado = entregados.get(tipo, 0)
+        tarjetas.append({
+            "titulo": titulo, "icono": icono, "descripcion": descripcion,
+            "total": datos["total"], "entregados": entregado,
+            "bodega": max(datos["total"] - entregado, 0), "revision": datos["revision"],
+            "url": f"{lista}?tipo={tipo}",
+            "url_bodega": f"{lista}?tipo={tipo}&disponibilidad=en_inventario",
+            "url_revision": f"{lista}?tipo={tipo}&revision=si",
+        })
+    total = sum(t["total"] for t in tarjetas)
+    return render(request, "inventario/equipos_inicio.html", {
+        "tarjetas": tarjetas,
+        "total": total,
+        "total_entregados": sum(t["entregados"] for t in tarjetas),
+        "url_todos": lista,
     })

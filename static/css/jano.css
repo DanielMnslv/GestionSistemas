@@ -687,3 +687,38 @@ html[data-tema="dark"] .jx-avatar { color: #0d1020; }
 .jx-list-ico.jx-tone-warn { background: var(--jx-warn-soft); color: var(--jx-warn); }
 .jx-list-ico.jx-tone-info { background: var(--jx-info-soft); color: var(--jx-info); }
 html[data-tema="dark"] .jx-brand-logo img { filter: invert(1) brightness(1.6); }
+
+/* Encabezado con icono y tarjetas de sección (como la Intranet Jano) */
+.jx-pagehead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+.jx-pagehead > div:first-of-type { flex: 1; min-width: 200px; }
+.jx-pagehead h1 { margin: 0; font-size: 20px; font-weight: 600; color: var(--jx-text); }
+.jx-pagehead p { margin: 2px 0 0; color: var(--jx-text-2); font-size: 14px; }
+.jx-tile-ico { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; flex: none; background: var(--jx-primary-soft); color: var(--jx-primary); }
+.jx-tile-ico svg.jx-i { width: 19px; height: 19px; stroke-width: 1.7; }
+.jx-tile-ico-lg { width: 44px; height: 44px; border-radius: 11px; }
+.jx-tile-ico-lg svg.jx-i { width: 22px; height: 22px; }
+.jx-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.jx-tile {
+    position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 148px;
+    padding: 18px 18px 16px; background: var(--jx-surface); border: 1px solid var(--jx-line);
+    border-radius: var(--jx-radius); color: var(--jx-text); text-decoration: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.jx-tile:hover, .jx-tile:focus-within { border-color: var(--jx-primary); box-shadow: 0 0 0 1px var(--jx-primary); }
+.jx-tile .jx-tile-ico { margin-bottom: 10px; }
+.jx-tile strong { font-size: 15px; font-weight: 600; }
+.jx-tile p { margin: 0; flex: 1; font-size: 13px; line-height: 1.45; color: var(--jx-text-2); }
+.jx-tile-meta { margin-top: 8px; font-size: 12.5px; color: var(--jx-muted); }
+.jx-tile-meta b { color: var(--jx-text); font-weight: 600; }
+.jx-tile-meta a { position: relative; z-index: 1; color: var(--jx-primary); text-decoration: none; font-weight: 500; }
+.jx-tile-meta a:hover { text-decoration: underline; }
+.jx-tile-meta a.is-warn { color: var(--jx-warn); }
+.jx-tile-cover { position: absolute; inset: 0; border-radius: inherit; }
+.jx-tile-cover:focus-visible { outline-offset: -2px; }
+
+/* Los botones que son enlaces conservan su color (".jx a" heredaba el del texto). */
+.jx a.jx-btn-primary, .jx a.jx-btn-lime { color: #fff; }
+html[data-tema="dark"] .jx a.jx-btn-primary, html[data-tema="dark"] .jx a.jx-btn-lime { color: #0d1020; }
+.jx a.jx-btn { color: var(--jx-text); }
+.jx a.jx-btn.jx-btn-primary, .jx a.jx-btn.jx-btn-lime { color: #fff; }
+html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a.jx-btn.jx-btn-lime { color: #0d1020; }
