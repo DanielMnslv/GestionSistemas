@@ -8,3 +8,4 @@ tzdata==2026.5
 waitress==3.0.2
 whitenoise==6.9.0
 djangorestframework==3.18.3
+reportlab==4.2.5

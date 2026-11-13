@@ -64,7 +64,7 @@ class Equipo(models.Model):
     @property
     def estado_tono(self):
         return {
-            "Operativo": "green", "Regular": "amber", "DaÃ±ado": "red",
+            "Operativo": "green", "Regular": "amber", "Dañado": "red",
             "Baja": "red", "No operativo": "red",
         }.get(self.estado_texto, "gray")
 
@@ -192,7 +192,7 @@ class Radio(models.Model):
 
     ESTADO_OPERATIVO = "Operativo"
     ESTADO_REGULAR = "Regular"
-    ESTADO_DANADO = "DaÃ±ado"
+    ESTADO_DANADO = "Dañado"
     ESTADO_BAJA = "Baja"
     ESTADOS = [
         (ESTADO_OPERATIVO, "Operativo"),
@@ -210,7 +210,7 @@ class Radio(models.Model):
             return ""
         if "baja" in t:
             return cls.ESTADO_BAJA
-        if any(p in t for p in ("daÃ±", "malo", "defect", "falla")):
+        if any(p in t for p in ("dañ", "malo", "defect", "falla")):
             return cls.ESTADO_DANADO
         if "regular" in t or "desgast" in t:
             return cls.ESTADO_REGULAR

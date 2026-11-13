@@ -875,8 +875,9 @@ class MantenimientoProgramadoVistasTests(TestCase):
                     "%Y-%m-%dT%H:%M"
                 ),
                 "tipo": MantenimientoEquipo.Tipo.PREVENTIVO,
-                "tecnico_responsable": "Técnico de prueba",
+                "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
                 "motivo": "Mantenimiento preventivo programado",
+                "actividades_preventivas": ["radio_limpieza", "radio_prueba"],
                 "diagnostico": "Equipo revisado durante prueba automática",
                 "trabajo_realizado": "Limpieza y revisión preventiva",
                 "repuestos_utilizados": "",
@@ -2692,9 +2693,11 @@ class MantenimientosTodosLosEquiposTests(TestCase):
                 "equipo": self.pc.pk,
                 "fecha_intervencion": "2026-10-30T14:29",
                 "tipo": MantenimientoEquipo.Tipo.PREVENTIVO,
-                "tecnico_responsable": "Tec",
+                "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
                 "motivo": "Revisión",
+                "actividades_preventivas": ["limpieza_computador"],
                 "trabajo_realizado": "Limpieza",
+                "estado_final": MantenimientoEquipo.EstadoFinal.OPERATIVO,
                 "resultado": MantenimientoEquipo.Resultado.SOLUCIONADO,
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
@@ -2987,8 +2990,9 @@ class MantenimientoSinTicketsTests(TestCase):
         self.client.post(reverse("inventario:mantenimiento_crear"), {
             "equipo": self.pc.pk,
             "fecha_intervencion": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
-            "tipo": "PREVENTIVO", "tecnico_responsable": "Yeiver",
+            "tipo": "PREVENTIVO", "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
             "motivo": "Rutina semestral", "trabajo_realizado": "Limpieza",
+            "actividades_preventivas": ["limpieza_computador"],
             "resultado": "SOLUCIONADO", "estado_final": "OPERATIVO",
         }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
 
@@ -3177,8 +3181,8 @@ class ClientesPuestosYAntivirusTests(TestCase):
         self.assertEqual(self.radio.cliente_asignado, "Gases del Llano")
 
     def test_sin_puesto_exige_los_textos(self):
-        respuesta = self.entregar()
-        self.assertIn("puesto_asignado", respuesta.context["formulario_entrega"].errors)
+        respuesta = self.entregar(pestanas_radio="1")
+        self.assertIn("puesto_asignado", respuesta.context["formulario"].errors)
         self.assertFalse(AsignacionRadio.objects.exists())
 
         self.entregar(cliente_asignado="Seguridad Jano", puesto_asignado="Sistemas")
