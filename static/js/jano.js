@@ -149,3 +149,15 @@
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
     else iniciar();
 })();
+
+/* Ventanas <dialog>: [data-jx-abrir="id"] abre, [data-jx-cerrar] cierra. */
+document.addEventListener("click", function (e) {
+    var abrir = e.target.closest("[data-jx-abrir]");
+    if (abrir) {
+        var d = document.getElementById(abrir.getAttribute("data-jx-abrir"));
+        if (d && d.showModal) { d.showModal(); }
+        return;
+    }
+    var cerrar = e.target.closest("[data-jx-cerrar]");
+    if (cerrar) { var dl = cerrar.closest("dialog"); if (dl) dl.close(); }
+});

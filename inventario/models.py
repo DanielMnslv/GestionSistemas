@@ -1146,3 +1146,118 @@ class RenovacionAntivirus(models.Model):
         ]
 
 
+
+
+class RetiroFuncionario(models.Model):
+    """Retiro de un funcionario (renuncia, despido…) y su paz y salvo.
+
+    Talento Humano lo inicia; TIC valida cada equipo que la persona tiene a
+    cargo. El paz y salvo se emite cuando todos quedan devueltos en buen
+    estado o reasignados a otra persona.
+    """
+
+    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    class Motivo(models.TextChoices):
+        RENUNCIA = "RENUNCIA", "Renuncia"
+        DESPIDO = "DESPIDO", "Despido"
+        FIN_CONTRATO = "FIN_CONTRATO", "Terminación de contrato"
+        TRASLADO = "TRASLADO", "Traslado"
+        OTRO = "OTRO", "Otro"
+
+    class Estado(models.TextChoices):
+        EN_PROCESO = "EN_PROCESO", "En proceso"
+        PAZ_Y_SALVO = "PAZ_Y_SALVO", "Paz y salvo emitido"
+        CANCELADO = "CANCELADO", "Cancelado"
+
+    funcionario = models.ForeignKey(
+        Funcionario, on_delete=models.PROTECT, related_name="retiros"
+    )
+    motivo = models.CharField(max_length=20, choices=Motivo.choices)
+    fecha_retiro = models.DateField(verbose_name="Fecha de retiro")
+    observaciones = models.TextField(blank=True)
+    estado = models.CharField(
+        max_length=12, choices=Estado.choices, default=Estado.EN_PROCESO,
+        db_index=True,
+    )
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="retiros_iniciados",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+    cerrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="retiros_cerrados", null=True, blank=True,
+    )
+    cerrado_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Retiro de funcionario"
+        verbose_name_plural = "Retiros de funcionarios"
+        ordering = ["-creado_en", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["funcionario"],
+                condition=models.Q(estado="EN_PROCESO"),
+                name="un_retiro_en_proceso_por_funcionario",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Retiro de {self.funcionario.nombre_completo} ({self.get_estado_display()})"
+
+
+class ItemRetiro(models.Model):
+    """Un equipo que la persona tenía a cargo al iniciar su retiro."""
+
+    class Resultado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente de validar"
+        DEVUELTO = "DEVUELTO", "Devuelto en buen estado"
+        DEVUELTO_DANO = "DEVUELTO_DANO", "Devuelto con daño"
+        REASIGNADO = "REASIGNADO", "Reasignado a otra persona"
+        FALTANTE = "FALTANTE", "No fue entregado (faltante)"
+
+    # Resultados que impiden emitir el paz y salvo.
+    BLOQUEAN = {Resultado.PENDIENTE, Resultado.DEVUELTO_DANO, Resultado.FALTANTE}
+
+    retiro = models.ForeignKey(
+        RetiroFuncionario, on_delete=models.CASCADE, related_name="items"
+    )
+    equipo = models.ForeignKey(
+        Equipo, on_delete=models.PROTECT, related_name="items_retiro"
+    )
+    asignacion_equipo = models.ForeignKey(
+        AsignacionEquipo, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )
+    asignacion_radio = models.ForeignKey(
+        AsignacionRadio, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )
+    resultado = models.CharField(
+        max_length=15, choices=Resultado.choices, default=Resultado.PENDIENTE,
+    )
+    reasignado_a = models.ForeignKey(
+        Funcionario, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="+",
+    )
+    observaciones = models.TextField(blank=True)
+    validado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True,
+        blank=True, related_name="+",
+    )
+    validado_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Equipo del retiro"
+        verbose_name_plural = "Equipos del retiro"
+        ordering = ["equipo__tipo", "equipo__placa"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["retiro", "equipo"], name="un_item_por_equipo_en_retiro"
+            ),
+        ]
+
+    @property
+    def bloquea(self):
+        return self.resultado in self.BLOQUEAN

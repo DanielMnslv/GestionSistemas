@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ persona.nombre_completo }} | JANO Inventario{% endblock %}
+{% block page_heading %}Personas{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'inventario:personas_lista' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Personas</a>
+
+<section class="jx-card jx-profile">
+    <span class="jx-avatar jx-avatar-lg">{{ persona.nombre_completo|slice:":1" }}</span>
+    <div class="jx-profile-txt">
+        <h1>{{ persona.nombre_completo }}</h1>
+        <p>C.C. {{ persona.cedula }}{% if persona.cargo %} · {{ persona.cargo }}{% endif %}{% if persona.correo %} · {{ persona.correo }}{% endif %}</p>
+        <div class="jx-tchips">
+            {% if retiro %}<span class="jx-badge jx-badge-warn">Retiro en proceso</span>
+            {% elif not persona.activo %}<span class="jx-badge">Retirada</span>
+            {% else %}<span class="jx-badge jx-badge-ok">Activa</span>{% endif %}
+            {% for c in chips %}<span class="jx-tchip"><svg class="jx-i"><use href="#i-{{ c.icono }}"/></svg>{{ c.n }} {{ c.etiqueta }}</span>{% endfor %}
+        </div>
+    </div>
+    <div class="jx-head-actions">
+        {% if permisos.personas %}<a class="jx-btn" href="{% url 'inventario:persona_editar' persona.pk %}"><svg class="jx-i"><use href="#i-settings"/></svg>Editar</a>{% endif %}
+        {% if retiro %}
+        <a class="jx-btn jx-btn-primary" href="{% url 'inventario:retiro_detalle' retiro.pk %}"><svg class="jx-i"><use href="#i-handoff"/></svg>Ver retiro</a>
+        {% elif persona.activo and permisos.retiros %}
+        <button class="jx-btn jx-btn-primary" type="button" data-jx-abrir="dlg-retiro"><svg class="jx-i"><use href="#i-logout"/></svg>Iniciar retiro</button>
+        {% endif %}
+    </div>
+</section>
+
+{% if retiro %}
+<div class="jx-alert jx-alert-warning" style="margin-top:16px">
+    Retiro por {{ retiro.get_motivo_display|lower }} desde el {{ retiro.fecha_retiro|date:"d/m/Y" }}. TIC debe validar cada equipo antes de emitir el paz y salvo.
+    <a href="{% url 'inventario:retiro_detalle' retiro.pk %}">Ir a la validación</a>
+</div>
+{% endif %}
+
+<section class="jx-card" style="margin-top:18px" aria-labelledby="t-cargo">
+    <div class="jx-card-head">
+        <h2 id="t-cargo">Equipos a cargo hoy <span class="jx-count">{{ a_cargo|length }}</span></h2>
+    </div>
+    {% if a_cargo %}
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Placa</th><th>Equipo</th><th>Dónde está</th><th>Desde</th><th>Mantenimiento</th></tr></thead>
+            <tbody>
+            {% for d in a_cargo %}
+                <tr>
+                    <td><a class="jx-placa" href="{% url 'inventario:equipo_detalle' d.equipo.placa %}">{{ d.equipo.placa }}</a></td>
+                    <td><strong>{{ d.equipo.get_tipo_display }}</strong><small class="muted d-block">{{ d.equipo.marca }} {{ d.equipo.modelo }}</small></td>
+                    <td class="muted">{{ d.lugar|default:"—" }}</td>
+                    <td class="muted">{{ d.desde|date:"d/m/Y"|default:"Sin registro" }}</td>
+                    <td>
+                        {% if d.mant == "VIGENTE" %}<span class="jx-badge jx-badge-ok">{{ d.mant_txt }}</span>
+                        {% elif d.mant == "PROXIMO" %}<span class="jx-badge jx-badge-warn">{{ d.mant_txt }}</span>
+                        {% elif d.mant == "VENCIDO" %}<span class="jx-badge jx-badge-bad">{{ d.mant_txt }}</span>
+                        {% else %}<span class="jx-badge">{{ d.mant_txt|default:"Sin dato" }}</span>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>No tiene equipos a cargo. Puede recibir paz y salvo de inmediato.</p></div>
+    {% endif %}
+</section>
+
+<div class="jx-grid jx-grid-2" style="margin-top:18px">
+    <section class="jx-card" aria-labelledby="t-hist">
+        <div class="jx-card-head"><h2 id="t-hist">Historial de entregas <span class="jx-count">{{ n_historial }}</span></h2></div>
+        <ul class="jx-list">
+        {% for h in historial %}
+            <li class="jx-list-row">
+                <span class="jx-list-ico {% if h.vigente %}jx-tone-primary{% else %}jx-tone-ok{% endif %}"><svg class="jx-i"><use href="#i-{% if h.vigente %}handoff{% else %}check{% endif %}"/></svg></span>
+                <span class="jx-list-txt"><strong>{{ h.equipo.placa }} · {{ h.equipo.get_tipo_display }}</strong>
+                <small>Recibido {{ h.fecha|date:"d/m/Y" }}{% if h.devuelto %} · devuelto {{ h.devuelto|date:"d/m/Y" }}{% endif %}{% if h.lugar %} · {{ h.lugar }}{% endif %}</small></span>
+                <span class="jx-badge {% if h.vigente %}jx-badge-primary{% endif %}">{{ h.estado }}</span>
+            </li>
+        {% empty %}
+            <li><div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Sin entregas registradas.</p></div></li>
+        {% endfor %}
+        </ul>
+    </section>
+    <section class="jx-card" aria-labelledby="t-ret">
+        <div class="jx-card-head"><h2 id="t-ret">Retiros y paz y salvo</h2></div>
+        <ul class="jx-list">
+        {% for r in retiros %}
+            <li class="jx-list-row">
+                <span class="jx-list-ico {% if r.estado == 'PAZ_Y_SALVO' %}jx-tone-ok{% elif r.estado == 'EN_PROCESO' %}jx-tone-warn{% else %}jx-tone-info{% endif %}"><svg class="jx-i"><use href="#i-flag"/></svg></span>
+                <span class="jx-list-txt"><strong>{{ r.get_motivo_display }} · {{ r.fecha_retiro|date:"d/m/Y" }}</strong><small>{{ r.get_estado_display }}</small></span>
+                {% if r.estado == 'PAZ_Y_SALVO' %}<a class="jx-btn jx-btn-sm" href="{% url 'inventario:paz_y_salvo' r.pk %}" target="_blank">Ver paz y salvo</a>
+                {% else %}<a class="jx-btn jx-btn-sm" href="{% url 'inventario:retiro_detalle' r.pk %}">Abrir</a>{% endif %}
+            </li>
+        {% empty %}
+            <li><div class="jx-empty"><svg class="jx-i"><use href="#i-flag"/></svg><p>No tiene retiros registrados.</p></div></li>
+        {% endfor %}
+        </ul>
+    </section>
+</div>
+
+{% if persona.activo and not retiro and permisos.retiros %}
+<dialog class="jx-dialog" id="dlg-retiro" aria-labelledby="t-dlg">
+    <form method="post" action="{% url 'inventario:retiro_iniciar' persona.pk %}">
+        {% csrf_token %}
+        <h2 id="t-dlg">Iniciar retiro de {{ persona.nombre_completo }}</h2>
+        <p class="muted">Se arma la lista de los {{ a_cargo|length }} equipo{{ a_cargo|length|pluralize }} que tiene a cargo para que TIC valide su estado. La persona sigue activa hasta que se emita el paz y salvo.</p>
+        <div class="jx-form">
+            {% for campo in form_retiro %}
+            <label class="jx-field"><span>{{ campo.label }}</span>{{ campo }}</label>
+            {% endfor %}
+        </div>
+        <div class="jx-dialog-actions">
+            <button class="jx-btn" type="button" data-jx-cerrar>Cancelar</button>
+            <button class="jx-btn jx-btn-primary" type="submit">Iniciar retiro</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+{% endblock %}

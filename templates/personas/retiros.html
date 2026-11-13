@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Paz y salvo | JANO Inventario{% endblock %}
+{% block page_heading %}Paz y salvo{% endblock %}
+
+{% block content %}
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Paz y salvo</h1>
+        <p>Retiros de personal: qué equipos falta validar antes de entregar el paz y salvo.</p>
+    </div>
+    <div class="jx-head-actions">
+        <a class="jx-btn jx-btn-primary" href="{% url 'inventario:personas_lista' %}?equipos=con"><svg class="jx-i"><use href="#i-users"/></svg>Iniciar desde una persona</a>
+    </div>
+</div>
+
+<nav class="jx-tabs" aria-label="Estado del retiro">
+    {% for t in pestanas %}
+    <a class="jx-tab{% if estado == t.valor or not estado and t.valor == 'todos' %} is-active{% endif %}" href="?estado={{ t.valor }}">{{ t.etiqueta }}<span>{{ t.total }}</span></a>
+    {% endfor %}
+</nav>
+
+<section class="jx-card jx-card-flush" style="margin-top:14px">
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Persona</th><th>Motivo</th><th>Fecha de retiro</th><th>Validación de equipos</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for f in filas %}
+                <tr class="jx-row-link" onclick="location.href='{% url 'inventario:retiro_detalle' f.r.pk %}'">
+                    <td><a class="jx-person" href="{% url 'inventario:retiro_detalle' f.r.pk %}"><span class="jx-avatar">{{ f.r.funcionario.nombre_completo|slice:":1" }}</span><span><strong>{{ f.r.funcionario.nombre_completo }}</strong><small>C.C. {{ f.r.funcionario.cedula }}</small></span></a></td>
+                    <td>{{ f.r.get_motivo_display }}</td>
+                    <td class="muted">{{ f.r.fecha_retiro|date:"d/m/Y" }}</td>
+                    <td style="min-width:200px">
+                        <div class="jx-progress jx-progress-sm {% if f.res.novedades %}is-bad{% elif f.res.puede_emitir or f.r.estado == 'PAZ_Y_SALVO' %}is-ok{% endif %}"><i style="width:{{ f.res.pct }}%"></i></div>
+                        <small class="muted">{{ f.res.validados }} de {{ f.res.total }}{% if f.res.novedades %} · {{ f.res.novedades }} con novedad{% endif %}</small>
+                    </td>
+                    <td>
+                        {% if f.r.estado == "PAZ_Y_SALVO" %}<span class="jx-badge jx-badge-ok">Paz y salvo</span>
+                        {% elif f.r.estado == "CANCELADO" %}<span class="jx-badge">Cancelado</span>
+                        {% elif f.res.novedades %}<span class="jx-badge jx-badge-bad">Con novedades</span>
+                        {% elif f.res.puede_emitir %}<span class="jx-badge jx-badge-primary">Listo para emitir</span>
+                        {% else %}<span class="jx-badge jx-badge-warn">Validando equipos</span>{% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-handoff"/></svg><p>No hay retiros en este estado. Para iniciar uno, abre la persona y usa "Iniciar retiro".</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

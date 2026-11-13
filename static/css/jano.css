@@ -497,3 +497,92 @@ html[data-tema="dark"] .jx-tab.is-active span { color: #0d1020; }
 
 /* El formulario de filtros solo agrupa los campos; nunca se ve. */
 #eq-form[hidden] { display: none !important; }
+
+/* ===== Módulo de Usuarios: tablas, ficha de persona, retiro ===== */
+.muted { color: var(--jx-muted); }
+.d-block { display: block; }
+.jx-card-flush { padding: 0; overflow: hidden; }
+.jx-card-narrow { max-width: 640px; }
+.jx-count { display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 7px; margin-left: 6px; border-radius: 999px; background: var(--jx-primary-soft); color: var(--jx-primary); font-size: 12px; font-weight: 800; vertical-align: 2px; }
+.jx-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; color: var(--jx-muted); text-decoration: none; font-size: 13px; font-weight: 600; }
+.jx-back svg { transform: rotate(180deg); width: 16px; height: 16px; }
+.jx-back:hover { color: var(--jx-primary); }
+
+.jx-table-wrap { overflow-x: auto; }
+.jx-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.jx-table th { text-align: left; padding: 12px 16px; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--jx-muted); background: var(--jx-surface-2); border-bottom: 1px solid var(--jx-line); white-space: nowrap; }
+.jx-table td { padding: 12px 16px; border-bottom: 1px solid var(--jx-line); vertical-align: middle; color: var(--jx-text); }
+.jx-table tbody tr:last-child td { border-bottom: 0; }
+.jx-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.jx-table small { font-size: 12px; }
+.jx-row-link { cursor: pointer; }
+.jx-row-link:hover td { background: var(--jx-surface-2); }
+.jx-table-foot { padding: 12px 16px; border-top: 1px solid var(--jx-line); font-size: 12.5px; color: var(--jx-muted); }
+.jx-card > .jx-table-wrap { margin-top: 14px; }
+.jx-card-flush > .jx-table-wrap { margin: 0; }
+.jx-placa { font-weight: 800; color: var(--jx-primary); text-decoration: none; white-space: nowrap; }
+.jx-placa:hover { text-decoration: underline; }
+
+.jx-person { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; min-width: 220px; }
+.jx-person strong { display: block; font-size: 13.5px; }
+.jx-person small { display: block; color: var(--jx-muted); }
+.jx-tchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.jx-tchip { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border-radius: 8px; background: var(--jx-primary-soft); color: var(--jx-primary); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.jx-tchip .jx-i { width: 14px; height: 14px; }
+
+.jx-profile { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.jx-avatar-lg { width: 64px; height: 64px; font-size: 26px; }
+.jx-profile-txt { flex: 1; min-width: 240px; }
+.jx-profile-txt h1 { margin: 0 0 2px; font-size: 22px; }
+.jx-profile-txt p { margin: 0 0 10px; color: var(--jx-muted); }
+
+.jx-progress-card { margin-top: 16px; }
+.jx-progress-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.jx-progress { height: 10px; border-radius: 999px; background: var(--jx-neutral-soft); overflow: hidden; }
+.jx-progress i { display: block; height: 100%; border-radius: inherit; background: var(--jx-warn); transition: width .3s; }
+.jx-progress.is-ok i { background: var(--jx-ok); }
+.jx-progress.is-bad i { background: var(--jx-bad); }
+.jx-progress-sm { height: 6px; margin-bottom: 4px; }
+
+.jx-checklist { list-style: none; margin: 0; padding: 0; }
+.jx-check { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 4px; border-top: 1px solid var(--jx-line); }
+.jx-check:first-child { border-top: 0; }
+.jx-check-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--jx-warn-soft); color: var(--jx-warn); }
+.jx-check.is-ok .jx-check-ico { background: var(--jx-ok-soft); color: var(--jx-ok); }
+.jx-check.is-bad .jx-check-ico { background: var(--jx-bad-soft); color: var(--jx-bad); }
+.jx-check-txt { flex: 1; min-width: 220px; }
+.jx-check-txt strong { display: block; }
+.jx-check-txt strong a { color: var(--jx-primary); text-decoration: none; }
+.jx-check-txt small { display: block; color: var(--jx-muted); font-size: 12px; }
+.jx-check-res { margin-top: 3px; color: var(--jx-text-2) !important; font-weight: 600; }
+.jx-check-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.jx-check-form select, .jx-check-form input, .jx-field input, .jx-field select, .jx-field textarea {
+    height: 38px; padding: 0 12px; border: 1px solid var(--jx-line-strong); border-radius: 10px;
+    background: var(--jx-surface); color: var(--jx-text); font: inherit; font-size: 13.5px;
+}
+.jx-field textarea { height: auto; padding: 10px 12px; resize: vertical; }
+.jx-check-form select { max-width: 230px; }
+.jx-check-form input { width: 200px; }
+.jx-check-form select:focus, .jx-check-form input:focus, .jx-field input:focus, .jx-field select:focus, .jx-field textarea:focus { outline: none; border-color: var(--jx-primary); box-shadow: 0 0 0 4px var(--jx-primary-soft); }
+
+.jx-form { display: grid; gap: 14px; }
+.jx-field { display: grid; gap: 6px; }
+.jx-field > span { font-size: 12px; font-weight: 700; color: var(--jx-text-2); }
+.jx-field.has-error input { border-color: var(--jx-bad); }
+.jx-error { color: var(--jx-bad); font-size: 12px; }
+.jx-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.jx-dialog { width: min(520px, calc(100vw - 32px)); border: 0; border-radius: 18px; padding: 24px; background: var(--jx-surface); color: var(--jx-text); box-shadow: var(--jx-shadow-lg); }
+.jx-dialog::backdrop { background: rgba(9, 13, 58, .5); }
+.jx-dialog h2 { margin: 0 0 6px; font-size: 18px; }
+.jx-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+@media (max-width: 600px) {
+    .jx-table th:nth-child(2), .jx-table td:nth-child(2) { display: none; }
+    .jx-check-form, .jx-check-form select, .jx-check-form input { width: 100%; max-width: none; }
+    .jx-profile .jx-head-actions { width: 100%; }
+}
+.jx-profile, .jx-progress-card { padding: 20px; }
+.jx-card > .jx-list, .jx-card > .jx-checklist { padding: 6px 20px 12px; }
+.jx-list-txt strong { display: block; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jx-card-head h1 { margin: 0; font-size: 20px; }

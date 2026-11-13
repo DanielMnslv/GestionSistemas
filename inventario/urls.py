@@ -1,6 +1,6 @@
 
 from django.urls import include, path
-from . import views, views_catalogos, views_equipos
+from . import views, views_catalogos, views_equipos, views_personas
 
 app_name = "inventario"
 
@@ -8,6 +8,18 @@ urlpatterns = [
     path("informes/", include("inventario.informes.urls")),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
     path("buscar/", views_equipos.buscar_json, name="buscar"),
+    # Módulo de Usuarios: personas, equipos a cargo y paz y salvo.
+    path("personas/", views_personas.personas_lista, name="personas_lista"),
+    path("personas/nueva/", views_personas.persona_crear, name="persona_crear"),
+    path("personas/<int:pk>/", views_personas.persona_detalle, name="persona_detalle"),
+    path("personas/<int:pk>/editar/", views_personas.persona_editar, name="persona_editar"),
+    path("personas/<int:pk>/retiro/", views_personas.retiro_iniciar, name="retiro_iniciar"),
+    path("paz-y-salvo/", views_personas.retiros_lista, name="retiros_lista"),
+    path("paz-y-salvo/<int:pk>/", views_personas.retiro_detalle, name="retiro_detalle"),
+    path("paz-y-salvo/<int:pk>/emitir/", views_personas.retiro_emitir, name="retiro_emitir"),
+    path("paz-y-salvo/<int:pk>/cancelar/", views_personas.retiro_cancelar, name="retiro_cancelar"),
+    path("paz-y-salvo/<int:pk>/documento/", views_personas.paz_y_salvo, name="paz_y_salvo"),
+    path("paz-y-salvo/item/<int:pk>/validar/", views_personas.retiro_item_validar, name="retiro_item_validar"),
     path("clientes/", views_catalogos.clientes_lista, name="clientes_lista"),
     path("clientes/nuevo/", views_catalogos.cliente_crear, name="cliente_crear"),
     path("clientes/puestos.json", views_catalogos.puestos_json, name="puestos_json"),

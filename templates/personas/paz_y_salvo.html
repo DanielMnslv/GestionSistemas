@@ -1,0 +1,68 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paz y salvo · {{ retiro.funcionario.nombre_completo }}</title>
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef0f6; font: 14px/1.5 "Segoe UI", Arial, sans-serif; color: #1b1f3b; }
+    .hoja { max-width: 800px; margin: 24px auto; background: #fff; padding: 48px 56px; box-shadow: 0 6px 30px rgba(15,21,85,.12); }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2E3092; padding-bottom: 14px; }
+    header img { height: 56px; }
+    header .num { text-align: right; font-size: 12px; color: #5b6080; }
+    h1 { font-size: 22px; text-align: center; letter-spacing: .08em; margin: 28px 0 6px; color: #0f1555; }
+    .sub { text-align: center; color: #5b6080; margin: 0 0 24px; }
+    p.cuerpo { text-align: justify; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; }
+    th, td { border: 1px solid #d5d8e6; padding: 7px 9px; text-align: left; }
+    th { background: #f1f2f9; color: #2E3092; }
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 72px; }
+    .firmas div { border-top: 1px solid #1b1f3b; padding-top: 6px; font-size: 12.5px; }
+    .acciones { max-width: 800px; margin: 16px auto 0; text-align: right; }
+    .acciones button { background: #2E3092; color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 600; cursor: pointer; }
+    @media print { body { background: #fff; } .hoja { box-shadow: none; margin: 0; padding: 24px 32px; } .acciones { display: none; } }
+</style>
+</head>
+<body>
+<div class="acciones"><button type="button" onclick="window.print()">Imprimir o guardar en PDF</button></div>
+<div class="hoja">
+    <header>
+        <img src="{% static 'img/logo-jano.png' %}" alt="Seguridad JANO" onerror="this.replaceWith(Object.assign(document.createElement('strong'),{textContent:'SEGURIDAD JANO'}))">
+        <div class="num">Paz y salvo de equipos tecnológicos<br>N.º PYS-{{ retiro.pk|stringformat:"05d" }}<br>Emitido {{ retiro.cerrado_en|date:"d/m/Y" }}</div>
+    </header>
+
+    <h1>PAZ Y SALVO</h1>
+    <p class="sub">Área de Tecnologías de la Información</p>
+
+    <p class="cuerpo">El área de TIC de Seguridad JANO hace constar que <strong>{{ retiro.funcionario.nombre_completo }}</strong>, identificado(a) con cédula de ciudadanía <strong>{{ retiro.funcionario.cedula }}</strong>{% if retiro.funcionario.cargo %}, quien se desempeñaba como <strong>{{ retiro.funcionario.cargo }}</strong>{% endif %}, se encuentra <strong>a paz y salvo</strong> por concepto de equipos tecnológicos de la compañía, con motivo de su retiro ({{ retiro.get_motivo_display|lower }}) con fecha {{ retiro.fecha_retiro|date:"d \d\e F \d\e Y" }}.</p>
+
+    {% if items %}
+    <p class="cuerpo">Los equipos que tenía a su cargo fueron validados así:</p>
+    <table>
+        <thead><tr><th>Placa</th><th>Equipo</th><th>Serial</th><th>Resultado</th><th>Validó</th></tr></thead>
+        <tbody>
+        {% for it in items %}
+        <tr>
+            <td>{{ it.equipo.placa }}</td>
+            <td>{{ it.equipo.get_tipo_display }} {{ it.equipo.marca }} {{ it.equipo.modelo }}</td>
+            <td>{{ it.equipo.serial|default:"—" }}</td>
+            <td>{{ it.get_resultado_display }}{% if it.reasignado_a %} a {{ it.reasignado_a.nombre_completo }}{% endif %}</td>
+            <td>{{ it.validado_por.get_full_name|default:it.validado_por.username }} · {{ it.validado_en|date:"d/m/Y" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="cuerpo">No tenía equipos tecnológicos a su cargo registrados en la plataforma.</p>
+    {% endif %}
+
+    <p class="cuerpo">Se expide a solicitud del área de Talento Humano.</p>
+
+    <div class="firmas">
+        <div>Responsable TIC<br>{{ retiro.cerrado_por.get_full_name|default:retiro.cerrado_por.username }}</div>
+        <div>Funcionario(a)<br>{{ retiro.funcionario.nombre_completo }} · C.C. {{ retiro.funcionario.cedula }}</div>
+    </div>
+</div>
+</body>
+</html>

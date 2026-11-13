@@ -36,6 +36,10 @@ def login_view(request):
 @login_required
 def inicio(request):
     from inventario.panel import datos_inicio
+    from inventario.permisos import solo_talento
+
+    if solo_talento(request.user):
+        return redirect("inventario:personas_lista")
 
     return render(request, "usuarios/inicio.html", datos_inicio())
 

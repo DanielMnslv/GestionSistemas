@@ -15,6 +15,7 @@ from django.db import transaction
 from inventario.models import (
     Equipo,
     AlertaMantenimiento,
+    AsignacionEquipo,
     AsignacionRadio,
     MantenimientoEquipo,
     MantenimientoProgramado,
@@ -2046,7 +2047,7 @@ class ImportarEquiposSheetTests(TestCase):
                          Equipo.EstadoOperativo.OPERATIVO)
 
     def test_no_toca_radios_ni_repite_y_crea_funcionarios(self):
-        from inventario.models import Funcionario
+        from inventario.models import AsignacionEquipo, Funcionario
 
         Radio.objects.create(placa="RJ-10")
         self.escribir(
@@ -3917,3 +3918,168 @@ class RedisenoListaYDashboardTests(TestCase):
         placas = [fila[0] for fila in hoja.iter_rows(min_row=2, values_only=True)]
         self.assertEqual(placas, ["PC--50", "PC--51"])
         self.assertEqual(hoja["A1"].value, "Placa")
+
+
+class ModuloUsuariosPazYSalvoTests(TestCase):
+    """Personas, equipos a cargo y el proceso de retiro con paz y salvo."""
+
+    def setUp(self):
+        from inventario.models import AsignacionEquipo, Funcionario
+
+        Usuario = get_user_model()
+        self.tic = Usuario.objects.create_user(username="tic", password="x")
+        self.tic.groups.add(Group.objects.create(name="Encargado de inventario"))
+        self.th = Usuario.objects.create_user(username="th", password="x")
+        self.th.groups.add(Group.objects.create(name="Talento humano"))
+
+        self.ana = Funcionario.objects.create(cedula="111", nombre_completo="ANA RUIZ", cargo="Analista")
+        self.luis = Funcionario.objects.create(cedula="222", nombre_completo="LUIS PAZ")
+
+        self.pc = Equipo.objects.create(
+            placa="PC--70", tipo=Equipo.Tipo.COMPUTADOR, serial="S70",
+            responsable_nombre="ANA RUIZ", responsable_cedula="111",
+        )
+        self.gps = Equipo.objects.create(placa="GPS-70", tipo=Equipo.Tipo.GPS, serial="G70")
+        self.entrega_gps = AsignacionEquipo.objects.create(
+            equipo=self.gps, funcionario=self.ana, nombre_recibe="ANA RUIZ",
+            cedula_recibe="111", entregado_por=self.tic,
+        )
+        self.radio = Radio.objects.create(placa="RJ-700", serial="R700")
+        self.entrega_radio = AsignacionRadio.objects.create(
+            radio=self.radio, coordinador_zona="ANA RUIZ", cedula_funcionario="111",
+            cliente_asignado="CLIENTE X", puesto_asignado="PUESTO 1", entregado_por=self.tic,
+        )
+
+    def iniciar(self, usuario=None):
+        self.client.force_login(usuario or self.th)
+        self.client.post(
+            reverse("inventario:retiro_iniciar", args=[self.ana.pk]),
+            {"motivo": "RENUNCIA", "fecha_retiro": "2026-11-30", "observaciones": ""},
+        )
+        from inventario.models import RetiroFuncionario
+        return RetiroFuncionario.objects.get(funcionario=self.ana)
+
+    def validar(self, retiro, placa, resultado, **extra):
+        item = retiro.items.get(equipo__placa=placa)
+        self.client.force_login(self.tic)
+        return self.client.post(
+            reverse("inventario:retiro_item_validar", args=[item.pk]),
+            {"resultado": resultado, **extra},
+        )
+
+    def test_equipos_a_cargo_une_las_tres_fuentes(self):
+        from inventario.personas import conteos_por_cedula, equipos_a_cargo
+
+        placas = [d["equipo"].placa for d in equipos_a_cargo(self.ana)]
+        self.assertEqual(sorted(placas), ["GPS-70", "PC--70", "RJ-700"])
+        conteo = conteos_por_cedula()["111"]
+        self.assertEqual(conteo["COMPUTADOR"], 1)
+        self.assertEqual(conteo["GPS"], 1)
+        self.assertEqual(conteo["RADIO"], 1)
+
+        self.client.force_login(self.th)
+        lista = self.client.get(reverse("inventario:personas_lista"), {"equipos": "con"})
+        self.assertEqual([f["p"] for f in lista.context["filas"]], [self.ana])
+        ficha = self.client.get(reverse("inventario:persona_detalle", args=[self.ana.pk]))
+        self.assertEqual(len(ficha.context["a_cargo"]), 3)
+
+    def test_paz_y_salvo_completo(self):
+        retiro = self.iniciar()
+        self.assertEqual(retiro.items.count(), 3)
+
+        self.validar(retiro, "PC--70", "DEVUELTO")
+        self.validar(retiro, "GPS-70", "REASIGNADO", reasignado_a=self.luis.pk)
+        self.validar(retiro, "RJ-700", "REASIGNADO", reasignado_a=self.luis.pk)
+
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.responsable_cedula, "")
+        self.entrega_gps.refresh_from_db()
+        self.assertEqual(self.entrega_gps.estado, AsignacionEquipo.Estado.DEVUELTO)
+        self.assertTrue(AsignacionEquipo.objects.filter(
+            equipo=self.gps, funcionario=self.luis, estado="ASIGNADO").exists())
+        nueva = AsignacionRadio.objects.get(radio=self.radio, estado="ASIGNADO")
+        self.assertEqual(nueva.cedula_funcionario, "222")
+        self.assertEqual(nueva.puesto_asignado, "PUESTO 1")
+
+        self.client.force_login(self.th)
+        self.client.post(reverse("inventario:retiro_emitir", args=[retiro.pk]))
+        retiro.refresh_from_db()
+        self.ana.refresh_from_db()
+        self.assertEqual(retiro.estado, "PAZ_Y_SALVO")
+        self.assertFalse(self.ana.activo)
+        documento = self.client.get(reverse("inventario:paz_y_salvo", args=[retiro.pk]))
+        self.assertContains(documento, "PAZ Y SALVO")
+        self.assertContains(documento, "ANA RUIZ")
+
+    def test_faltante_bloquea_el_paz_y_salvo(self):
+        retiro = self.iniciar()
+        self.validar(retiro, "PC--70", "FALTANTE", observaciones="No lo trajo")
+        self.validar(retiro, "GPS-70", "DEVUELTO")
+        self.validar(retiro, "RJ-700", "DEVUELTO")
+
+        self.pc.refresh_from_db()
+        self.assertTrue(self.pc.requiere_revision)
+        self.client.force_login(self.th)
+        self.client.post(reverse("inventario:retiro_emitir", args=[retiro.pk]))
+        retiro.refresh_from_db()
+        self.assertEqual(retiro.estado, "EN_PROCESO")
+        self.ana.refresh_from_db()
+        self.assertTrue(self.ana.activo)
+
+    def test_talento_humano_no_valida_equipos_ni_ve_el_inventario(self):
+        retiro = self.iniciar()
+        item = retiro.items.get(equipo__placa="PC--70")
+        self.client.force_login(self.th)
+        self.client.post(
+            reverse("inventario:retiro_item_validar", args=[item.pk]), {"resultado": "DEVUELTO"}
+        )
+        item.refresh_from_db()
+        self.assertEqual(item.resultado, "PENDIENTE")
+
+        inicio = self.client.get(reverse("inicio"))
+        self.assertRedirects(inicio, reverse("inventario:personas_lista"))
+        lista = self.client.get(reverse("inventario:personas_lista"))
+        self.assertNotContains(lista, "Equipos y radios</span>")
+        self.assertContains(lista, "Paz y salvo")
+
+    def test_reasignar_exige_persona_y_un_solo_retiro_abierto(self):
+        retiro = self.iniciar()
+        self.validar(retiro, "PC--70", "REASIGNADO")
+        self.assertEqual(retiro.items.get(equipo__placa="PC--70").resultado, "PENDIENTE")
+
+        self.iniciar()
+        from inventario.models import RetiroFuncionario
+        self.assertEqual(RetiroFuncionario.objects.filter(funcionario=self.ana).count(), 1)
+
+    def test_persona_sin_equipos_recibe_paz_y_salvo_de_inmediato(self):
+        self.client.force_login(self.th)
+        self.client.post(
+            reverse("inventario:retiro_iniciar", args=[self.luis.pk]),
+            {"motivo": "DESPIDO", "fecha_retiro": "2026-11-30"},
+        )
+        retiro = self.luis.retiros.get()
+        self.assertEqual(retiro.items.count(), 0)
+        self.client.post(reverse("inventario:retiro_emitir", args=[retiro.pk]))
+        retiro.refresh_from_db()
+        self.assertEqual(retiro.estado, "PAZ_Y_SALVO")
+
+
+class RetiroEntregaSinCedulaTests(ModuloUsuariosPazYSalvoTests):
+    """Entregas importadas sin cédula: el equipo es de quien figura como responsable."""
+
+    def test_reasignar_equipo_con_entrega_sin_cedula(self):
+        imp = Equipo.objects.create(
+            placa="IMP-70", tipo=Equipo.Tipo.IMPRESORA, serial="I70",
+            responsable_nombre="ANA RUIZ", responsable_cedula="111",
+        )
+        AsignacionEquipo.objects.create(
+            equipo=imp, nombre_recibe="ANA RUIZ", cedula_recibe="", entregado_por=self.tic,
+        )
+        from inventario.personas import conteos_por_cedula
+        self.assertEqual(conteos_por_cedula()["111"]["IMPRESORA"], 1)
+
+        retiro = self.iniciar()
+        self.validar(retiro, "IMP-70", "REASIGNADO", reasignado_a=self.luis.pk)
+        self.assertEqual(retiro.items.get(equipo__placa="IMP-70").resultado, "REASIGNADO")
+        vigente = AsignacionEquipo.objects.get(equipo=imp, estado="ASIGNADO")
+        self.assertEqual(vigente.funcionario, self.luis)

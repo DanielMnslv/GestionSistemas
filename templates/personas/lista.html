@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Personas | JANO Inventario{% endblock %}
+{% block page_heading %}Personas{% endblock %}
+
+{% block content %}
+{% url 'inventario:personas_lista' as u_lista %}
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Personas y equipos a cargo</h1>
+        <p>Qué equipos tecnológicos tiene cada funcionario. Ábrelo para ver el detalle o iniciar su retiro.</p>
+    </div>
+    <div class="jx-head-actions">
+        <a class="jx-btn" href="{% url 'inventario:retiros_lista' %}"><svg class="jx-i"><use href="#i-handoff"/></svg>Paz y salvo</a>
+        {% if permisos.personas %}<a class="jx-btn jx-btn-primary" href="{% url 'inventario:persona_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar persona</a>{% endif %}
+    </div>
+</div>
+
+<div class="jx-kpis">
+    <a class="jx-kpi" href="{{ u_lista }}">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Personas activas</span><span class="jx-kpi-ico soft-primary"><svg class="jx-i"><use href="#i-users"/></svg></span></div>
+        <span class="jx-kpi-value">{{ kpi.activos }}</span>
+        <span class="jx-kpi-foot">Funcionarios registrados</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{{ u_lista }}?equipos=con">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Con equipos a cargo</span><span class="jx-kpi-ico soft-info"><svg class="jx-i"><use href="#i-monitor"/></svg></span></div>
+        <span class="jx-kpi-value">{{ kpi.con_equipos }}</span>
+        <span class="jx-kpi-foot">Deben validarse si se retiran</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{% url 'inventario:retiros_lista' %}">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Retiros en proceso</span><span class="jx-kpi-ico soft-warn"><svg class="jx-i"><use href="#i-clock"/></svg></span></div>
+        <span class="jx-kpi-value">{{ kpi.en_retiro }}</span>
+        <span class="jx-kpi-foot">Esperando validación de equipos</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+    <a class="jx-kpi" href="{% url 'inventario:retiros_lista' %}?estado=PAZ_Y_SALVO">
+        <div class="jx-kpi-top"><span class="jx-kpi-label">Paz y salvo emitidos</span><span class="jx-kpi-ico soft-ok"><svg class="jx-i"><use href="#i-check"/></svg></span></div>
+        <span class="jx-kpi-value">{{ kpi.paz_y_salvo }}</span>
+        <span class="jx-kpi-foot">Retiros cerrados</span>
+        <svg class="jx-i jx-kpi-arrow"><use href="#i-arrow"/></svg>
+    </a>
+</div>
+
+<form method="get" class="jx-filterbar" style="margin-top:18px">
+    <label class="jx-filter-search">
+        <svg class="jx-i"><use href="#i-search"/></svg>
+        <span class="sr-only">Buscar por nombre, cédula o cargo</span>
+        <input type="search" name="q" value="{{ q }}" placeholder="Nombre, cédula o cargo…">
+    </label>
+    <label class="jx-select"><span>Estado</span>
+        <select name="estado" onchange="this.form.submit()">
+            <option value="activos" {% if estado == "activos" %}selected{% endif %}>Activas</option>
+            <option value="retiro" {% if estado == "retiro" %}selected{% endif %}>En retiro</option>
+            <option value="inactivos" {% if estado == "inactivos" %}selected{% endif %}>Retiradas</option>
+            <option value="todos" {% if estado == "todos" %}selected{% endif %}>Todas</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Equipos</span>
+        <select name="equipos" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="con" {% if con == "con" %}selected{% endif %}>Con equipos</option>
+            <option value="sin" {% if con == "sin" %}selected{% endif %}>Sin equipos</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Tiene</span>
+        <select name="tipo" onchange="this.form.submit()">
+            <option value="">Cualquier tipo</option>
+            {% for valor, corto, icono in tipos %}<option value="{{ valor }}" {% if tipo == valor %}selected{% endif %}>{{ corto }}</option>{% endfor %}
+        </select>
+    </label>
+    <button class="jx-btn" type="submit">Buscar</button>
+    {% if n_filtros %}<a class="jx-chip-clear" href="{{ u_lista }}">Limpiar</a>{% endif %}
+</form>
+
+<section class="jx-card jx-card-flush" aria-label="Personas">
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead>
+                <tr><th>Persona</th><th>Cargo</th><th>Equipos a cargo</th><th class="num">Total</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                {% for f in filas %}
+                <tr class="jx-row-link" onclick="location.href='{% url 'inventario:persona_detalle' f.p.pk %}'">
+                    <td>
+                        <a class="jx-person" href="{% url 'inventario:persona_detalle' f.p.pk %}">
+                            <span class="jx-avatar">{{ f.p.nombre_completo|slice:":1" }}</span>
+                            <span><strong>{{ f.p.nombre_completo }}</strong><small>C.C. {{ f.p.cedula }}</small></span>
+                        </a>
+                    </td>
+                    <td class="muted">{{ f.p.cargo|default:"—" }}</td>
+                    <td>
+                        <div class="jx-tchips">
+                        {% for c in f.chips %}<span class="jx-tchip" title="{{ c.n }} {{ c.etiqueta }}"><svg class="jx-i"><use href="#i-{{ c.icono }}"/></svg>{{ c.n }} {{ c.etiqueta }}</span>{% empty %}<span class="muted">Sin equipos</span>{% endfor %}
+                        </div>
+                    </td>
+                    <td class="num"><strong>{{ f.total }}</strong></td>
+                    <td>
+                        {% if f.retiro %}<span class="jx-badge jx-badge-warn">En retiro</span>
+                        {% elif not f.p.activo %}<span class="jx-badge">Retirada</span>
+                        {% else %}<span class="jx-badge jx-badge-ok">Activa</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-users"/></svg><p>No hay personas con esos filtros.</p></div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="jx-table-foot">{{ filas|length }} persona{{ filas|length|pluralize }}</div>
+</section>
+{% endblock %}

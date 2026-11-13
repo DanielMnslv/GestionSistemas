@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{% if persona %}Editar persona{% else %}Registrar persona{% endif %} | JANO Inventario{% endblock %}
+{% block page_heading %}Personas{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% if persona %}{% url 'inventario:persona_detalle' persona.pk %}{% else %}{% url 'inventario:personas_lista' %}{% endif %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Volver</a>
+<section class="jx-card jx-card-narrow">
+    <div class="jx-card-head"><h1>{% if persona %}Editar {{ persona.nombre_completo }}{% else %}Registrar persona{% endif %}</h1></div>
+    <form method="post" class="jx-card-body">
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}<div class="jx-alert jx-alert-error">{{ formulario.non_field_errors }}</div>{% endif %}
+        <div class="jx-form">
+            {% for campo in formulario %}
+            <label class="jx-field{% if campo.errors %} has-error{% endif %}"><span>{{ campo.label }}</span>{{ campo }}{% for e in campo.errors %}<small class="jx-error">{{ e }}</small>{% endfor %}</label>
+            {% endfor %}
+        </div>
+        <div class="jx-dialog-actions">
+            <button class="jx-btn jx-btn-primary" type="submit">Guardar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

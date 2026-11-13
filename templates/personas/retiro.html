@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Retiro de {{ retiro.funcionario.nombre_completo }} | JANO Inventario{% endblock %}
+{% block page_heading %}Paz y salvo{% endblock %}
+
+{% block content %}
+{% with p=retiro.funcionario %}
+<a class="jx-back" href="{% url 'inventario:persona_detalle' p.pk %}"><svg class="jx-i"><use href="#i-arrow"/></svg>{{ p.nombre_completo }}</a>
+
+<section class="jx-card jx-profile">
+    <span class="jx-avatar jx-avatar-lg">{{ p.nombre_completo|slice:":1" }}</span>
+    <div class="jx-profile-txt">
+        <h1>Retiro de {{ p.nombre_completo }}</h1>
+        <p>C.C. {{ p.cedula }} · {{ retiro.get_motivo_display }} · fecha de retiro {{ retiro.fecha_retiro|date:"d/m/Y" }} · iniciado por {{ retiro.creado_por.get_full_name|default:retiro.creado_por.username }}</p>
+        {% if retiro.observaciones %}<p class="muted">{{ retiro.observaciones }}</p>{% endif %}
+    </div>
+    <div class="jx-head-actions">
+        {% if retiro.estado == "PAZ_Y_SALVO" %}
+        <a class="jx-btn jx-btn-lime" href="{% url 'inventario:paz_y_salvo' retiro.pk %}" target="_blank"><svg class="jx-i"><use href="#i-file"/></svg>Imprimir paz y salvo</a>
+        {% elif retiro.estado == "EN_PROCESO" and puede_cerrar %}
+        <form method="post" action="{% url 'inventario:retiro_emitir' retiro.pk %}">{% csrf_token %}
+            <button class="jx-btn jx-btn-primary" type="submit" {% if not resumen.puede_emitir %}disabled title="Todos los equipos deben quedar devueltos en buen estado o reasignados"{% endif %}><svg class="jx-i"><use href="#i-check"/></svg>Emitir paz y salvo</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+<div class="jx-progress-card jx-card">
+    <div class="jx-progress-top">
+        <strong>
+        {% if retiro.estado == "PAZ_Y_SALVO" %}Paz y salvo emitido el {{ retiro.cerrado_en|date:"d/m/Y" }}
+        {% elif retiro.estado == "CANCELADO" %}Retiro cancelado
+        {% elif resumen.puede_emitir %}Todo validado: ya se puede emitir el paz y salvo
+        {% elif resumen.novedades %}Bloqueado: {{ resumen.novedades }} equipo{{ resumen.novedades|pluralize }} con daño o faltante{{ resumen.novedades|pluralize }}
+        {% else %}{{ resumen.pendientes }} equipo{{ resumen.pendientes|pluralize }} por validar{% endif %}
+        </strong>
+        <span class="muted">{{ resumen.validados }} de {{ resumen.total }} validados</span>
+    </div>
+    <div class="jx-progress {% if resumen.novedades %}is-bad{% elif resumen.puede_emitir or retiro.estado == 'PAZ_Y_SALVO' %}is-ok{% endif %}" aria-hidden="true"><i style="width:{{ resumen.pct }}%"></i></div>
+    {% if resumen.novedades and retiro.estado == "EN_PROCESO" %}<p class="muted" style="margin:10px 0 0">Los equipos con daño o faltantes quedan marcados "Por revisar" en el inventario. Talento Humano define el descuento o la reposición antes de cerrar.</p>{% endif %}
+</div>
+
+<section class="jx-card" aria-labelledby="t-items" style="margin-top:18px">
+    <div class="jx-card-head"><h2 id="t-items">Equipos a validar <span class="jx-count">{{ resumen.total }}</span></h2></div>
+    {% if items %}
+    <ul class="jx-checklist">
+    {% for it in items %}
+        <li id="item-{{ it.pk }}" class="jx-check {% if it.resultado == 'PENDIENTE' %}is-pending{% elif it.bloquea %}is-bad{% else %}is-ok{% endif %}">
+            <span class="jx-check-ico"><svg class="jx-i"><use href="#i-{% if it.resultado == 'PENDIENTE' %}clock{% elif it.bloquea %}alert{% else %}check{% endif %}"/></svg></span>
+            <div class="jx-check-txt">
+                <strong><a href="{% url 'inventario:equipo_detalle' it.equipo.placa %}">{{ it.equipo.placa }}</a> · {{ it.equipo.get_tipo_display }}</strong>
+                <small>{{ it.equipo.marca }} {{ it.equipo.modelo }}{% if it.equipo.serial %} · serial {{ it.equipo.serial }}{% endif %}</small>
+                {% if it.resultado != 'PENDIENTE' %}
+                <small class="jx-check-res">{{ it.get_resultado_display }}{% if it.reasignado_a %} → {{ it.reasignado_a.nombre_completo }}{% endif %} · {{ it.validado_por.get_full_name|default:it.validado_por.username }}, {{ it.validado_en|date:"d/m/Y H:i" }}{% if it.observaciones %} · “{{ it.observaciones }}”{% endif %}</small>
+                {% endif %}
+            </div>
+            {% if it.resultado == 'PENDIENTE' and retiro.estado == 'EN_PROCESO' %}
+                {% if puede_validar %}
+                <form class="jx-check-form" method="post" action="{% url 'inventario:retiro_item_validar' it.pk %}" data-jx-validar>
+                    {% csrf_token %}
+                    <select name="resultado" required aria-label="Resultado de {{ it.equipo.placa }}">
+                        <option value="">¿Qué pasó con el equipo?</option>
+                        {% for v, l in resultados %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+                    </select>
+                    <select name="reasignado_a" hidden aria-label="Persona que recibe">
+                        <option value="">¿Quién lo recibe?</option>
+                        {% for o in personas %}<option value="{{ o.pk }}">{{ o.nombre_completo }}</option>{% endfor %}
+                    </select>
+                    <input name="observaciones" type="text" placeholder="Observación (opcional)">
+                    <button class="jx-btn jx-btn-primary jx-btn-sm" type="submit">Validar</button>
+                </form>
+                {% else %}
+                <span class="jx-badge jx-badge-warn">Pendiente de TIC</span>
+                {% endif %}
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>La persona no tenía equipos a cargo.</p></div>
+    {% endif %}
+</section>
+
+{% if retiro.estado == "EN_PROCESO" and puede_cerrar %}
+<form method="post" action="{% url 'inventario:retiro_cancelar' retiro.pk %}" style="margin-top:14px" onsubmit="return confirm('¿Cancelar este retiro? Lo ya validado se conserva.')">
+    {% csrf_token %}
+    <button class="jx-btn jx-btn-sm" type="submit">La persona no se retira: cancelar</button>
+</form>
+{% endif %}
+{% endwith %}
+
+<script>
+document.querySelectorAll("[data-jx-validar]").forEach(function (f) {
+    var res = f.querySelector('[name="resultado"]'), quien = f.querySelector('[name="reasignado_a"]');
+    res.addEventListener("change", function () {
+        var r = res.value === "REASIGNADO";
+        quien.hidden = !r; quien.required = r;
+    });
+});
+</script>
+{% endblock %}
