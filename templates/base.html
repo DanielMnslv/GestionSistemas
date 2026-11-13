@@ -23,12 +23,14 @@
 
         {% if permisos.tecnico %}
         <div class="jx-nav-label">1 · Inventario</div>
-        <a class="jx-nav-link{% if 'equipo' in n and request.GET.revision != 'si' and request.GET.disponibilidad != 'en_inventario' or 'radio' in n or 'asignacion' in n %} is-active{% endif %}" href="{% url 'inventario:equipos_inicio' %}" title="Equipos">
+        <a class="jx-nav-link{% if 'equipo' in n and n != 'equipos_bajas' and request.GET.revision != 'si' and request.GET.disponibilidad != 'en_inventario' or 'radio' in n or 'asignacion' in n %} is-active{% endif %}" href="{% url 'inventario:equipos_inicio' %}" title="Equipos">
             <svg class="jx-i"><use href="#i-monitor"/></svg><span class="jx-nav-text">Equipos</span>{% if c.equipos %}<span class="jx-nav-badge">{{ c.equipos }}</span>{% endif %}</a>
         <a class="jx-nav-link{% if n == 'equipos_lista' and request.GET.disponibilidad == 'en_inventario' %} is-active{% endif %}" href="{% url 'inventario:equipos_lista' %}?disponibilidad=en_inventario" title="Bodega: equipos disponibles para entregar">
             <svg class="jx-i"><use href="#i-warehouse"/></svg><span class="jx-nav-text">Bodega</span>{% if c.bodega %}<span class="jx-nav-badge">{{ c.bodega }}</span>{% endif %}</a>
         <a class="jx-nav-link{% if n == 'equipos_lista' and request.GET.revision == 'si' %} is-active{% endif %}" href="{% url 'inventario:equipos_lista' %}?revision=si" title="Equipos por revisar">
             <svg class="jx-i"><use href="#i-alert"/></svg><span class="jx-nav-text">Por revisar</span>{% if c.revision %}<span class="jx-nav-badge is-warn">{{ c.revision }}</span>{% endif %}</a>
+        <a class="jx-nav-link jx-nav-baul{% if n == 'equipos_bajas' %} is-active{% endif %}" href="{% url 'inventario:equipos_bajas' %}" title="Baúl de bajas: equipos excluidos">
+            <svg class="jx-i"><use href="#i-box"/></svg><span class="jx-nav-text">Baúl de bajas</span>{% if c.bajas %}<span class="jx-nav-badge is-bad">{{ c.bajas }}</span>{% endif %}</a>
         <a class="jx-nav-link{% if 'cliente' in n or 'puesto' in n %} is-active{% endif %}" href="{% url 'inventario:clientes_lista' %}" title="Clientes y puestos">
             <svg class="jx-i"><use href="#i-building"/></svg><span class="jx-nav-text">Clientes y puestos</span></a>
 
@@ -56,6 +58,10 @@
         <a class="jx-nav-link{% if 'informe' in n %} is-active{% endif %}" href="{% url 'inventario:informes_inicio' %}" title="Informes">
             <svg class="jx-i"><use href="#i-file"/></svg><span class="jx-nav-text">Informes y reportes</span></a>
         {% endif %}
+        {% if permisos.auditoria %}
+        <a class="jx-nav-link{% if n == 'auditoria' %} is-active{% endif %}" href="{% url 'inventario:auditoria' %}" title="Auditoría">
+            <svg class="jx-i"><use href="#i-shield"/></svg><span class="jx-nav-text">Auditoría</span></a>
+        {% endif %}
         {% if request.user.is_superuser %}
         <a class="jx-nav-link{% if 'usuario' in n %} is-active{% endif %}" href="{% url 'usuarios_lista' %}" title="Accesos a la plataforma">
             <svg class="jx-i"><use href="#i-settings"/></svg><span class="jx-nav-text">Accesos a la plataforma</span></a>
@@ -77,7 +83,7 @@
         <button type="button" class="jx-iconbtn jx-only-desktop" data-jx-mini aria-label="Reducir o ampliar el menú" title="Reducir o ampliar el menú"><svg class="jx-i"><use href="#i-sidebar"/></svg></button>
         <nav class="jx-crumbs" aria-label="Ubicación">
             <a href="{% url 'inicio' %}">Inicio</a><span aria-hidden="true">/</span>
-            <strong>{% block page_heading %}{% if n == 'inicio' %}Dashboard{% elif n == 'equipos_lista' and request.GET.disponibilidad == 'en_inventario' %}Bodega{% elif 'equipo' in n or 'radio' in n or 'asignacion' in n %}Equipos{% elif 'cliente' in n or 'puesto' in n %}Clientes y puestos{% elif n == 'vigilantes_lista' %}Vigilantes{% elif n == 'panel_mantenimientos' %}Mantenimiento{% elif 'programado' in n %}Programación{% elif 'mantenimiento' in n %}Intervenciones{% elif 'politica' in n %}Política de seguridad{% elif 'informe' in n %}Informes{% elif 'usuario' in n %}Accesos a la plataforma{% else %}JANO Inventario{% endif %}{% endblock %}</strong>
+            <strong>{% block page_heading %}{% if n == 'inicio' %}Dashboard{% elif n == 'equipos_lista' and request.GET.disponibilidad == 'en_inventario' %}Bodega{% elif 'equipo' in n or 'radio' in n or 'asignacion' in n %}Equipos{% elif n == 'equipos_bajas' %}Baúl de bajas{% elif n == 'auditoria' %}Auditoría{% elif 'cliente' in n or 'puesto' in n %}Clientes y puestos{% elif n == 'vigilantes_lista' %}Vigilantes{% elif n == 'panel_mantenimientos' %}Mantenimiento{% elif 'programado' in n %}Programación{% elif 'mantenimiento' in n %}Intervenciones{% elif 'politica' in n %}Política de seguridad{% elif 'informe' in n %}Informes{% elif 'usuario' in n %}Accesos a la plataforma{% else %}JANO Inventario{% endif %}{% endblock %}</strong>
         </nav>
         <span class="jx-top-spacer"></span>
         <div class="jx-search" role="search" data-jx-search data-url="{% url 'inventario:buscar' %}" data-todos="{% url 'inventario:equipos_lista' %}">

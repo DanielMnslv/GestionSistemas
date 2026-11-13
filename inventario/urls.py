@@ -1,12 +1,13 @@
 
 from django.urls import include, path
-from . import views, views_catalogos, views_equipos, views_personas
+from . import views, views_auditoria, views_catalogos, views_equipos, views_personas
 
 app_name = "inventario"
 
 urlpatterns = [
     path("informes/", include("inventario.informes.urls")),
     path("equipos/tipos/", views_equipos.equipos_inicio, name="equipos_inicio"),
+    path("equipos/bajas/", views_equipos.equipos_bajas, name="equipos_bajas"),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
     path("buscar/", views_equipos.buscar_json, name="buscar"),
     # Módulo de Usuarios: personas, equipos a cargo y paz y salvo.
@@ -46,6 +47,7 @@ urlpatterns = [
         name="panel_mantenimientos",
     ),
     path("equipos/nuevo/", views_equipos.equipo_crear, name="equipo_crear"),
+    path("auditoria/", views_auditoria.auditoria_lista, name="auditoria"),
     path(
         "equipos/<str:placa>/",
         views_equipos.equipo_detalle,

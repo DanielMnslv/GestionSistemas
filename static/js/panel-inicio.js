@@ -1,4 +1,4 @@
-/* Panel de inicio: mapa de radios y mapa de calor.
+/* Panel de inicio: mapa de equipos por sede y mapa de calor.
    Los datos llegan en <script id="pn-datos"> (ver inventario/panel.py). */
 (function () {
     "use strict";
@@ -34,25 +34,29 @@
         $("pn-max").textContent = Math.max.apply(null, sumas);
     })();
 
-    /* ---------- Mapa: dónde están los radios (Leaflet + OpenStreetMap) ---------- */
+    /* ---------- Mapa: dónde están los equipos, por sede (Leaflet + OpenStreetMap) ---------- */
     (function () {
         var cont = $("pn-map"), M = D.mapa || { puntos: [] }, pts = M.puntos || [];
         if (!cont) return;
         var sin = M.sin_ubicar || { total: 0, puestos: 0 }, bod = M.bodega || { total: 0, malos: 0 };
 
+        function plural(n, uno, varios) { return n + " " + (n === 1 ? uno : varios); }
+        function textoTipos(tipos) {
+            return (tipos || []).map(function (t) { return t.texto; }).join(", ");
+        }
         function pie() {
-            var t = [(M.total || 0) + " radio" + (M.total === 1 ? "" : "s") + " asignado" + (M.total === 1 ? "" : "s") + " en " + pts.length + " lugar" + (pts.length === 1 ? "" : "es")];
-            if (sin.total) t.push(sin.total + " sin ubicar (" + sin.puestos + " puesto" + (sin.puestos === 1 ? "" : "s") + ")");
-            if (bod.total) t.push(bod.total + " en bodega sin asignar" + (bod.malos ? " (" + bod.malos + " dañado" + (bod.malos === 1 ? "" : "s") + ")" : ""));
+            var t = [plural(M.total || 0, "equipo", "equipos") + " ubicados en " + plural(pts.length, "lugar", "lugares")];
+            if (sin.total) t.push(sin.total + " sin sede registrada (" + textoTipos(sin.tipos) + ")");
+            if (bod.total) t.push(plural(bod.total, "radio", "radios") + " en bodega sin asignar" + (bod.malos ? " (" + bod.malos + " dañado" + (bod.malos === 1 ? "" : "s") + ")" : ""));
             $("pn-mp").textContent = t.join(" · ") + ".";
         }
         pie();
 
         if (typeof L === "undefined") {          /* sin internet: lista simple */
             cont.className = "pn-map-lista";
-            if (!pts.length) { cont.textContent = "Todavía no hay radios asignados."; return; }
+            if (!pts.length) { cont.textContent = "Todavía no hay equipos con sede."; return; }
             pts.forEach(function (p) {
-                cont.appendChild(el("p", {}, (p.lugar || "Ubicación exacta") + ": " + p.total + " radios" + (p.malos ? ", " + p.malos + " dañados" : "")));
+                cont.appendChild(el("p", {}, (p.lugar || "Ubicación exacta") + ": " + textoTipos(p.tipos) + (p.malos ? " · " + p.malos + " dañados" : "")));
             });
             return;
         }
@@ -72,11 +76,14 @@
 
         function popup(p) {
             var d = el("div", { class: "pn-pop" });
-            d.appendChild(el("strong", {}, (p.lugar || "Ubicación exacta") + ": " + p.total + " radio" + (p.total === 1 ? "" : "s")));
-            if (!p.exacta) d.appendChild(el("small", {}, "Ubicación aproximada (centro del municipio)"));
+            d.appendChild(el("strong", {}, (p.lugar || "Ubicación exacta") + ": " + plural(p.total, "equipo", "equipos")));
+            d.appendChild(el("small", {}, textoTipos(p.tipos) + (p.exacta ? "" : " · ubicación aproximada (centro del municipio)")));
             var ul = el("ul");
             p.puestos.forEach(function (x) {
-                ul.appendChild(el("li", {}, x.nombre + ": " + x.total + (x.malos ? " (" + x.malos + " dañado" + (x.malos === 1 ? "" : "s") + ")" : "")));
+                var li = el("li");
+                li.appendChild(el("b", {}, x.nombre));
+                li.appendChild(document.createTextNode(": " + (x.tipos.length ? textoTipos(x.tipos) : x.total) + (x.malos ? " (" + x.malos + " dañado" + (x.malos === 1 ? "" : "s") + ")" : "")));
+                ul.appendChild(li);
             });
             d.appendChild(ul);
             return d;
@@ -89,7 +96,7 @@
             if (m) n.appendChild(el("i", {}, m));
             return L.divIcon({ html: n, className: "pn-pin-w", iconSize: [r, r], iconAnchor: [r / 2, r / 2] });
         }
-        /* Si hay varios lugares muy juntos se agrupan en un solo círculo (suma de radios) al alejar el mapa. */
+        /* Si hay varios lugares muy juntos se agrupan en un solo círculo (suma de equipos) al alejar el mapa. */
         var grupo = typeof L.markerClusterGroup === "function"
             ? L.markerClusterGroup({
                 maxClusterRadius: 50, showCoverageOnHover: false, spiderfyOnMaxZoom: true,
@@ -105,7 +112,7 @@
         pts.forEach(function (p) {
             var m = L.marker([p.lat, p.lng], {
                 icon: pin(p.total, p.malos), p: p, keyboard: true,
-                title: (p.lugar || "Ubicación") + ": " + p.total + " radios"
+                title: (p.lugar || "Ubicación") + ": " + textoTipos(p.tipos)
             });
             m.bindPopup(function () { return popup(p); }, { maxWidth: 320 });
             grupo.addLayer(m);
@@ -120,7 +127,7 @@
             if (i >= MAX_LUGARES) return;
             var li = el("li"), b = el("button", { type: "button" });
             b.appendChild(el("span", { class: "pn-lg-n" }, p.lugar || "Ubicación exacta"));
-            b.appendChild(el("span", { class: "pn-lg-t" + (p.malos ? " mal" : "") }, p.total + (p.malos ? " · " + p.malos + " dañados" : "")));
+            b.appendChild(el("span", { class: "pn-lg-t" + (p.malos ? " mal" : ""), title: textoTipos(p.tipos) }, p.total + (p.malos ? " · " + p.malos + " dañados" : "")));
             b.addEventListener("click", function () {
                 var m = marcas[i];
                 if (typeof grupo.zoomToShowLayer === "function") grupo.zoomToShowLayer(m, function () { m.openPopup(); });
@@ -138,7 +145,7 @@
         }
         if (limites.length > 1) map.fitBounds(limites, { padding: [40, 40], maxZoom: 9 });
         else if (limites.length === 1) map.setView(limites[0], 10);
-        else $("pn-mp").textContent = "Todavía no hay radios con ubicación. " + $("pn-mp").textContent;
+        else $("pn-mp").textContent = "Todavía no hay equipos con sede. " + $("pn-mp").textContent;
         setTimeout(function () { map.invalidateSize(); }, 200);
         /* El mapa ocupa el alto libre de la pantalla: se reajusta si cambia el tamaño de la ventana. */
         var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { map.invalidateSize(); }, 120); });

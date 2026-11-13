@@ -633,6 +633,9 @@ class RadioBajaForm(forms.Form):
     )
 
 
+SEDE_PRINCIPAL = "SEGURIDAD JANO LTDA SEDE PRINCIPAL"
+
+
 class EquipoForm(forms.ModelForm):
     """Datos comunes de cualquier equipo que no sea radio."""
 
@@ -650,7 +653,7 @@ class EquipoForm(forms.ModelForm):
             "fecha_compra": "Fecha de compra",
             "responsable_nombre": "Responsable",
             "responsable_cedula": "Cédula del responsable",
-            "ubicacion": "Ubicación",
+            "ubicacion": "Sede",
             "requiere_revision": "Requiere revisión",
             "motivo_revision": "Motivo de la revisión",
         }
@@ -664,6 +667,19 @@ class EquipoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
+        # La sede se elige de la lista (sede principal y sedes de los puestos)
+        # para que el equipo aparezca en el mapa "Dónde están los equipos".
+        actual = (self.instance.ubicacion or "").strip()
+        sedes = sorted(
+            {s.strip() for s in Puesto.objects.filter(activo=True).values_list("sede", flat=True) if s.strip()}
+            - {SEDE_PRINCIPAL}
+        )
+        opciones = [("", "Sin sede registrada"), (SEDE_PRINCIPAL, SEDE_PRINCIPAL)]
+        if actual and actual != SEDE_PRINCIPAL and actual not in sedes:
+            opciones.append((actual, actual))
+        opciones += [(x, x) for x in sedes]
+        self.fields["ubicacion"].widget = forms.Select(choices=opciones)
+        self.fields["ubicacion"].help_text = "Con la sede, el equipo aparece en el mapa del inicio."
         if self.instance.pk:
             # La placa identifica al equipo en las importaciones y en T.MANT.
             self.fields["placa"].disabled = True

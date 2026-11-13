@@ -155,24 +155,24 @@
 <div class="jx-grid jx-grid-3-1">
     <section class="jx-card" aria-labelledby="t-mapa">
         <div class="jx-card-head">
-            <div><h2 id="t-mapa">Dónde están los radios</h2><p>Radios con entrega vigente, por municipio del puesto</p></div>
+            <div><h2 id="t-mapa">Dónde están los equipos</h2><p>Todos los equipos por sede: los radios según su puesto y los demás según la sede registrada</p></div>
         </div>
         <div class="jx-card-body">
             <div class="jx-grid jx-grid-3-1" style="gap:16px">
-                <div><div id="pn-map" class="jx-map" role="region" aria-label="Mapa con la ubicación de los radios"></div><p class="jx-map-note" id="pn-mp"></p></div>
-                <ol class="jx-places" id="pn-lugares" aria-label="Lugares con más radios"></ol>
+                <div><div id="pn-map" class="jx-map" role="region" aria-label="Mapa con la ubicación de los equipos por sede"></div><p class="jx-map-note" id="pn-mp"></p></div>
+                <ol class="jx-places" id="pn-lugares" aria-label="Lugares con más equipos"></ol>
             </div>
         </div>
     </section>
     <section class="jx-card" aria-labelledby="t-actividad">
-        <div class="jx-card-head"><div><h2 id="t-actividad">Actividad reciente</h2><p>Últimos registros</p></div></div>
+        <div class="jx-card-head"><div><h2 id="t-actividad">Actividad reciente</h2><p>Quién hizo qué en la plataforma</p></div>{% if permisos.auditoria %}<a class="jx-btn jx-btn-sm" href="{% url 'inventario:auditoria' %}">Ver auditoría</a>{% endif %}</div>
         <div class="jx-card-body" style="padding-top:8px">
             <ul class="jx-list">
                 {% for a in actividad %}
                 <li><a href="{{ a.url }}">
-                    <span class="jx-list-ico jx-kpi-ico {% if a.clase == 'mant' %}soft-ok{% else %}soft-info{% endif %}"><svg class="jx-i"><use href="{% if a.clase == 'mant' %}#i-wrench{% else %}#i-handoff{% endif %}"/></svg></span>
+                    <span class="jx-list-ico jx-kpi-ico {% if a.clase == 'mant' or a.clase == 'crear' %}soft-ok{% elif a.clase == 'eliminar' %}soft-bad{% else %}soft-info{% endif %}"><svg class="jx-i"><use href="{% if a.clase == 'mant' %}#i-wrench{% elif a.clase == 'crear' %}#i-plus{% elif a.clase == 'eliminar' %}#i-alert{% elif a.clase == 'editar' %}#i-settings{% else %}#i-handoff{% endif %}"/></svg></span>
                     <span class="jx-list-txt"><b>{{ a.titulo }}</b><small>{{ a.detalle|default:"—" }}</small></span>
-                    <time datetime="{{ a.fecha|date:'c' }}">{{ a.fecha|date:"d M" }}</time></a></li>
+                    <time datetime="{{ a.fecha|date:'c' }}">{{ a.fecha|date:"d M" }}<br>{{ a.fecha|date:"H:i" }}</time></a></li>
                 {% empty %}
                 <li><div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Aún no hay actividad registrada.</p></div></li>
                 {% endfor %}
@@ -185,6 +185,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
-<script src="{% static 'js/panel-inicio.js' %}?v=20261112a" defer></script>
+<script src="{% static 'js/panel-inicio.js' %}?v=20261113a" defer></script>
 <script src="{% static 'js/dashboard.js' %}?v=20261112a" defer></script>
 {% endblock %}

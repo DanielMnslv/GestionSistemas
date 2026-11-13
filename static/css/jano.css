@@ -559,6 +559,25 @@ html[data-tema="dark"] .jx-tab.is-active span { color: #0d1020; }
 .jx-queda .jx-i { width: 14px; height: 14px; flex: none; }
 .jx-queda-previa { flex-basis: 100%; color: var(--jx-text-2); font-weight: 600; }
 .jx-queda-previa:empty { display: none; }
+.jx-date { height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--jx-line); background: var(--jx-surface-2); color: var(--jx-text); font: inherit; font-size: 13px; }
+.jx-audit td { vertical-align: top; }
+
+/* Baúl de bajas: todo en rojo para distinguir lo que ya salió del inventario */
+.jx-tile.jx-tile-baul { border-color: var(--jx-bad); background: var(--jx-bad-soft); }
+.jx-tile.jx-tile-baul:hover, .jx-tile.jx-tile-baul:focus-visible { border-color: var(--jx-bad); box-shadow: 0 0 0 1px var(--jx-bad); }
+.jx-tile-baul .jx-tile-ico, .jx-baul-ico { background: var(--jx-bad); color: #fff; }
+.jx-tile-baul strong, .jx-tile-baul .jx-tile-meta b { color: var(--jx-bad); }
+.jx-baul-head h1 { color: var(--jx-bad); }
+.jx-baul { border-top: 4px solid var(--jx-bad); }
+.jx-baul thead th { background: var(--jx-bad-soft); color: var(--jx-bad); }
+.jx-tabs-bad .jx-tab.is-active { color: var(--jx-bad); }
+.jx-tabs-bad .jx-tab.is-active span { background: var(--jx-bad); color: #fff; }
+.jx-tabs-bad .jx-tab.is-active::after { background: var(--jx-bad); }
+.jx-nav-link.jx-nav-baul svg.jx-i { color: var(--jx-bad); }
+.jx-nav-link.jx-nav-baul.is-active { background: var(--jx-bad-soft); color: var(--jx-bad); }
+.jx-audit details summary { cursor: pointer; font-weight: 700; color: var(--jx-primary); }
+.jx-audit-cambios { margin: 6px 0 0; padding-left: 16px; font-size: 12.5px; line-height: 1.5; max-width: 520px; }
+.jx-audit-cambios s { color: var(--jx-muted); }
 .jx-check-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .jx-check-form select, .jx-check-form input, .jx-field input, .jx-field select, .jx-field textarea {
     height: 38px; padding: 0 12px; border: 1px solid var(--jx-line-strong); border-radius: 10px;

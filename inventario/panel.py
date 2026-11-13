@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .ubicaciones import Localizador
+from .ubicaciones import SEDE_JANO, Localizador, municipio_de
 from .models import (
     AsignacionEquipo,
     AsignacionRadio,
@@ -19,6 +19,17 @@ from .models import (
 )
 
 MAX_PUESTOS_POPUP = 12
+
+NOMBRE_TIPO = {
+    "RADIO": "radio", "COMPUTADOR": "computador", "TABLETA": "tableta",
+    "IMPRESORA": "impresora", "ESCANER": "escáner", "GPS": "GPS",
+    "ALARMA": "alarma", "UPS": "UPS", "OTRO": "otro equipo",
+}
+PLURAL_TIPO = {
+    "RADIO": "radios", "COMPUTADOR": "computadores", "TABLETA": "tabletas",
+    "IMPRESORA": "impresoras", "ESCANER": "escáneres", "GPS": "GPS",
+    "ALARMA": "alarmas", "UPS": "UPS", "OTRO": "otros equipos",
+}
 
 
 def _dia(fecha):
@@ -65,12 +76,29 @@ def _tipos(activos):
     return sorted(tipos, key=lambda t: -t["total"])
 
 
-def _mapa():
-    """Radios con asignación vigente agrupados por lugar, para el mapa del panel.
+def _ubicar_sede(texto, por_sede):
+    """(lugar, lat, lng, exacta) de la sede registrada en un equipo, o None.
 
-    Cada puesto se ubica con el municipio que aparece en su nombre. Los puestos del mismo lugar quedan en un
-    solo punto del mapa; los que no se pueden ubicar se cuentan aparte.
+    Primero el municipio que nombre la sede; si no, donde quedan los puestos
+    de esa sede en el catálogo; la sede principal de Jano tiene punto propio.
     """
+    if "seguridad jano" in (texto or "").lower():
+        return (SEDE_JANO[0], SEDE_JANO[1], SEDE_JANO[2], False)
+    m = municipio_de(texto)
+    if m:
+        return (m[0], m[1], m[2], False)
+    return por_sede.get(" ".join((texto or "").lower().split()))
+
+
+def _mapa():
+    """Todos los equipos activos agrupados por sede, para el mapa del panel.
+
+    - Radios: por el cliente y puesto de su entrega vigente (municipio del puesto).
+    - Los demás equipos: por la ubicación registrada en el equipo.
+    Las sedes del mismo municipio quedan en un solo punto, con el conteo por
+    tipo de equipo. Lo que no se puede ubicar se cuenta aparte.
+    """
+    etiquetas = dict(Equipo.Tipo.choices)
     filas = (
         AsignacionRadio.objects.filter(estado=AsignacionRadio.Estado.ASIGNADO, radio__activo=True)
         .order_by("-fecha_entrega")
@@ -79,58 +107,103 @@ def _mapa():
         )
     )
     loc = Localizador(Puesto.objects.values_list("cliente__nombre", "sede", "nombre"))
-    vistos, puestos = set(), {}
+
+    # sede -> {"u": ubicación, "tipos": {tipo: n}, "malos": n}
+    sedes = {}
+    sin = {"total": 0, "malos": 0, "puestos": 0, "tipos": defaultdict(int)}
+
+    def sumar(clave, ubicacion, tipo, malo):
+        if ubicacion is None:
+            sin["total"] += 1
+            sin["malos"] += malo
+            sin["tipos"][tipo] += 1
+            return
+        d = sedes.setdefault(clave, {"u": ubicacion, "tipos": defaultdict(int), "malos": 0})
+        d["tipos"][tipo] += 1
+        d["malos"] += malo
+
+    vistos = set()
+    puestos_sin = set()
     for rid, estado, cliente, puesto in filas:
         if rid in vistos:
             continue
         vistos.add(rid)
-        clave = (cliente or "Sin cliente", puesto or "")
-        d = puestos.setdefault(clave, {"total": 0, "malos": 0})
-        d["total"] += 1
-        d["malos"] += estado == Radio.ESTADO_DANADO
+        cliente = cliente or "Sin cliente"
+        u = loc.de(cliente, puesto or "")
+        nombre = f"{cliente}, {puesto}" if puesto else cliente
+        if u is None:
+            puestos_sin.add(nombre)
+        sumar(nombre, u, Equipo.Tipo.RADIO, estado == Radio.ESTADO_DANADO)
+    sin["puestos"] = len(puestos_sin)
 
-    puntos, sin = {}, {"total": 0, "malos": 0, "puestos": 0}
-    for (cliente, puesto), d in puestos.items():
-        u = loc.de(cliente, puesto)
-        if not u:
-            sin["total"] += d["total"]
-            sin["malos"] += d["malos"]
-            sin["puestos"] += 1
-            continue
-        lugar, lat, lng, exacta = u
+    otros = Equipo.objects.filter(activo=True).exclude(tipo=Equipo.Tipo.RADIO)
+    por_sede = {}
+    if otros.exclude(ubicacion="").exists():
+        for cliente, sede, nombre in Puesto.objects.exclude(sede="").values_list(
+            "cliente__nombre", "sede", "nombre"
+        ):
+            clave = " ".join(sede.lower().split())
+            if clave not in por_sede:
+                u = loc.de(cliente, nombre)
+                if u:
+                    por_sede[clave] = u
+    for tipo, ubicacion, estado in otros.values_list("tipo", "ubicacion", "estado_operativo"):
+        ubicacion = (ubicacion or "").strip()
+        u = _ubicar_sede(ubicacion, por_sede) if ubicacion else None
+        sumar(ubicacion, u, tipo, estado == Equipo.EstadoOperativo.NO_OPERATIVO)
+
+    def resumen_tipos(tipos):
+        return [
+            {"tipo": str(t), "nombre": etiquetas.get(t, t), "n": n,
+             "texto": f"{n} {(NOMBRE_TIPO if n == 1 else PLURAL_TIPO).get(t, etiquetas.get(t, t))}"}
+            for t, n in sorted(tipos.items(), key=lambda x: -x[1])
+        ]
+
+    puntos = {}
+    for nombre, d in sedes.items():
+        lugar, lat, lng, exacta = d["u"]
+        total = sum(d["tipos"].values())
         pt = puntos.setdefault((round(lat, 4), round(lng, 4)), {
             "lat": lat, "lng": lng, "lugar": lugar, "exacta": exacta,
-            "total": 0, "malos": 0, "puestos": [],
+            "total": 0, "malos": 0, "tipos": defaultdict(int), "puestos": [],
         })
-        pt["total"] += d["total"]
+        pt["total"] += total
         pt["malos"] += d["malos"]
         pt["exacta"] = pt["exacta"] and exacta
         pt["lugar"] = pt["lugar"] or lugar
+        for t, n in d["tipos"].items():
+            pt["tipos"][t] += n
         pt["puestos"].append({
-            "nombre": f"{cliente}, {puesto}" if puesto else cliente,
-            "total": d["total"], "malos": d["malos"],
+            "nombre": nombre, "total": total, "malos": d["malos"],
+            "tipos": resumen_tipos(d["tipos"]),
         })
+
     lista = sorted(puntos.values(), key=lambda x: -x["total"])
     for pt in lista:
+        pt["tipos"] = resumen_tipos(pt["tipos"])
         pt["puestos"].sort(key=lambda x: -x["total"])
         if len(pt["puestos"]) > MAX_PUESTOS_POPUP:
             resto = pt["puestos"][MAX_PUESTOS_POPUP:]
             pt["puestos"] = pt["puestos"][:MAX_PUESTOS_POPUP] + [{
-                "nombre": f"Otros puestos ({len(resto)})",
+                "nombre": f"Otras sedes ({len(resto)})",
                 "total": sum(x["total"] for x in resto),
                 "malos": sum(x["malos"] for x in resto),
+                "tipos": [],
             }]
 
     radios = Radio.objects.filter(activo=True)
     sin_asignar = radios.count() - len(vistos)
-    malos_bodega = radios.filter(estado_radio=Radio.ESTADO_DANADO).count() - sum(
-        d["malos"] for d in puestos.values()
-    )
+    malos_radios_ubicados = AsignacionRadio.objects.filter(
+        estado=AsignacionRadio.Estado.ASIGNADO, radio__activo=True,
+        radio__estado_radio=Radio.ESTADO_DANADO,
+    ).values("radio_id").distinct().count()
+    malos_bodega = radios.filter(estado_radio=Radio.ESTADO_DANADO).count() - malos_radios_ubicados
+    sin["tipos"] = resumen_tipos(sin["tipos"])
     return {
         "puntos": lista,
         "sin_ubicar": sin,
         "bodega": {"total": max(sin_asignar, 0), "malos": max(malos_bodega, 0)},
-        "total": len(vistos),
+        "total": sum(pt["total"] for pt in lista),
     }
 
 
@@ -239,7 +312,29 @@ def _politica(hoy):
 
 
 def _actividad(limite=7):
-    """Últimas intervenciones y entregas, de la más reciente a la más antigua."""
+    """Lo último que se hizo en la plataforma (auditoría): quién, qué y cuándo.
+
+    Mientras la auditoría esté vacía se muestran las últimas intervenciones y
+    entregas, como antes.
+    """
+    from urllib.parse import urlencode
+
+    from .models import RegistroAuditoria
+
+    registros = list(
+        RegistroAuditoria.objects.exclude(
+            accion__in=[RegistroAuditoria.Accion.INGRESO, RegistroAuditoria.Accion.SALIDA]
+        ).order_by("-fecha", "-id")[:limite]
+    )
+    if registros:
+        return [{
+            "fecha": r.fecha,
+            "clase": {"CREAR": "crear", "ELIMINAR": "eliminar", "EDITAR": "editar"}.get(r.accion, "otro"),
+            "titulo": f"{r.usuario_nombre} · {r.get_accion_display().lower()} {r.modelo.lower()}",
+            "detalle": r.objeto_texto or r.descripcion,
+            "url": reverse("inventario:auditoria") + "?" + urlencode({"q": r.referencia or r.objeto_texto}),
+        } for r in registros]
+
     items = []
     for m in MantenimientoEquipo.objects.select_related("equipo").order_by(
         "-fecha_intervencion", "-id"

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Baúl de bajas | JANO Inventario{% endblock %}
+{% block page_heading %}Baúl de bajas{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'inventario:equipos_inicio' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Equipos</a>
+
+<div class="jx-pagehead jx-baul-head">
+    <span class="jx-tile-ico jx-tile-ico-lg jx-baul-ico"><svg class="jx-i"><use href="#i-box"/></svg></span>
+    <div>
+        <h1>Baúl de bajas</h1>
+        <p>Equipos excluidos definitivamente del inventario: ya no cuentan en los totales, mantenimientos ni entregas. {{ total }} equipo{{ total|pluralize }} dado{{ total|pluralize }} de baja.</p>
+    </div>
+</div>
+
+{% if pestanas|length > 1 %}
+<nav class="jx-tabs jx-tabs-bad" aria-label="Tipo de equipo">
+    <a class="jx-tab{% if not tipo %} is-active{% endif %}" href="?{% if q %}q={{ q|urlencode }}{% endif %}">Todos<span>{{ total }}</span></a>
+    {% for p in pestanas %}
+    <a class="jx-tab{% if tipo == p.valor %} is-active{% endif %}" href="?tipo={{ p.valor }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">{{ p.etiqueta }}<span>{{ p.total }}</span></a>
+    {% endfor %}
+</nav>
+{% endif %}
+
+<form method="get" class="jx-filterbar">
+    {% if tipo %}<input type="hidden" name="tipo" value="{{ tipo }}">{% endif %}
+    <label class="jx-filter-search">
+        <svg class="jx-i"><use href="#i-search"/></svg>
+        <span class="sr-only">Buscar en el baúl de bajas</span>
+        <input type="search" name="q" value="{{ q }}" placeholder="Placa, serial, marca o motivo…">
+    </label>
+    <button class="jx-btn" type="submit">Buscar</button>
+</form>
+
+<section class="jx-card jx-card-flush jx-baul">
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Placa</th><th>Equipo</th><th>Serial</th><th>Fecha de baja</th><th>Motivo</th><th>Quién la dio de baja</th></tr></thead>
+            <tbody>
+            {% for e in bajas %}
+                <tr class="jx-row-link" onclick="location.href='{% url 'inventario:equipo_detalle' e.placa %}'">
+                    <td><a href="{% url 'inventario:equipo_detalle' e.placa %}"><strong>{{ e.placa }}</strong></a> <span class="jx-badge jx-badge-bad">Baja</span></td>
+                    <td>{{ e.get_tipo_display }}<small class="muted" style="display:block">{{ e.marca }} {{ e.modelo }}</small></td>
+                    <td class="muted">{{ e.serial|default:"—" }}</td>
+                    <td>{{ e.fecha_baja|date:"d/m/Y"|default:"Sin fecha" }}</td>
+                    <td>{{ e.motivo_baja|default:"—" }}</td>
+                    <td>{% if e.baja_por %}{{ e.baja_por.usuario_nombre }}<small class="muted" style="display:block">{{ e.baja_por.fecha|date:"d/m/Y H:i" }}</small>{% else %}<span class="muted">Antes de la auditoría</span>{% endif %}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6"><div class="jx-empty"><svg class="jx-i"><use href="#i-box"/></svg><p>{% if q or tipo %}No hay bajas con estos filtros.{% else %}El baúl está vacío: no hay equipos dados de baja.{% endif %}</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

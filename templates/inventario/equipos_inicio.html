@@ -37,5 +37,11 @@
     {% empty %}
     <div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Todavía no hay equipos registrados.</p></div>
     {% endfor %}
+    <a class="jx-tile jx-tile-baul" href="{% url 'inventario:equipos_bajas' %}">
+        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-box"/></svg></span>
+        <strong>Baúl de bajas</strong>
+        <p>Equipos excluidos definitivamente del inventario, con fecha, motivo y quién los dio de baja</p>
+        <span class="jx-tile-meta"><b>{{ bajas }}</b> dado{{ bajas|pluralize }} de baja</span>
+    </a>
 </div>
 {% endblock %}

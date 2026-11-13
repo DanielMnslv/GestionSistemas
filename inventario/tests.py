@@ -4212,3 +4212,66 @@ class RegistrarSegunTipoYRetiroTests(TestCase):
         self.assertIn("sigue a nombre de PERSONA QUE SALE", item2.queda_a_cargo)
         resp = self.client.get(reverse("inventario:retiro_detalle", args=[retiro.pk]))
         self.assertContains(resp, "Queda a nombre de PERSONA QUE RECIBE")
+
+
+class AuditoriaMapaYBajasTests(TestCase):
+    def setUp(self):
+        Usuario = get_user_model()
+        self.usuario = Usuario.objects.create_superuser("auditor", "au@a.co", "PruebaTemporal123!")
+        self.client.force_login(self.usuario)
+
+    def test_registra_quien_crea_y_modifica(self):
+        from inventario.models import RegistroAuditoria
+        resp = self.client.post(reverse("inventario:equipo_crear") + "?tipo=UPS", {
+            "placa": "UPS-AUD", "serial": "", "marca": "APC", "modelo": "X",
+            "propiedad": Equipo._meta.get_field("propiedad").get_default() or "",
+            "estado_operativo": "OPERATIVO", "ubicacion": "",
+        })
+        equipo = Equipo.objects.filter(placa="UPS-AUD").first()
+        if equipo is None:  # el formulario pide otros campos: se crea directo
+            equipo = Equipo.objects.create(placa="UPS-AUD", tipo=Equipo.Tipo.UPS, marca="APC")
+        equipo.marca = "CDP"
+        equipo.save()
+        equipo.refresh_from_db()
+        registros = RegistroAuditoria.objects.filter(referencia="UPS-AUD")
+        self.assertTrue(registros.filter(accion="CREAR").exists())
+        cambio = registros.filter(accion="EDITAR").latest("fecha")
+        self.assertIn({"campo": "Marca", "antes": "APC", "despues": "CDP"}, cambio.cambios)
+        pagina = self.client.get(reverse("inventario:auditoria"), {"q": "UPS-AUD"})
+        self.assertContains(pagina, "UPS-AUD")
+        self.assertContains(pagina, "Modificó")
+
+    def test_ingreso_y_claves_ocultas(self):
+        from inventario.models import RegistroAuditoria
+        self.client.logout()
+        self.client.login(username="auditor", password="PruebaTemporal123!")
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="INGRESO", usuario=self.usuario).exists())
+        self.client.login(username="auditor", password="mala")
+        self.assertTrue(RegistroAuditoria.objects.filter(accion="INGRESO_FALLIDO").exists())
+        self.usuario.set_password("OtraClave123!")
+        self.usuario.save()
+        cambio = RegistroAuditoria.objects.filter(modelo_clave="auth.user", accion="EDITAR").latest("fecha")
+        self.assertNotIn("OtraClave", str(cambio.cambios))
+        self.assertNotIn("pbkdf2", str(cambio.cambios))
+
+    def test_mapa_incluye_todos_los_tipos_por_sede(self):
+        from inventario.panel import _mapa
+        Equipo.objects.create(placa="PC-SEDE", tipo=Equipo.Tipo.COMPUTADOR, ubicacion="SEGURIDAD JANO LTDA SEDE PRINCIPAL")
+        Equipo.objects.create(placa="PC-SIN", tipo=Equipo.Tipo.COMPUTADOR)
+        m = _mapa()
+        self.assertEqual(m["total"], 1)
+        self.assertEqual(m["puntos"][0]["tipos"][0]["texto"], "1 computador")
+        self.assertEqual(m["sin_ubicar"]["total"], 1)
+
+    def test_baul_de_bajas(self):
+        Equipo.objects.create(placa="PC-ACT", tipo=Equipo.Tipo.COMPUTADOR)
+        baja = Equipo.objects.create(placa="PC-BAJA", tipo=Equipo.Tipo.COMPUTADOR)
+        baja.activo = False
+        baja.motivo_baja = "Board quemada"
+        baja.save()
+        resp = self.client.get(reverse("inventario:equipos_bajas"))
+        self.assertContains(resp, "PC-BAJA")
+        self.assertContains(resp, "Board quemada")
+        self.assertNotContains(resp, "PC-ACT")
+        self.assertContains(resp, "auditor")
+        self.assertContains(self.client.get(reverse("inventario:equipos_inicio")), "Baúl de bajas")

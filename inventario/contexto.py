@@ -22,6 +22,7 @@ def conteos_menu():
                 if e.estado_mantenimiento == VENCIDO
             ),
             "revision": activos.filter(requiere_revision=True).count(),
+            "bajas": Equipo.objects.filter(activo=False).count(),
         }
         try:
             datos["retiros"] = RetiroFuncionario.objects.filter(

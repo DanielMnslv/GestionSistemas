@@ -28,6 +28,8 @@ ACCIONES = {
     "validar_retiro": {ENCARGADO},
     # Registrar y editar personas (funcionarios).
     "personas": {ENCARGADO, TALENTO},
+    # Ver la auditoría (quién hizo qué y cuándo).
+    "auditoria": {ENCARGADO},
 }
 
 

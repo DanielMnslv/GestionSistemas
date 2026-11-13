@@ -1298,3 +1298,42 @@ class ItemRetiro(models.Model):
         if self.resultado == R.FALTANTE:
             return f"Sigue a nombre de {persona} hasta que se resuelva el faltante"
         return f"Por ahora sigue a nombre de {persona}"
+
+
+class RegistroAuditoria(models.Model):
+    """Bitácora de lo que se hace en la plataforma (ver inventario/auditoria.py)."""
+
+    class Accion(models.TextChoices):
+        CREAR = "CREAR", "Creó"
+        EDITAR = "EDITAR", "Modificó"
+        ELIMINAR = "ELIMINAR", "Eliminó"
+        INGRESO = "INGRESO", "Ingresó"
+        SALIDA = "SALIDA", "Cerró sesión"
+        INGRESO_FALLIDO = "INGRESO_FALLIDO", "Ingreso fallido"
+
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="registros_auditoria",
+    )
+    # Se guarda el nombre por si el usuario se elimina después.
+    usuario_nombre = models.CharField(max_length=150)
+    accion = models.CharField(max_length=20, choices=Accion.choices, db_index=True)
+    modelo = models.CharField("Tipo de registro", max_length=100)
+    modelo_clave = models.CharField(max_length=100, db_index=True)
+    objeto_id = models.CharField(max_length=64, blank=True)
+    objeto_texto = models.CharField(max_length=255, blank=True)
+    referencia = models.CharField(max_length=100, blank=True, db_index=True)
+    cambios = models.JSONField(default=list, blank=True)
+    descripcion = models.CharField(max_length=255, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    ruta = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Registro de auditoría"
+        verbose_name_plural = "Auditoría"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self):
+        return f"{self.fecha:%d/%m/%Y %H:%M} {self.usuario_nombre} {self.get_accion_display()} {self.modelo}"
+

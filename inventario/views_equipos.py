@@ -1911,8 +1911,54 @@ def equipos_inicio(request):
         })
     total = sum(t["total"] for t in tarjetas)
     return render(request, "inventario/equipos_inicio.html", {
+        "bajas": Equipo.objects.filter(activo=False).count(),
         "tarjetas": tarjetas,
         "total": total,
         "total_entregados": sum(t["entregados"] for t in tarjetas),
         "url_todos": lista,
+    })
+
+
+@login_required
+def equipos_bajas(request):
+    """Baúl de bajas: los equipos que ya salieron definitivamente del inventario."""
+    from .models import RegistroAuditoria
+
+    bajas = Equipo.objects.filter(activo=False)
+    q = request.GET.get("q", "").strip()
+    tipo = request.GET.get("tipo", "")
+    if q:
+        bajas = bajas.filter(
+            Q(placa__icontains=q) | Q(serial__icontains=q) | Q(marca__icontains=q)
+            | Q(modelo__icontains=q) | Q(motivo_baja__icontains=q)
+        )
+    if tipo in Equipo.Tipo.values:
+        bajas = bajas.filter(tipo=tipo)
+    else:
+        tipo = ""
+    bajas = list(bajas.order_by("-fecha_baja", "-actualizado_en", "placa"))
+
+    # Quién la dio de baja, según la auditoría (desde que existe).
+    quien = {}
+    for r in RegistroAuditoria.objects.filter(
+        accion=RegistroAuditoria.Accion.EDITAR,
+        referencia__in=[e.placa for e in bajas],
+    ).order_by("fecha"):
+        if any(c.get("campo") == "Activo" and c.get("despues") == "No" for c in r.cambios):
+            quien[r.referencia] = r
+    for e in bajas:
+        e.baja_por = quien.get(e.placa)
+
+    conteo = dict(
+        Equipo.objects.filter(activo=False).values_list("tipo").annotate(n=Count("id"))
+        .values_list("tipo", "n")
+    )
+    return render(request, "inventario/equipos_bajas.html", {
+        "bajas": bajas,
+        "q": q, "tipo": tipo,
+        "total": sum(conteo.values()),
+        "pestanas": [
+            {"valor": t, "etiqueta": etiqueta, "total": conteo[t]}
+            for t, etiqueta in Equipo.Tipo.choices if conteo.get(t)
+        ],
     })
