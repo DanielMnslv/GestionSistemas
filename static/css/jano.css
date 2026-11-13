@@ -586,3 +586,104 @@ html[data-tema="dark"] .jx-tab.is-active span { color: #0d1020; }
 .jx-card > .jx-list, .jx-card > .jx-checklist { padding: 6px 20px 12px; }
 .jx-list-txt strong { display: block; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jx-card-head h1 { margin: 0; font-size: 20px; }
+
+/* ==========================================================================
+   Diseño corporativo (Intranet Jano)
+   Mismo lenguaje visual de la intranet de la compañía: menú lateral claro,
+   fondo gris muy suave, índigo #2E3092 como único color de acento, tarjetas
+   blancas de borde fino e iconos en un cuadro lavanda. Solo cambia la
+   apariencia; la estructura y las clases jx- siguen iguales.
+   ========================================================================== */
+:root {
+    --jx-primary: #2e3092;
+    --jx-primary-600: #24267a;
+    --jx-primary-soft: #eef0fb;
+    /* El lima del diseño anterior pasa al índigo corporativo. */
+    --jx-lime: #2e3092;
+    --jx-lime-600: #2e3092;
+    --jx-lime-soft: #eef0fb;
+    --jx-on-lime: #ffffff;
+
+    --jx-bg: #f7f8fa;
+    --jx-surface: #ffffff;
+    --jx-surface-2: #f4f5f7;
+    --jx-line: #e7e8ec;
+    --jx-line-strong: #d6d8de;
+    --jx-text: #1f2430;
+    --jx-text-2: #3f4452;
+    --jx-muted: #6b7080;
+
+    --jx-radius: 12px;
+    --jx-radius-sm: 9px;
+    --jx-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    --jx-font: Inter, "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --jx-side-bg: #ffffff;
+    --jx-side-text: #3f4452;
+    --jx-side-muted: #8a8f9c;
+    --jx-side-hover: #f4f5f7;
+}
+html[data-tema="dark"] {
+    --jx-lime: #8f93ff;
+    --jx-lime-600: #a5a8ff;
+    --jx-lime-soft: #23275a;
+    --jx-on-lime: #0d1020;
+    --jx-side-bg: var(--jx-surface);
+    --jx-side-text: #c3c8dc;
+    --jx-side-muted: #8189a6;
+    --jx-side-hover: #1f2440;
+}
+
+.jx :focus-visible { outline-color: var(--jx-primary); }
+
+/* Menú lateral claro */
+.jx-side { background: var(--jx-side-bg); color: var(--jx-side-text); border-right: 1px solid var(--jx-line); }
+.jx-brand { color: var(--jx-text); border-bottom: 1px solid var(--jx-line); gap: 10px; }
+.jx-brand-logo { width: 34px; height: 34px; background: none; border-radius: 0; }
+.jx-brand-logo img { width: 32px; }
+.jx-brand-txt strong { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.jx-brand-txt span { display: none; }
+.jx-nav { scrollbar-color: var(--jx-line-strong) transparent; padding: 16px 12px 20px; }
+.jx-nav-label { color: var(--jx-side-muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; margin: 20px 12px 6px; }
+.jx-nav-link { color: var(--jx-side-text); font-weight: 500; font-size: 14.5px; min-height: 40px; gap: 14px; }
+.jx-nav-link svg.jx-i { color: var(--jx-side-text); stroke-width: 1.6; }
+.jx-nav-link:hover { background: var(--jx-side-hover); color: var(--jx-text); }
+.jx-nav-link.is-active { background: var(--jx-primary-soft); color: var(--jx-primary); font-weight: 600; }
+.jx-nav-link.is-active::before { display: none; }
+.jx-nav-link.is-active svg { color: var(--jx-primary); }
+.jx-nav-badge { background: var(--jx-surface-2); color: var(--jx-text-2); border: 1px solid var(--jx-line); }
+.jx-nav-badge.is-bad { background: var(--jx-bad-soft); color: var(--jx-bad); border-color: transparent; }
+.jx-nav-badge.is-warn { background: var(--jx-warn-soft); color: var(--jx-warn); border-color: transparent; }
+.jx-side-foot { border-top: 1px solid var(--jx-line); }
+.jx-user { background: none; }
+.jx-user-txt strong { color: var(--jx-text); font-weight: 500; font-size: 14px; }
+.jx-user-txt small { color: var(--jx-muted); }
+.jx-side-btn { color: var(--jx-muted); }
+.jx-side-btn:hover { background: var(--jx-side-hover); color: var(--jx-text); }
+
+/* Avatar índigo con iniciales blancas */
+.jx-avatar { background: var(--jx-primary); color: #fff; font-weight: 600; font-size: 13px; }
+html[data-tema="dark"] .jx-avatar { color: #0d1020; }
+
+/* Barra superior blanca con buscador gris */
+.jx-top { background: var(--jx-surface); backdrop-filter: none; }
+.jx-search input { border-color: transparent; background: var(--jx-surface-2); border-radius: 10px; }
+.jx-iconbtn { color: var(--jx-muted); }
+
+/* Tarjetas y botones más sobrios */
+.jx-card { box-shadow: none; }
+.jx-card-head h2 { font-weight: 600; }
+.jx-head h1 { font-weight: 700; font-size: 24px; letter-spacing: -.01em; }
+.jx-btn { font-weight: 600; border-radius: 10px; }
+.jx-quick a { font-weight: 600; }
+
+/* Iconos en cuadro lavanda, como las tarjetas de la intranet */
+.jx-quick .jx-quick-ico.jx-quick-ico { width: 40px; height: 40px; border-radius: 9px; background: var(--jx-primary-soft); color: var(--jx-primary); }
+.jx-quick .jx-quick-ico svg.jx-i { width: 20px; height: 20px; stroke-width: 1.6; }
+.jx-kpi-ico, .jx-list-ico { border-radius: 9px; }
+/* Iconos de listas: tono suave en vez de relleno sólido */
+.jx-list-ico.jx-tone-primary, .jx-list-ico.jx-tone-lime { background: var(--jx-primary-soft); color: var(--jx-primary); }
+.jx-list-ico.jx-tone-ok { background: var(--jx-ok-soft); color: var(--jx-ok); }
+.jx-list-ico.jx-tone-bad { background: var(--jx-bad-soft); color: var(--jx-bad); }
+.jx-list-ico.jx-tone-warn { background: var(--jx-warn-soft); color: var(--jx-warn); }
+.jx-list-ico.jx-tone-info { background: var(--jx-info-soft); color: var(--jx-info); }
+html[data-tema="dark"] .jx-brand-logo img { filter: invert(1) brightness(1.6); }
