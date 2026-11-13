@@ -10,6 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 
@@ -19,6 +21,7 @@ from .serializers import (
     EquipoIntegracionSerializer,
     RadioIntegracionSerializer,
 )
+from .indicadores import periodo_desde_parametros, resumen_indicadores
 from .models import IntegrationInbox, IntegrationAudit
 
 from inventario.models import Equipo, Radio
@@ -141,3 +144,24 @@ def recibir_evento_gestion_tic(request):
         },
         status=202
     )
+
+
+class IndicadoresAPI(APIView):
+    """GET /api/v1/indicadores/?desde=AAAA-MM-DD&hasta=AAAA-MM-DD
+
+    Resumen de indicadores de JANO para Gestión TIC (mismo token de integración).
+    Sin parámetros entrega el trimestre en curso.
+    """
+
+    authentication_classes = [AutenticacionIntegracion]
+    permission_classes = [IsAuthenticated, SoloLecturaIntegracion]
+
+    def get(self, request):
+        try:
+            desde, hasta = periodo_desde_parametros(request.query_params)
+        except (KeyError, ValueError):
+            return Response(
+                {"detail": "Use ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD (máximo un año)."},
+                status=400,
+            )
+        return Response(resumen_indicadores(desde, hasta))
