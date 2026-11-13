@@ -1,5 +1,6 @@
 ﻿
 from datetime import datetime, timedelta, timezone as dt_timezone
+from types import SimpleNamespace
 from unittest.mock import patch
 from django.utils import timezone
 
@@ -21,7 +22,6 @@ from inventario.models import (
     MantenimientoProgramado,
     Radio,
     TransferenciaComponentesRadio,
-    Vigilante,
 )
 
 
@@ -399,7 +399,7 @@ class AsignacionRadioTests(TestCase):
         self.radio = Radio.objects.create(
             placa="TEST-ASIG-001", 
         )
-        self.vigilante = Vigilante.objects.create(
+        self.vigilante = SimpleNamespace(
             cedula="123456789",
             nombre_completo="VIGILANTE DE PRUEBA",
             activo=True,
@@ -482,7 +482,7 @@ class AsignacionRadioVistasTests(TestCase):
             marca="Motorola",
             modelo="Prueba",
         )
-        self.vigilante = Vigilante.objects.create(
+        self.vigilante = SimpleNamespace(
             cedula="123456789",
             nombre_completo="VIGILANTE DE PRUEBA",
             activo=True,
@@ -671,53 +671,6 @@ class AsignacionRadioVistasTests(TestCase):
             AsignacionRadio.objects.filter(radio=self.radio).count(),
             2,
         )
-
-
-class VigilanteModelTests(TestCase):
-    def test_crea_vigilante_con_datos_de_origen(self):
-        from inventario.models import Vigilante
-
-        vigilante = Vigilante.objects.create(
-            cedula="987654321",
-            nombre_completo="VIGILANTE PRUEBA",
-            hoja_origen="HUILA",
-            fila_origen=3,
-        )
-
-        self.assertEqual(vigilante.cedula, "987654321")
-        self.assertEqual(
-            vigilante.nombre_completo,
-            "VIGILANTE PRUEBA",
-        )
-        self.assertTrue(vigilante.activo)
-        self.assertEqual(vigilante.hoja_origen, "HUILA")
-        self.assertEqual(vigilante.fila_origen, 3)
-
-    def test_rechaza_cedula_duplicada(self):
-        from django.db import IntegrityError, transaction
-        from inventario.models import Vigilante
-
-        Vigilante.objects.create(
-            cedula="987654321",
-            nombre_completo="PRIMER VIGILANTE",
-        )
-
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                Vigilante.objects.create(
-                    cedula="987654321",
-                    nombre_completo="SEGUNDO VIGILANTE",
-                )
-
-    def test_vigilante_nuevo_esta_activo_por_defecto(self):
-        from inventario.models import Vigilante
-
-        vigilante = Vigilante.objects.create(
-            cedula="987654322",
-            nombre_completo="VIGILANTE ACTIVO",
-        )
-
-        self.assertTrue(vigilante.activo)
 
 
 class MantenimientoProgramadoVistasTests(TestCase):
@@ -1768,7 +1721,7 @@ class EntregaCompletaTests(TestCase):
         self.radio = Radio.objects.create(
             serial="752ITC1377", placa="RJ-10"
         )
-        self.vigilante = Vigilante.objects.create(
+        self.vigilante = SimpleNamespace(
             cedula="987654321", nombre_completo="VIGILANTE PRUEBA"
         )
 
@@ -3159,7 +3112,7 @@ class ClientesPuestosYAntivirusTests(TestCase):
         )
         Puesto.objects.create(cliente=self.cliente, nombre="Puesto inactivo", activo=False)
         self.radio = Radio.objects.create(placa="RJ-10", serial="S1")
-        self.vigilante = Vigilante.objects.create(cedula="987654321", nombre_completo="VIGILANTE")
+        self.vigilante = SimpleNamespace(cedula="987654321", nombre_completo="VIGILANTE")
 
     def entregar(self, **extra):
         datos = {

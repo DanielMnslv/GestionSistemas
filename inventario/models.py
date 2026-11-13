@@ -743,54 +743,6 @@ class TransferenciaComponentesRadio(models.Model):
         )
 
 
-class Vigilante(models.Model):
-    cedula = models.CharField(
-        "Cédula",
-        max_length=50,
-        unique=True,
-    )
-
-    nombre_completo = models.CharField(
-        "Apellidos y nombres",
-        max_length=200,
-    )
-
-    activo = models.BooleanField(
-        "Activo",
-        default=True,
-        db_index=True,
-    )
-
-    hoja_origen = models.CharField(
-        "Hoja de origen en Excel",
-        max_length=100,
-        blank=True,
-    )
-
-    fila_origen = models.PositiveIntegerField(
-        "Fila original en Excel",
-        null=True,
-        blank=True,
-    )
-
-    ultima_actualizacion_excel = models.DateTimeField(
-        "Última actualización desde Excel",
-        null=True,
-        blank=True,
-    )
-
-    creado_en = models.DateTimeField(auto_now_add=True)
-    actualizado_en = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Vigilante"
-        verbose_name_plural = "Vigilantes"
-        ordering = ["nombre_completo"]
-
-    def __str__(self):
-        return f"{self.cedula} - {self.nombre_completo}"
-
-
 class DetalleComputador(models.Model):
     """Computadores y tabletas."""
 
