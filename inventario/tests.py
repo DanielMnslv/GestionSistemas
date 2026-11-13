@@ -4099,7 +4099,9 @@ class SeccionEquiposTarjetasTests(TestCase):
         resp = self.client.get(reverse("inventario:equipos_inicio"))
         self.assertEqual(resp.status_code, 200)
         tarjetas = {t["titulo"]: t for t in resp.context["tarjetas"]}
-        self.assertEqual(set(tarjetas), {"Computadores", "Radios"})
+        # Impresoras y GPS se ven en 0 aunque no haya ninguno registrado.
+        self.assertEqual(set(tarjetas), {"Computadores", "Radios", "Impresoras", "GPS"})
+        self.assertEqual(tarjetas["GPS"]["total"], 0)
         self.assertEqual(tarjetas["Radios"]["total"], 2)
         self.assertEqual(tarjetas["Radios"]["bodega"], 2)
         self.assertEqual(tarjetas["Computadores"]["total"], 1)

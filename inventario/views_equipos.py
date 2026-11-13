@@ -1849,6 +1849,8 @@ TARJETAS_TIPO = [
     (Equipo.Tipo.UPS, "UPS", "battery", "Respaldo de energía"),
     (Equipo.Tipo.OTRO, "Otros equipos", "box", "Equipos que no encajan en las demás categorías"),
 ]
+# Se muestran aunque estén en 0, para que se vea dónde registrarlos.
+TIPOS_SIEMPRE_VISIBLES = {Equipo.Tipo.COMPUTADOR, Equipo.Tipo.RADIO, Equipo.Tipo.IMPRESORA, Equipo.Tipo.GPS}
 
 
 def _ids_entregados():
@@ -1880,7 +1882,9 @@ def equipos_inicio(request):
     for tipo, titulo, icono, descripcion in TARJETAS_TIPO:
         datos = por_tipo.get(tipo)
         if not datos:
-            continue
+            if tipo not in TIPOS_SIEMPRE_VISIBLES:
+                continue
+            datos = {"total": 0, "revision": 0}
         entregado = entregados.get(tipo, 0)
         tarjetas.append({
             "titulo": titulo, "icono": icono, "descripcion": descripcion,
