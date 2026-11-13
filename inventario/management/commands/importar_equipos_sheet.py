@@ -361,6 +361,16 @@ class Command(BaseCommand):
     def leer_computador2(self, archivo):
         hoja = "BASEDATOS-COMPUTADOR2"
         registros = []
+        # El Excel exportado a mano puede no traer esta hoja (solo la versión
+        # anterior, BASEDATOS-COMPUTADOR); en ese caso se avisa y se sigue.
+        libro = openpyxl.load_workbook(archivo, read_only=True)
+        try:
+            existe = hoja in libro.sheetnames
+        finally:
+            libro.close()
+        if not existe:
+            self.stdout.write(f"Aviso: el archivo no trae la hoja {hoja}; se omite.")
+            return registros
         for f in self.filas_por_posicion(archivo, hoja, COMPUTADOR2):
             placa, baja = placa_y_baja(f["placa"])
             tipo = TIPOS_COMPUTADOR2.get(limpio(f["tipo"]).upper())
