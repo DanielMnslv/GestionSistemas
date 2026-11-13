@@ -1,6 +1,7 @@
 import uuid
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class IntegrationLink(models.Model):
@@ -52,8 +53,11 @@ class IntegrationInbox(models.Model):
     sistema_origen = models.CharField(max_length=50, db_index=True)
     event_id = models.UUIDField()
     event_type = models.CharField(max_length=150, db_index=True)
+    aggregate_type = models.CharField(max_length=100, blank=True, default="")
+    aggregate_id = models.CharField(max_length=100, blank=True, default="")
     payload = models.JSONField(default=dict)
     estado = models.CharField(max_length=20, default="RECIBIDO", db_index=True)
+    ocurrido_en = models.DateTimeField(default=timezone.now, db_index=True)
     recibido_en = models.DateTimeField(auto_now_add=True)
     procesado_en = models.DateTimeField(null=True, blank=True)
     error = models.TextField(blank=True, default="")
@@ -82,3 +86,67 @@ class IntegrationAudit(models.Model):
     resultado = models.CharField(max_length=30, default="OK")
     detalle = models.JSONField(default=dict, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
+
+
+class RegistroRemotoIntegrado(models.Model):
+    """Proyección de solo lectura de un registro propiedad de otra plataforma."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sistema_origen = models.CharField(max_length=50, db_index=True)
+    entidad_origen = models.CharField(max_length=100, db_index=True)
+    public_id_origen = models.UUIDField()
+    aggregate_id_origen = models.CharField(max_length=100, blank=True, default="")
+    ultimo_event_id = models.UUIDField()
+    ocurrido_en = models.DateTimeField(db_index=True)
+    datos = models.JSONField(default=dict)
+    recibido_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sistema_origen", "entidad_origen", "public_id_origen"],
+                name="uq_jano_remote_entity_public",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["sistema_origen", "entidad_origen"], name="jano_remote_type_idx"),
+        ]
+
+
+class EquivalenciaRegistro(models.Model):
+    """Relación explícita entre registros equivalentes de ambas plataformas.
+
+    No transfiere propiedad ni crea claves foráneas entre bases de datos.
+    """
+    ESTADOS = [
+        ("PENDIENTE", "Pendiente de validación"),
+        ("ACTIVA", "Activa"),
+        ("REVISION", "Requiere revisión"),
+        ("INACTIVA", "Inactiva"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sistema_remoto = models.CharField(max_length=50, db_index=True)
+    entidad_local = models.CharField(max_length=100, db_index=True)
+    public_id_local = models.UUIDField(db_index=True)
+    entidad_remota = models.CharField(max_length=100, db_index=True)
+    public_id_remoto = models.UUIDField(db_index=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default="PENDIENTE", db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "sistema_remoto", "entidad_local", "public_id_local",
+                    "entidad_remota", "public_id_remoto",
+                ],
+                name="uq_equiv_registro_pair",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["entidad_local", "public_id_local"], name="equiv_local_lookup_idx"),
+            models.Index(fields=["entidad_remota", "public_id_remoto"], name="equiv_remote_lookup_idx"),
+        ]

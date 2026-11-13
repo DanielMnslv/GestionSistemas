@@ -8,6 +8,8 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from rest_framework import generics
 from rest_framework.response import Response
@@ -100,6 +102,9 @@ def recibir_evento_gestion_tic(request):
         event_id = uuid.UUID(str(data["event_id"]))
         event_type = str(data["event_type"]).strip()
         payload = data.get("payload", {})
+        ocurrido_en = parse_datetime(str(data.get("occurred_at", ""))) or timezone.now()
+        if timezone.is_naive(ocurrido_en) and timezone.is_aware(timezone.now()):
+            ocurrido_en = timezone.make_aware(ocurrido_en, timezone.get_current_timezone())
 
         if not event_type or not isinstance(payload, dict):
             raise ValueError(
@@ -117,8 +122,11 @@ def recibir_evento_gestion_tic(request):
         event_id=event_id,
         defaults={
             "event_type": event_type,
+            "aggregate_type": str(data.get("aggregate_type", ""))[:100],
+            "aggregate_id": str(data.get("aggregate_id", ""))[:100],
             "payload": payload,
             "estado": "RECIBIDO",
+            "ocurrido_en": ocurrido_en,
         }
     )
 

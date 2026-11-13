@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import IntegrationAudit, IntegrationDelivery, IntegrationInbox, IntegrationLink, IntegrationOutbox
+from .models import (
+    EquivalenciaRegistro, IntegrationAudit, IntegrationDelivery,
+    IntegrationInbox, IntegrationLink, IntegrationOutbox, RegistroRemotoIntegrado,
+)
 
 @admin.register(IntegrationOutbox)
 class IntegrationOutboxAdmin(admin.ModelAdmin):
@@ -32,3 +35,19 @@ class IntegrationAuditAdmin(admin.ModelAdmin):
     list_display = ("sistema", "accion", "entidad", "resultado", "creado_en")
     list_filter = ("sistema", "resultado", "accion")
     search_fields = ("referencia", "entidad")
+
+
+@admin.register(RegistroRemotoIntegrado)
+class RegistroRemotoIntegradoAdmin(admin.ModelAdmin):
+    list_display = ("sistema_origen", "entidad_origen", "public_id_origen", "ocurrido_en")
+    list_filter = ("sistema_origen", "entidad_origen")
+    search_fields = ("public_id_origen", "aggregate_id_origen")
+    readonly_fields = [f.name for f in RegistroRemotoIntegrado._meta.fields]
+
+
+@admin.register(EquivalenciaRegistro)
+class EquivalenciaRegistroAdmin(admin.ModelAdmin):
+    list_display = ("entidad_local", "public_id_local", "entidad_remota",
+                    "public_id_remoto", "estado", "sistema_remoto")
+    list_filter = ("estado", "sistema_remoto", "entidad_local", "entidad_remota")
+    search_fields = ("public_id_local", "public_id_remoto")
