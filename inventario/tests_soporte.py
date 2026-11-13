@@ -1,4 +1,5 @@
 """Mesa de ayuda: solicitud pública por cédula y equipo, cola TIC y atención."""
+import os
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core import mail
@@ -209,8 +210,9 @@ class PublicacionPorInternetTests(TestCase):
 
     def test_desde_internet_solo_responde_soporte(self):
         self.assertEqual(self.client.get("/soporte/", HTTP_HOST=self.HOST).status_code, 200)
-        self.assertRedirects(self.client.get("/", HTTP_HOST=self.HOST), "/soporte/", fetch_redirect_response=False)
-        for ruta in ["/login/", "/admin/", "/inventario/solicitudes/", "/api/v1/"]:
+        self.assertRedirects(self.client.get("/", HTTP_HOST=self.HOST), "/mi-soporte/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/login/", HTTP_HOST=self.HOST).status_code, 200)
+        for ruta in ["/admin/", "/inventario/solicitudes/", "/api/v1/", "/usuarios/"]:
             self.assertEqual(self.client.get(ruta, HTTP_HOST=self.HOST).status_code, 404, ruta)
 
     def test_dentro_del_equipo_todo_sigue_igual(self):
@@ -225,3 +227,93 @@ class PublicacionPorInternetTests(TestCase):
         self.assertEqual(ip_cliente(r), "190.1.2.3")
         r = RequestFactory().get("/soporte/", HTTP_CF_CONNECTING_IP="190.1.2.3")
         self.assertEqual(ip_cliente(r), "127.0.0.1")
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+                   DEFAULT_FROM_EMAIL="jano@example.com", SITIO_URL_PUBLICO="https://jano.example.com")
+class PortalSolicitanteTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.persona = Funcionario.objects.create(
+            cedula="1075000333", nombre_completo="Marta Lucía Prueba", correo="marta@example.com",
+        )
+        self.pc = Equipo.objects.create(placa="PC--933", tipo=Equipo.Tipo.COMPUTADOR, responsable_cedula="1075000333")
+        self.ajeno = Equipo.objects.create(placa="PC--934", tipo=Equipo.Tipo.COMPUTADOR)
+
+    def _cuenta(self):
+        from django.core.management import call_command
+
+        call_command("crear_cuentas_solicitantes", "--enviar", "--pausa", "0", stdout=open(os.devnull, "w"))
+        return get_user_model().objects.get(username="1075000333")
+
+    def test_revision_no_crea_ni_envia(self):
+        from django.core.management import call_command
+
+        call_command("crear_cuentas_solicitantes", stdout=open(os.devnull, "w"))
+        self.assertFalse(get_user_model().objects.filter(username="1075000333").exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_crea_cuenta_y_envia_enlace_que_permite_crear_la_clave(self):
+        usuario = self._cuenta()
+        self.assertFalse(usuario.has_usable_password())
+        self.assertTrue(usuario.groups.filter(name="Solicitante").exists())
+        self.assertEqual(len(mail.outbox), 1)
+        cuerpo = mail.outbox[0].body
+        self.assertIn("1075000333", cuerpo)
+        enlace = next(l for l in cuerpo.split() if "/cuenta/clave/" in l).replace("https://jano.example.com", "")
+        r = self.client.get(enlace, follow=True)
+        self.assertContains(r, "Crea tu contraseña")
+        r = self.client.post(r.redirect_chain[-1][0], {"new_password1": "Mantenimiento-2026", "new_password2": "Mantenimiento-2026"})
+        self.assertRedirects(r, reverse("cuenta_lista"))
+        self.assertTrue(self.client.login(username="1075000333", password="Mantenimiento-2026"))
+        # Segunda corrida: no duplica ni reenvía.
+        self._cuenta()
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_solicitante_solo_ve_su_portal(self):
+        usuario = self._cuenta()
+        self.client.force_login(usuario)
+        self.assertRedirects(self.client.get("/"), reverse("portal:inicio"), fetch_redirect_response=False)
+        for ruta in ["/inventario/equipos/", "/inventario/solicitudes/", "/inventario/personas/", "/usuarios/"]:
+            self.assertRedirects(self.client.get(ruta), "/mi-soporte/", fetch_redirect_response=False, msg_prefix=ruta)
+        r = self.client.get(reverse("portal:inicio"))
+        self.assertContains(r, "PC--933")
+        self.assertNotContains(r, "PC--934")
+
+    def test_agendar_mantenimiento_de_su_equipo(self):
+        from inventario import agenda
+
+        self.client.force_login(self._cuenta())
+        cupo = agenda.cupos_disponibles()[0]
+        r = self.client.post(reverse("portal:agendar", args=[self.pc.pk]), {
+            "visita": cupo["valor"], "ubicacion": "Sede principal", "correo": "marta@example.com",
+        })
+        self.assertRedirects(r, reverse("portal:inicio"), fetch_redirect_response=False)
+        t = Ticket.objects.get()
+        self.assertEqual((t.tipo, t.categoria, t.equipo, t.fecha_programada, t.franja),
+                         (Ticket.Tipo.PREVENTIVO, Ticket.Categoria.MANTENIMIENTO, self.pc, cupo["fecha"], cupo["franja"]))
+        self.assertContains(self.client.get(reverse("portal:inicio")), "Mantenimiento ya agendado")
+        r = self.client.get(reverse("portal:agendar", args=[self.ajeno.pk]))
+        self.assertRedirects(r, reverse("portal:inicio"), fetch_redirect_response=False)
+
+    def test_pedir_soporte_desde_el_portal(self):
+        self.client.force_login(self._cuenta())
+        self.client.post(reverse("portal:nueva"), {
+            "categoria": Ticket.Categoria.EQUIPO_OFICINA, "equipo": str(self.pc.pk),
+            "descripcion": "Teclado no responde", "ubicacion": "Sede", "correo": "marta@example.com",
+        })
+        t = Ticket.objects.get()
+        self.assertEqual((t.funcionario, t.equipo, t.tipo), (self.persona, self.pc, Ticket.Tipo.CORRECTIVO))
+
+    def test_recuperar_clave_sirve_para_cuentas_sin_clave(self):
+        self._cuenta()
+        mail.outbox.clear()
+        self.client.post(reverse("cuenta_recuperar"), {"email": "marta@example.com"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/cuenta/clave/", mail.outbox[0].body)
+
+    def test_personal_tic_no_queda_encerrado(self):
+        tec = get_user_model().objects.create_user("tecnico2", password="x-prueba-1")
+        tec.groups.add(Group.objects.get_or_create(name="Técnico de mantenimiento")[0])
+        self.client.force_login(tec)
+        self.assertEqual(self.client.get("/inventario/solicitudes/").status_code, 200)

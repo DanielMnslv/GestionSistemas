@@ -12,6 +12,8 @@ ENCARGADO = "Encargado de inventario"
 TECNICO = "Técnico de mantenimiento"
 CONSULTA = "Consulta"
 TALENTO = "Talento humano"
+# Funcionarios: solo el portal "Mi soporte" (agendar y pedir soporte).
+SOLICITANTE = "Solicitante"
 
 # Acción -> roles que la pueden realizar.
 ACCIONES = {
@@ -59,6 +61,14 @@ def solo_talento(usuario):
         return False
     roles = roles_de(usuario)
     return TALENTO in roles and not roles & {ENCARGADO, TECNICO, CONSULTA}
+
+
+def solo_solicitante(usuario):
+    """Funcionarios sin otro rol: solo ven el portal Mi soporte."""
+    if usuario is None or not usuario.is_authenticated or usuario.is_superuser:
+        return False
+    roles = roles_de(usuario)
+    return SOLICITANTE in roles and not roles & {ENCARGADO, TECNICO, CONSULTA, TALENTO}
 
 
 def requiere_permiso(accion):

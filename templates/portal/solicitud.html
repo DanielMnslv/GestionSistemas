@@ -1,0 +1,51 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Pedir soporte{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'portal:inicio' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Mi soporte</a>
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Pedir soporte técnico</h1>
+        <p>Cuéntanos qué pasa. Te enviaremos el número de caso al correo y lo verás en Mi soporte.</p>
+    </div>
+</div>
+<section class="jx-card">
+    <form method="post" class="jx-card-body" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if formulario.non_field_errors or errores_fotos %}
+        <div class="jx-alert jx-alert-error" role="alert"><div>{% for e in formulario.non_field_errors %}<p style="margin:0">{{ e }}</p>{% endfor %}{% for e in errores_fotos %}<p style="margin:0">{{ e }}</p>{% endfor %}</div></div>
+        {% endif %}
+        <div class="jx-form-2">
+            {% include "inventario/_jx_campo.html" with field=formulario.categoria ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.equipo ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.placa ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.descripcion ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.ubicacion ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.visita ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.correo %}
+            {% include "inventario/_jx_campo.html" with field=formulario.telefono %}
+            <div class="jx-field jx-field-wide">
+                <span><label for="id_fotos">Fotos de la falla (opcional, máximo 3)</label></span>
+                <input id="id_fotos" type="file" name="fotos" accept="image/jpeg,image/png,image/webp" multiple>
+                <small class="jx-help">JPG, PNG o WEBP de hasta 5 MB cada una.</small>
+            </div>
+        </div>
+        <div class="jx-dialog-actions">
+            <a class="jx-btn" href="{% url 'portal:inicio' %}">Cancelar</a>
+            <button class="jx-btn jx-btn-primary" type="submit">Enviar solicitud</button>
+        </div>
+    </form>
+</section>
+<script>
+(function () {
+    var placa = document.querySelector('[data-campo="placa"]');
+    function actualizar() {
+        var elegido = document.querySelector('input[name="equipo"]:checked');
+        placa.hidden = !(elegido && elegido.value === "otro");
+    }
+    document.querySelectorAll('input[name="equipo"]').forEach(function (r) { r.addEventListener("change", actualizar); });
+    actualizar();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Crear o recuperar contraseña{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'login' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Iniciar sesión</a>
+<section class="jx-card">
+    <div class="jx-card-head"><div><h1 style="margin:0;font-size:20px">Crear o recuperar tu contraseña</h1><p>Escribe tu correo registrado. Te enviaremos un enlace para crear una contraseña nueva.</p></div></div>
+    <form method="post" class="jx-card-body jx-form" novalidate>
+        {% csrf_token %}
+        {% include "inventario/_jx_campo.html" with field=form.email %}
+        <div class="jx-dialog-actions"><button class="jx-btn jx-btn-primary" type="submit">Enviar enlace</button></div>
+    </form>
+</section>
+{% endblock %}

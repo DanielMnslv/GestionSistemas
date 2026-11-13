@@ -1,0 +1,14 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Mi soporte{% endblock %}
+
+{% block content %}
+<section class="jx-card">
+    <div class="jx-card-body">
+        <div class="jx-empty"><svg class="jx-i"><use href="#i-users"/></svg>
+            <p>Tu cuenta no está asociada a un funcionario activo del listado de personal. El usuario debe ser tu número de cédula. Comunícate con el área de TIC.</p>
+            {% if user.is_superuser %}<p><a href="{% url 'inicio' %}">Ir a JANO Inventario</a></p>{% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

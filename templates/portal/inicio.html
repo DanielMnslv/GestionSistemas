@@ -1,0 +1,76 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Mi soporte{% endblock %}
+{% block main_class %} jx-portal-main{% endblock %}
+
+{% block content %}
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Hola, {{ funcionario.nombre_completo }}</h1>
+        <p>Aquí agendas el mantenimiento de tus equipos y pides soporte al área de sistemas.</p>
+    </div>
+</div>
+
+<div class="jx-acciones-portal">
+    <a class="jx-accion-portal" href="{% url 'portal:nueva' %}">
+        <span class="jx-kpi-ico soft-bad"><svg class="jx-i"><use href="#i-alert"/></svg></span>
+        <span><strong>Pedir soporte</strong><small>Un daño, o problemas con el correo, Novasoft, SEIF, el servidor o internet.</small></span>
+    </a>
+    <a class="jx-accion-portal" href="#mis-equipos">
+        <span class="jx-kpi-ico soft-primary"><svg class="jx-i"><use href="#i-calendar"/></svg></span>
+        <span><strong>Agendar mantenimiento</strong><small>Elige el equipo y el día de la visita de TIC.</small></span>
+    </a>
+</div>
+
+<section class="jx-card" id="mis-equipos">
+    <div class="jx-card-head"><div><h2>Mis equipos</h2><p>Los equipos que tienes a cargo según el inventario. Si falta alguno, avísale a TIC.</p></div></div>
+    <div class="jx-card-body">
+        {% if equipos %}
+        <div class="jx-equipos-mios">
+            {% for e in equipos %}
+            <article class="jx-equipo-mio">
+                <h3>{{ e.placa }}</h3>
+                <small class="jx-sub">{{ e.get_tipo_display }} {{ e.marca }} {{ e.modelo }}</small>
+                <div>
+                    {% if e.estado_mantenimiento == "VENCIDO" %}<span class="jx-badge jx-badge-bad">Mantenimiento vencido</span>
+                    {% elif e.estado_mantenimiento == "SIN_MANTENIMIENTO" %}<span class="jx-badge jx-badge-warn">Sin mantenimiento registrado</span>
+                    {% elif e.estado_mantenimiento == "PROXIMO" %}<span class="jx-badge jx-badge-warn">Vence pronto</span>
+                    {% elif e.estado_mantenimiento == "VIGENTE" %}<span class="jx-badge jx-badge-ok">Al día</span>{% endif %}
+                    {% if e.proximo_mantenimiento %}<small class="jx-sub">Próximo: {{ e.proximo_mantenimiento|date:"d/m/Y" }}</small>{% endif %}
+                </div>
+                {% if e.pk in agendados %}
+                <span class="jx-badge jx-badge-primary">Mantenimiento ya agendado</span>
+                {% else %}
+                <a class="jx-btn jx-btn-primary" href="{% url 'portal:agendar' e.pk %}"><svg class="jx-i"><use href="#i-calendar"/></svg>Agendar mantenimiento</a>
+                {% endif %}
+                <a class="jx-btn" href="{% url 'portal:nueva' %}?equipo={{ e.pk }}">Reportar una falla</a>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="jx-empty"><svg class="jx-i"><use href="#i-monitor"/></svg><p>No tienes equipos a cargo en el inventario. Si usas uno, avísale a TIC.</p></div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="jx-card jx-card-flush" style="margin-top:18px">
+    <div class="jx-card-head" style="padding-bottom:12px"><h2>Mis casos</h2></div>
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr><th>Caso</th><th>Equipo</th><th>Visita</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for t in casos %}
+                <tr class="jx-row-link" onclick="location.href='{% url 'soporte_caso' t.token %}'">
+                    <td><a class="jx-ticket-num" href="{% url 'soporte_caso' t.token %}">{{ t.numero }}</a><small class="jx-sub">{{ t.get_tipo_display }} · {{ t.creado_en|date:"d/m/Y" }}</small><small class="jx-sub">{{ t.descripcion|truncatechars:60 }}</small></td>
+                    <td>{% if t.equipo %}{{ t.equipo.placa }}{% else %}<span class="muted">—</span>{% endif %}</td>
+                    <td>{% if t.fecha_programada %}{{ t.fecha_programada|date:"d/m/Y" }}<small class="jx-sub">{{ t.get_franja_display }}</small>{% else %}<span class="muted">Por programar</span>{% endif %}</td>
+                    <td><span class="jx-badge {% if t.estado == 'CERRADO' or t.estado == 'RESUELTO' %}jx-badge-ok{% elif t.estado == 'CANCELADO' %}jx-badge-bad{% elif t.estado == 'ABIERTO' %}jx-badge-warn{% else %}jx-badge-primary{% endif %}">{{ t.get_estado_display }}</span></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4"><div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Aún no tienes casos.</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

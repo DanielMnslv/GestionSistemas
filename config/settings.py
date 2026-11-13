@@ -104,6 +104,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Las cuentas de funcionarios solo ven el portal Mi soporte.
+    'inventario.publico.SoloPortalSolicitanteMiddleware',
     # Usuario, IP y página de cada cambio, para la auditoría.
     'inventario.auditoria.AuditoriaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -217,6 +219,7 @@ SITIO_URL_PUBLICO = os.getenv('DJANGO_SITIO_URL_PUBLICO', '') or SITIO_URL
 
 
 LOGIN_URL = "login"
+PASSWORD_RESET_TIMEOUT = 7 * 24 * 3600
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "login"
 

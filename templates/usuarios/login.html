@@ -42,7 +42,7 @@
                     type="text"
                     id="username"
                     name="username"
-                    placeholder="Ingresa tu usuario"
+                    placeholder="Tu usuario o número de cédula"
                     autocomplete="username"
                     required
                     autofocus
@@ -62,6 +62,8 @@
                     Iniciar sesión
                 </button>
             </form>
+
+            <p class="login-security"><a href="{% url 'cuenta_recuperar' %}">¿Primer ingreso u olvidaste tu contraseña?</a></p>
 
             <p class="login-security">
                 Acceso exclusivo para personal autorizado.

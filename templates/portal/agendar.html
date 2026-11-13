@@ -1,0 +1,30 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Agendar mantenimiento{% endblock %}
+
+{% block content %}
+<a class="jx-back" href="{% url 'portal:inicio' %}"><svg class="jx-i"><use href="#i-arrow"/></svg>Mi soporte</a>
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Agendar mantenimiento</h1>
+        <p><strong>{{ equipo.placa }}</strong> · {{ equipo.get_tipo_display }} {{ equipo.marca }} {{ equipo.modelo }}. Elige cuándo puede pasar TIC; no se ofrecen fines de semana ni festivos.</p>
+    </div>
+</div>
+<section class="jx-card">
+    <form method="post" class="jx-card-body" novalidate>
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}<div class="jx-alert jx-alert-error">{{ formulario.non_field_errors }}</div>{% endif %}
+        <div class="jx-form-2">
+            {% include "inventario/_jx_campo.html" with field=formulario.visita ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.ubicacion ancho=True %}
+            {% include "inventario/_jx_campo.html" with field=formulario.correo %}
+            {% include "inventario/_jx_campo.html" with field=formulario.telefono %}
+            {% include "inventario/_jx_campo.html" with field=formulario.observaciones ancho=True %}
+        </div>
+        <div class="jx-dialog-actions">
+            <a class="jx-btn" href="{% url 'portal:inicio' %}">Cancelar</a>
+            <button class="jx-btn jx-btn-primary" type="submit"><svg class="jx-i"><use href="#i-calendar"/></svg>Agendar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

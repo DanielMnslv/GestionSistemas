@@ -16,8 +16,14 @@
             <strong>MESA DE AYUDA TI</strong>
             <small>Seguridad Jano · Área de Tecnología</small>
         </div>
+        {% if user.is_authenticated %}
+        <div class="jx-public-user">
+            <span>{{ user.get_full_name|default:user.username }}</span>
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit"><svg class="jx-i"><use href="#i-logout"/></svg>Salir</button></form>
+        </div>
+        {% endif %}
     </header>
-    <main class="jx-public-main">
+    <main class="jx-public-main{% block main_class %}{% endblock %}">
         {% for message in messages %}<div class="jx-alert jx-alert-{{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
         {% block content %}{% endblock %}
     </main>

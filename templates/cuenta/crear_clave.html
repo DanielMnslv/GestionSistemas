@@ -1,0 +1,25 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Crear contraseña{% endblock %}
+
+{% block content %}
+<section class="jx-card">
+    {% if validlink %}
+    <div class="jx-card-head"><div><h1 style="margin:0;font-size:20px">Crea tu contraseña</h1><p>Usuario: <strong>{{ form.user.get_username }}</strong>. Usa al menos 8 caracteres y que no sea solo números.</p></div></div>
+    <form method="post" class="jx-card-body jx-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="jx-alert jx-alert-error">{{ form.non_field_errors }}</div>{% endif %}
+        {% include "inventario/_jx_campo.html" with field=form.new_password1 %}
+        {% include "inventario/_jx_campo.html" with field=form.new_password2 %}
+        <div class="jx-dialog-actions"><button class="jx-btn jx-btn-primary" type="submit">Guardar contraseña</button></div>
+    </form>
+    {% else %}
+    <div class="jx-card-body">
+        <div class="jx-empty"><svg class="jx-i"><use href="#i-alert"/></svg>
+            <p>Este enlace ya se usó o venció.</p>
+            <p><a href="{% url 'cuenta_recuperar' %}">Pedir un enlace nuevo</a></p>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

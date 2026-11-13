@@ -1,15 +1,16 @@
 """Publicación por internet (túnel de Cloudflare).
 
 Cuando JANO se abre por una dirección pública (DJANGO_HOSTS_PUBLICOS), solo
-responde la mesa de ayuda (/soporte/) y sus archivos estáticos. El resto de
-la plataforma (inventario, inicio de sesión, administración) da 404 y solo
-se usa dentro del computador o de la red.
+responden la mesa de ayuda (/soporte/), el portal de los funcionarios
+(/mi-soporte/), el ingreso y la creación de contraseña. El inventario, la
+administración y la API dan 404 y solo se usan dentro del computador o la red.
+Si JANO completo ya está publicado, no definas DJANGO_HOSTS_PUBLICOS.
 """
 from django.conf import settings
 from django.http import Http404, HttpResponseRedirect
 from django.http.request import split_domain_port, validate_host
 
-RUTAS_PUBLICAS = ("/soporte/",)
+RUTAS_PUBLICAS = ("/soporte/", "/mi-soporte/", "/cuenta/", "/login/", "/logout/")
 
 
 def es_host_publico(request):
@@ -37,8 +38,27 @@ class SoloSoportePublicoMiddleware:
         if es_host_publico(request):
             ruta = request.path
             if ruta == "/":
-                return HttpResponseRedirect("/soporte/")
+                return HttpResponseRedirect("/mi-soporte/")
             permitidas = RUTAS_PUBLICAS + (settings.STATIC_URL,)
             if not ruta.startswith(permitidas):
                 raise Http404("No disponible desde internet.")
+        return self.get_response(request)
+
+
+RUTAS_SOLICITANTE = ("/mi-soporte/", "/soporte/", "/cuenta/", "/logout/", "/login/")
+
+
+class SoloPortalSolicitanteMiddleware:
+    """Las cuentas de funcionarios (rol Solicitante) solo ven Mi soporte."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from .permisos import solo_solicitante
+
+        if solo_solicitante(request.user):
+            ruta = request.path
+            if not ruta.startswith(RUTAS_SOLICITANTE + (settings.STATIC_URL,)):
+                return HttpResponseRedirect("/mi-soporte/")
         return self.get_response(request)

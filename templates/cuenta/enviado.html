@@ -1,0 +1,14 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Revisa tu correo{% endblock %}
+
+{% block content %}
+<section class="jx-card">
+    <div class="jx-card-body">
+        <div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg>
+            <p>Si el correo está registrado, te llegará en unos minutos un enlace para crear tu contraseña. Revisa también la carpeta de spam.</p>
+            <p><a href="{% url 'login' %}">Volver a iniciar sesión</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

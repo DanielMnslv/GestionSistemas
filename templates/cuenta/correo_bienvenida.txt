@@ -1,0 +1,19 @@
+{% autoescape off %}Hola {{ nombre }},
+
+Desde ahora el área de Tecnología atiende sus solicitudes en nuestra plataforma, en lugar del formulario de Google y Calendly. Allí puedes:
+
+- Agendar el mantenimiento de los equipos que tienes a cargo.
+- Pedir soporte (daños, correo, Novasoft, SEIF, servidor o internet).
+- Ver el estado de tus casos.
+
+Tu usuario es tu número de cédula: {{ usuario }}
+
+1. Crea tu contraseña con este enlace (vence en {{ horas }} horas y sirve una sola vez):
+{{ enlace }}
+
+2. Después entra aquí: {{ entrar }}
+
+Si el enlace vence, en la página de ingreso usa "¿Primer ingreso u olvidaste tu contraseña?".
+
+Área de Tecnología · Seguridad Jano
+Mensaje automático.{% endautoescape %}

@@ -1,0 +1,13 @@
+{% autoescape off %}Hola{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Recibimos una solicitud para crear o cambiar la contraseña de tu acceso a la mesa de ayuda de Seguridad Jano.
+
+Tu usuario es: {{ user.get_username }}
+
+Crea tu contraseña aquí (el enlace sirve una sola vez):
+{{ protocol }}://{{ domain }}{% url 'crear_clave' uidb64=uid token=token %}
+
+Si no lo pediste, ignora este correo.
+
+Área de Tecnología · Seguridad Jano
+Mensaje automático.{% endautoescape %}

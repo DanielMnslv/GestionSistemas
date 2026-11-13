@@ -11,6 +11,7 @@ class UsuarioCreationForm(UserCreationForm):
         ("Técnico de mantenimiento", "Técnico de mantenimiento"),
         ("Consulta", "Consulta"),
         ("Talento humano", "Talento humano"),
+        ("Solicitante", "Solicitante (portal Mi soporte)"),
     ]
 
     first_name = forms.CharField(

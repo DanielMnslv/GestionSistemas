@@ -1,0 +1,14 @@
+{% extends "publico/base_publica.html" %}
+
+{% block title %}Contraseña creada{% endblock %}
+
+{% block content %}
+<section class="jx-card">
+    <div class="jx-card-body">
+        <div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg>
+            <p>Tu contraseña quedó guardada. Ya puedes entrar con tu número de cédula y tu contraseña.</p>
+            <p><a class="jx-btn jx-btn-primary" href="{% url 'login' %}">Iniciar sesión</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}
