@@ -13,7 +13,7 @@ T = EventoTicket.Tipo
 
 
 def enlace_caso(ticket):
-    return settings.SITIO_URL.rstrip("/") + reverse("soporte_caso", args=[ticket.token])
+    return settings.SITIO_URL_PUBLICO.rstrip("/") + reverse("soporte_caso", args=[ticket.token])
 
 
 def enlace_interno(ticket):

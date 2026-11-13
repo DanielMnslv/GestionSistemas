@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from . import agenda, personas
+from .publico import ip_cliente
 from . import tickets as flujo
 from .forms import (
     FOTOS_MAXIMAS, CedulaSoporteForm, ReabrirForm, SoporteForm, validar_foto,
@@ -24,7 +25,7 @@ MAXIMO_POR_IP_HORA = 15
 
 
 def ip_de(request):
-    return request.META.get("REMOTE_ADDR", "")
+    return ip_cliente(request)
 
 
 def supera_limite(request, cedula):

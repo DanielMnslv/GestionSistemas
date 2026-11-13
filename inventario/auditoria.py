@@ -42,7 +42,9 @@ class AuditoriaMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        ip = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip() or request.META.get("REMOTE_ADDR", "")
+        from .publico import ip_cliente
+
+        ip = ip_cliente(request)
         token = _contexto.set({"request": request, "ip": ip[:45], "ruta": request.path[:255]})
         try:
             return self.get_response(request)

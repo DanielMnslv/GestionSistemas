@@ -201,3 +201,27 @@ class SolicitudConVisitaTests(TestCase):
         self.client.force_login(admin)
         r = self.client.get(reverse("inventario:tickets_agenda"), {"desde": cupo["fecha"].isoformat()})
         self.assertContains(r, ticket.numero)
+
+
+@override_settings(HOSTS_PUBLICOS=[".trycloudflare.com"], ALLOWED_HOSTS=["testserver", ".trycloudflare.com"])
+class PublicacionPorInternetTests(TestCase):
+    HOST = "prueba-uno.trycloudflare.com"
+
+    def test_desde_internet_solo_responde_soporte(self):
+        self.assertEqual(self.client.get("/soporte/", HTTP_HOST=self.HOST).status_code, 200)
+        self.assertRedirects(self.client.get("/", HTTP_HOST=self.HOST), "/soporte/", fetch_redirect_response=False)
+        for ruta in ["/login/", "/admin/", "/inventario/solicitudes/", "/api/v1/"]:
+            self.assertEqual(self.client.get(ruta, HTTP_HOST=self.HOST).status_code, 404, ruta)
+
+    def test_dentro_del_equipo_todo_sigue_igual(self):
+        self.assertEqual(self.client.get("/login/").status_code, 200)
+
+    def test_ip_real_del_visitante(self):
+        from django.test import RequestFactory
+
+        from inventario.publico import ip_cliente
+
+        r = RequestFactory().get("/soporte/", HTTP_HOST=self.HOST, HTTP_CF_CONNECTING_IP="190.1.2.3")
+        self.assertEqual(ip_cliente(r), "190.1.2.3")
+        r = RequestFactory().get("/soporte/", HTTP_CF_CONNECTING_IP="190.1.2.3")
+        self.assertEqual(ip_cliente(r), "127.0.0.1")

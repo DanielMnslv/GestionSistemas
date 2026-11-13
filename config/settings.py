@@ -45,6 +45,18 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = lista_env("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = lista_env("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Publicación de la mesa de ayuda por internet (túnel de Cloudflare). Con
+# estas direcciones JANO solo responde /soporte/ (ver inventario/publico.py).
+# Ej.: DJANGO_HOSTS_PUBLICOS=soporte.midominio.com  o  .trycloudflare.com
+HOSTS_PUBLICOS = lista_env("DJANGO_HOSTS_PUBLICOS")
+if HOSTS_PUBLICOS:
+    ALLOWED_HOSTS += HOSTS_PUBLICOS
+    CSRF_TRUSTED_ORIGINS += [
+        f"https://*{h}" if h.startswith(".") else f"https://{h}" for h in HOSTS_PUBLICOS
+    ]
+    # El túnel termina el HTTPS y avisa con X-Forwarded-Proto.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # DJANGO_HTTPS=False solo cuando la plataforma se sirve sin HTTPS (por
 # ejemplo, en http://localhost dentro del mismo computador).
 HTTPS = os.getenv("DJANGO_HTTPS", "True").lower() == "true"
@@ -84,6 +96,8 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Desde internet solo se ve la mesa de ayuda.
+    'inventario.publico.SoloSoportePublicoMiddleware',
     # Sirve los archivos estáticos cuando no hay un servidor web delante.
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -198,6 +212,8 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 # Dirección con la que se abre JANO desde otros equipos (enlaces de los
 # correos de soporte).
 SITIO_URL = os.getenv('DJANGO_SITIO_URL', 'http://127.0.0.1:8080')
+# Dirección pública para el enlace del caso que recibe el solicitante.
+SITIO_URL_PUBLICO = os.getenv('DJANGO_SITIO_URL_PUBLICO', '') or SITIO_URL
 
 
 LOGIN_URL = "login"
