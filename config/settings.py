@@ -27,6 +27,7 @@ load_dotenv(BASE_DIR / ".env")
 
 
 def lista_env(nombre):
+    """Lee una variable de entorno separada por comas y la devuelve como lista."""
     return [v.strip() for v in os.getenv(nombre, "").split(",") if v.strip()]
 
 

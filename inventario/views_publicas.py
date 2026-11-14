@@ -25,6 +25,7 @@ MAXIMO_POR_IP_HORA = 15
 
 
 def ip_de(request):
+    """Dirección IP del visitante (ver ``ip_cliente``)."""
     return ip_cliente(request)
 
 
@@ -41,6 +42,7 @@ def supera_limite(request, cedula):
 
 
 def contar_ip(request):
+    """Suma una solicitud a la IP del visitante (dura una hora; limita el abuso)."""
     clave = f"soporte-ip-{ip_de(request)}"
     cache.set(clave, cache.get(clave, 0) + 1, 3600)
 
@@ -57,6 +59,7 @@ def consultas_excedidas(request):
 
 
 def _paso_equipo(request, cedula_form, datos=None, archivos=None):
+    """Prepara el paso 2 del formulario público con los equipos del funcionario."""
     funcionario = cedula_form.funcionario
     equipos = [d["equipo"] for d in personas.equipos_a_cargo(funcionario)]
     formulario = SoporteForm(datos, funcionario=funcionario, equipos=equipos)
@@ -153,6 +156,10 @@ def soporte_formulario(request):
 
 
 def soporte_caso(request, token):
+    """Página pública del caso, a la que se llega con el enlace secreto del correo.
+
+    Permite ver el avance, confirmar la solución o reabrir el caso si sigue fallando.
+    """
     ticket = get_object_or_404(
         Ticket.objects.select_related("equipo", "tecnico"), token=token
     )

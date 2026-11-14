@@ -1,3 +1,9 @@
+"""Vistas del módulo de informes: listado, vista previa y exportación.
+
+Cada informe se ve en pantalla con sus filtros y se descarga en Excel o
+PDF con los mismos filtros. Los informes con ``requiere_permiso`` solo los
+ve quien tiene esa acción.
+"""
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -16,6 +22,7 @@ CLASE_TONO = {"green": "mant-vigente", "amber": "mant-proximo", "red": "mant-ven
 
 
 def _informe(clave):
+    """Informe con esa clave, o 404."""
     try:
         return obtener_informe(clave)
     except KeyError:
@@ -23,10 +30,12 @@ def _informe(clave):
 
 
 def _puede_ver(usuario, informe):
+    """Indica si el usuario puede ver el informe."""
     return informe.requiere_permiso is None or puede(usuario, informe.requiere_permiso)
 
 
 def _campos_filtros(informe, valores):
+    """Datos de cada filtro para pintar el formulario (valor actual en texto)."""
     campos = []
     for filtro in informe.filtros:
         valor = valores.get(filtro.clave)
@@ -47,6 +56,7 @@ def _consulta_filtros(request, informe):
 
 @login_required
 def inicio_informes(request):
+    """Página de informes agrupados por categoría (solo los que el usuario puede ver)."""
     categorias = []
     for nombre, lista in informes_por_categoria():
         visibles = [i for i in lista if _puede_ver(request.user, i)]
@@ -60,6 +70,7 @@ def inicio_informes(request):
 
 @login_required
 def vista_previa(request, clave):
+    """Vista previa del informe en pantalla con filtros, totales y paginación."""
     informe = _informe(clave)
     if not _puede_ver(request.user, informe):
         return HttpResponseForbidden("No tienes permiso para consultar este informe.")
@@ -102,6 +113,7 @@ def vista_previa(request, clave):
 
 
 def _exportar(request, clave, exportador):
+    """Valida permiso y filtros y genera el archivo con ``exportador``."""
     informe = _informe(clave)
     if not _puede_ver(request.user, informe):
         return HttpResponseForbidden("No tienes permiso para exportar este informe.")
@@ -112,9 +124,11 @@ def _exportar(request, clave, exportador):
 
 @login_required
 def exportar_informe_excel(request, clave):
+    """Descarga el informe en Excel."""
     return _exportar(request, clave, exportar_xlsx)
 
 
 @login_required
 def exportar_informe_pdf(request, clave):
+    """Descarga el informe en PDF."""
     return _exportar(request, clave, exportar_pdf)

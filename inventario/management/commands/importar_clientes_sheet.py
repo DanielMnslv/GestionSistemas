@@ -1,3 +1,7 @@
+"""Comando ``importar_clientes_sheet``: importa el catálogo de clientes y puestos de la hoja CLIENTES_PUESTOS. Crea los nuevos y actualiza nombre, NIT, sede y estado de los existentes (por su id del Sheet). Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_clientes_sheet`` (opciones en ``--help``).
+"""
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -9,6 +13,7 @@ COLUMNAS = ["idCliente", "NIT", "Nombre_Cliente", "Estado", "Sede", "ID Puestos"
 
 
 class Command(BaseCommand):
+    """Importa el catálogo de clientes y puestos de la hoja CLIENTES_PUESTOS. Crea los nuevos y actualiza nombre, NIT, sede y estado de los existentes (por su id del Sheet). Es una simulación salvo con --confirmar."""
     help = (
         "Importa el catálogo de clientes y puestos de la hoja CLIENTES_PUESTOS. "
         "Crea los nuevos y actualiza nombre, NIT, sede y estado de los "
@@ -16,10 +21,19 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--confirmar``: Guardar los cambios.
+        """
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
         parser.add_argument("--confirmar", action="store_true", help="Guardar los cambios.")
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         with libro_del_sheet(options["archivo"], self.stdout) as archivo:
             filas = leer_hoja(archivo, HOJA, COLUMNAS)
 

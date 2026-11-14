@@ -1,3 +1,7 @@
+"""Comando ``sincronizar_sheet``: descarga el Google Sheet una vez y ejecuta, en orden, la importación de radios, equipos de TI, entregas y mantenimientos. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py sincronizar_sheet`` (opciones en ``--help``).
+"""
 from datetime import datetime
 
 from django.core.management import call_command
@@ -7,6 +11,7 @@ from inventario.google_sheet import libro_del_sheet
 
 
 class Command(BaseCommand):
+    """Descarga el Google Sheet una vez y ejecuta, en orden, la importación de radios, equipos de TI, entregas y mantenimientos. Es una simulación salvo con --confirmar."""
     help = (
         "Descarga el Google Sheet una vez y ejecuta, en orden, la "
         "importación de radios, equipos de TI, entregas y mantenimientos. "
@@ -14,6 +19,12 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--usuario``: Usuario responsable de las asignaciones y mantenimientos.
+        - ``--archivo``: Ruta a un .xlsx exportado del Google Sheet.
+        - ``--confirmar``: Guardar los cambios.
+        """
         parser.add_argument(
             "--usuario",
             required=True,
@@ -30,6 +41,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         self.stdout.write(f"Sincronización {datetime.now():%Y-%m-%d %H:%M}")
         extra = ["--confirmar"] if options["confirmar"] else []
 

@@ -1,3 +1,10 @@
+"""Modelos de la integración con Gestión TIC.
+
+Patrón outbox/inbox: los cambios de JANO se guardan como eventos de salida
+(IntegrationOutbox) y un comando los entrega; los eventos que llegan de
+Gestión TIC se guardan en IntegrationInbox y otro comando los procesa.
+Así un corte de red no pierde datos.
+"""
 import uuid
 from django.conf import settings
 from django.db import models
@@ -67,6 +74,7 @@ class IntegrationInbox(models.Model):
 
 
 class IntegrationDelivery(models.Model):
+    """Un intento de entrega de un evento de salida: destino, código HTTP, éxito y duración."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     outbox = models.ForeignKey(IntegrationOutbox, on_delete=models.CASCADE, related_name="entregas")
     destino = models.CharField(max_length=100)
@@ -78,6 +86,7 @@ class IntegrationDelivery(models.Model):
 
 
 class IntegrationAudit(models.Model):
+    """Bitácora de acciones de la integración (consultas, envíos, recepciones)."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sistema = models.CharField(max_length=50)
     accion = models.CharField(max_length=100, db_index=True)

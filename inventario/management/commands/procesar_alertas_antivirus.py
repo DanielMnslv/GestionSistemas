@@ -1,3 +1,7 @@
+"""Comando ``procesar_alertas_antivirus``: avisa por correo los antivirus vencidos o que vencen en los próximos días. Cada vencimiento se avisa una sola vez. Por defecto simula y no envía correos.
+
+Uso: ``python manage.py procesar_alertas_antivirus`` (opciones en ``--help``).
+"""
 from datetime import timedelta
 
 from django.conf import settings
@@ -16,6 +20,7 @@ DIAS_ANTICIPACION = 30
 
 
 class Command(BaseCommand):
+    """Avisa por correo los antivirus vencidos o que vencen en los próximos días. Cada vencimiento se avisa una sola vez. Por defecto simula y no envía correos."""
     help = (
         "Avisa por correo los antivirus vencidos o que vencen en los "
         f"próximos {DIAS_ANTICIPACION} días. Cada vencimiento se avisa una "
@@ -23,12 +28,20 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--enviar``: Enviar el correo y registrar los avisos.
+        """
         parser.add_argument(
             "--enviar", action="store_true",
             help="Enviar el correo y registrar los avisos.",
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--enviar`` solo muestra lo que haría; no envía correos.
+        """
         enviar = options["enviar"]
         if enviar and not settings.EMAIL_HOST_USER:
             raise CommandError("EMAIL_HOST_USER no está configurado.")

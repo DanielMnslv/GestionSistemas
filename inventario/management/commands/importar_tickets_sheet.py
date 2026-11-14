@@ -1,3 +1,7 @@
+"""Comando ``importar_tickets_sheet``: importa las solicitudes de soporte del Sheet (CONSOLIDADO REPORTE y BD) como tickets. Las enlaza con su mantenimiento por el código de consulta. Las antiguas sin cierre quedan cerradas como histórico. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_tickets_sheet`` (opciones en ``--help``).
+"""
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -48,19 +52,23 @@ CATEGORIAS = {
 
 
 def limpio(valor):
+    """Texto de la celda; "#N/A", "N/A", "FALSO" y similares cuentan como vacío."""
     texto = texto_celda(valor)
     return "" if texto.upper() in ("#N/A", "N/A", "NONE", "FALSO", "VERDADERO") else texto
 
 
 def celda(fila, i):
+    """Valor de la columna ``i`` de la fila, o None si la fila es más corta."""
     return fila[i] if i < len(fila) else None
 
 
 def aware(fecha):
+    """Fecha y hora con la zona horaria de Colombia."""
     return timezone.make_aware(fecha.replace(microsecond=0), ZONA)
 
 
 class Command(BaseCommand):
+    """Importa las solicitudes de soporte del Sheet (CONSOLIDADO REPORTE y BD) como tickets. Las enlaza con su mantenimiento por el código de consulta. Las antiguas sin cierre quedan cerradas como histórico. Es una simulación salvo con --confirmar."""
     help = (
         "Importa las solicitudes de soporte del Sheet (CONSOLIDADO REPORTE y "
         "BD) como tickets. Las enlaza con su mantenimiento por el código de "
@@ -69,10 +77,19 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--confirmar``: Guardar los cambios.
+        """
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
         parser.add_argument("--confirmar", action="store_true", help="Guardar los cambios.")
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         with libro_del_sheet(options["archivo"], self.stdout) as archivo:
             libro = openpyxl.load_workbook(archivo, read_only=True, data_only=True)
             try:

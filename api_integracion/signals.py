@@ -1,3 +1,4 @@
+"""Publica un evento de salida cada vez que se guarda un equipo o un radio."""
 import uuid
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -7,6 +8,7 @@ from .models import IntegrationOutbox
 
 
 def _publicar(instancia, entidad, campos):
+    """Crea el evento de salida con los ``campos`` del registro (fechas en ISO)."""
     datos = {}
     for campo in campos:
         valor = getattr(instancia, campo, None)
@@ -33,6 +35,7 @@ def _publicar(instancia, entidad, campos):
 
 @receiver(post_save, sender=Equipo, dispatch_uid="jano_outbox_equipo_v1")
 def equipo_guardado(sender, instance, created, **kwargs):
+    """Señal post_save de Equipo: publica sus datos principales."""
     _publicar(instance, "equipo", [
         "id", "public_id", "placa", "tipo", "serial", "marca", "modelo",
         "propiedad", "fecha_compra", "estado_operativo", "activo",
@@ -41,6 +44,7 @@ def equipo_guardado(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Radio, dispatch_uid="jano_outbox_radio_v1")
 def radio_guardado(sender, instance, created, **kwargs):
+    """Señal post_save de Radio: publica sus datos principales."""
     _publicar(instance, "radio", [
         "id", "public_id", "codigo_fisico", "placa", "serial", "marca",
         "modelo", "tipo_frecuencia", "modalidad_servicio", "estado_radio",

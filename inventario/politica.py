@@ -38,6 +38,9 @@ def incumplimientos(respuestas):
 
 
 def normalizar_respuesta(valor):
+    """Convierte el texto de una respuesta (del Sheet o del formulario) en una
+    de las opciones: Cumple, No cumple o No aplica.
+    """
     texto = " ".join(str(valor or "").upper().split())
     if texto.startswith("NO C"):
         return NO_CUMPLE
@@ -77,6 +80,7 @@ CLASE_ESTADO = {
 
 
 def sumar_un_anio(fecha):
+    """Suma un año a una fecha (el 29 de febrero pasa al 28)."""
     try:
         return fecha.replace(year=fecha.year + 1)
     except ValueError:  # 29 de febrero

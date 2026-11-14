@@ -14,6 +14,7 @@ FILTRO_TIPO = Filtro("tipo", "Tipo de equipo", "select", opciones_con_todos((
 
 
 def _ultimas_verificaciones():
+    """Última verificación de política de cada equipo: {equipo_id: verificación}."""
     ultimas = {}
     for v in VerificacionPolitica.objects.order_by("-fecha", "-id"):
         ultimas.setdefault(v.equipo_id, v)
@@ -21,11 +22,13 @@ def _ultimas_verificaciones():
 
 
 def _contar_respuestas(respuestas):
+    """Cuenta las respuestas (cumple, no cumple, no aplica) de una verificación."""
     valores = list((respuestas or {}).values())
     return (valores.count(politica.CUMPLE), valores.count(politica.NO_CUMPLE), valores.count(politica.NO_APLICA))
 
 
 def _equipos(valores):
+    """Computadores y tabletas activos, filtrados por tipo si se eligió."""
     consulta = Equipo.objects.filter(activo=True, tipo__in=TIPOS_CON_POLITICA)
     if valores["tipo"]:
         consulta = consulta.filter(tipo=valores["tipo"])
@@ -33,6 +36,10 @@ def _equipos(valores):
 
 
 class EstadoPolitica(Informe):
+    """Informe «Política de seguridad: estado de cada equipo».
+
+    Cada computador y tableta con su última verificación anual y si vence, cumple o tiene incumplimientos.
+    """
     clave = "politica_estado"
     titulo = "Política de seguridad: estado de cada equipo"
     categoria = CATEGORIA
@@ -47,6 +54,7 @@ class EstadoPolitica(Informe):
     filtros = (FILTRO_TIPO, Filtro("estado", "Estado", "select", opciones_con_todos(politica.ESTADOS)))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Política de seguridad: estado de cada equipo» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         ultimas = _ultimas_verificaciones()
         filas = []
@@ -68,6 +76,7 @@ class EstadoPolitica(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos."""
         etiquetas = [e for _, e in politica.ESTADOS]
         conteo = {e: 0 for e in etiquetas}
         for f in filas:
@@ -76,6 +85,10 @@ class EstadoPolitica(Informe):
 
 
 class IncumplimientosPolitica(Informe):
+    """Informe «Política de seguridad: puntos incumplidos por equipo».
+
+    Una línea por cada punto de la política que el equipo no cumple en su última verificación.
+    """
     clave = "politica_incumplimientos"
     titulo = "Política de seguridad: puntos incumplidos por equipo"
     categoria = CATEGORIA
@@ -88,6 +101,7 @@ class IncumplimientosPolitica(Informe):
     filtros = (FILTRO_TIPO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Política de seguridad: puntos incumplidos por equipo» según los filtros elegidos (``valores``)."""
         ultimas = _ultimas_verificaciones()
         filas = []
         for e in _equipos(valores):
@@ -100,10 +114,15 @@ class IncumplimientosPolitica(Informe):
         return ordenar_por_placa(filas)
 
     def resumen(self, filas):
+        """Totales del encabezado: Puntos incumplidos, Equipos afectados."""
         return [("Puntos incumplidos", len(filas)), ("Equipos afectados", len({f["placa"] for f in filas}))]
 
 
 class PuntosMasIncumplidos(Informe):
+    """Informe «Política de seguridad: cumplimiento por punto».
+
+    Para cada uno de los 15 puntos de la política, cuántos equipos cumplen y cuántos no (última verificación).
+    """
     clave = "politica_puntos"
     titulo = "Política de seguridad: cumplimiento por punto"
     categoria = CATEGORIA
@@ -117,6 +136,7 @@ class PuntosMasIncumplidos(Informe):
     filtros = (FILTRO_TIPO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Política de seguridad: cumplimiento por punto» según los filtros elegidos (``valores``)."""
         ultimas = _ultimas_verificaciones()
         conteos = {c: {"cumple": 0, "no_cumple": 0, "no_aplica": 0} for c, _ in politica.PUNTOS}
         for e in _equipos(valores):
@@ -142,11 +162,16 @@ class PuntosMasIncumplidos(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Puntos evaluados, Con algún incumplimiento."""
         return [("Puntos evaluados", len(filas)),
                 ("Con algún incumplimiento", sum(1 for f in filas if f["no_cumple"]))]
 
 
 class HistorialPolitica(Informe):
+    """Informe «Verificaciones de la política realizadas».
+
+    Historial de verificaciones por rango de fechas, con la cantidad de puntos que cumplen y no cumplen.
+    """
     clave = "politica_verificaciones"
     titulo = "Verificaciones de la política realizadas"
     categoria = CATEGORIA
@@ -163,6 +188,7 @@ class HistorialPolitica(Informe):
                Filtro("solo_incumple", "Solo con incumplimientos", "checkbox"))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Verificaciones de la política realizadas» según los filtros elegidos (``valores``)."""
         consulta = VerificacionPolitica.objects.select_related("equipo")
         if valores["desde"]:
             consulta = consulta.filter(fecha__date__gte=valores["desde"])
@@ -183,6 +209,7 @@ class HistorialPolitica(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Verificaciones, Equipos verificados, Con incumplimientos."""
         return [("Verificaciones", len(filas)), ("Equipos verificados", len({f["placa"] for f in filas})),
                 ("Con incumplimientos", sum(1 for f in filas if f["no_cumple"]))]
 
@@ -195,6 +222,7 @@ ESTADOS_ANTIVIRUS = (
 
 
 def _estado_antivirus(vencimiento, hoy):
+    """Estado del antivirus según su vencimiento: sin fecha, vencido, por vencer o vigente."""
     if vencimiento is None:
         return "sin_fecha"
     dias = dias_entre(vencimiento, hoy)
@@ -206,6 +234,10 @@ def _estado_antivirus(vencimiento, hoy):
 
 
 class AntivirusVencimientos(Informe):
+    """Informe «Licencias de antivirus: vencimientos».
+
+    Qué antivirus tiene cada computador y cuándo vence. No incluye las claves de licencia.
+    """
     clave = "antivirus_vencimientos"
     titulo = "Licencias de antivirus: vencimientos"
     categoria = CATEGORIA
@@ -219,6 +251,7 @@ class AntivirusVencimientos(Informe):
     filtros = (FILTRO_TIPO, Filtro("estado", "Estado", "select", opciones_con_todos(ESTADOS_ANTIVIRUS)))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Licencias de antivirus: vencimientos» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         etiquetas = dict(ESTADOS_ANTIVIRUS)
         consulta = DetalleComputador.objects.filter(equipo__activo=True).select_related("equipo")
@@ -243,6 +276,7 @@ class AntivirusVencimientos(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Computadores."""
         etiquetas = [e for _, e in ESTADOS_ANTIVIRUS]
         conteo = {e: 0 for e in etiquetas}
         for f in filas:
@@ -251,6 +285,10 @@ class AntivirusVencimientos(Informe):
 
 
 class AntivirusRenovaciones(Informe):
+    """Informe «Renovaciones de antivirus registradas».
+
+    Historial de renovaciones de licencia por rango de fechas. No incluye las claves.
+    """
     clave = "antivirus_renovaciones"
     titulo = "Renovaciones de antivirus registradas"
     categoria = CATEGORIA
@@ -264,6 +302,7 @@ class AntivirusRenovaciones(Informe):
     filtros = (Filtro("desde", "Desde", "date"), Filtro("hasta", "Hasta", "date"))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Renovaciones de antivirus registradas» según los filtros elegidos (``valores``)."""
         consulta = RenovacionAntivirus.objects.select_related("equipo", "registrado_por")
         if valores["desde"]:
             consulta = consulta.filter(fecha__date__gte=valores["desde"])
@@ -281,6 +320,7 @@ class AntivirusRenovaciones(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Renovaciones."""
         return [("Renovaciones", len(filas))]
 
 

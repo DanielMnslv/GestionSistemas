@@ -1,3 +1,7 @@
+"""Comando ``importar_mantenimientos_sheet``: importa los mantenimientos de todos los equipos (radios, computadores, impresoras…) desde la hoja T.MANT del Google Sheet. Omite los que ya existen para el mismo equipo, día y tipo. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_mantenimientos_sheet`` (opciones en ``--help``).
+"""
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -35,6 +39,7 @@ SIN_DATO = "No informado en el Sheet"
 
 
 def obtener_tipo(valor):
+    """Tipo de mantenimiento según el texto del Sheet (preventivo, correctivo…)."""
     texto = texto_celda(valor).upper()
     for palabra, tipo in (
         ("PREVENTIVO", MantenimientoEquipo.Tipo.PREVENTIVO),
@@ -50,6 +55,7 @@ def obtener_tipo(valor):
 
 
 def obtener_estado_final(valor):
+    """Estado final del equipo según el texto del Sheet."""
     texto = texto_celda(valor).upper()
     if "NO SE REPARA" in texto or "BAJA" in texto or "NO OPERATIVO" in texto:
         return MantenimientoEquipo.EstadoFinal.NO_OPERATIVO
@@ -61,6 +67,7 @@ def obtener_estado_final(valor):
 
 
 def obtener_resultado(valor):
+    """Resultado del mantenimiento (completo, parcial, pendiente) según el texto del Sheet."""
     texto = texto_celda(valor).upper()
     if "NO SE REPARA" in texto or "BAJA" in texto or "TERCER NIVEL" in texto:
         return MantenimientoEquipo.Resultado.PENDIENTE
@@ -72,6 +79,7 @@ def obtener_resultado(valor):
 
 
 def fecha_local(valor):
+    """Convierte el valor de la celda en fecha, o None si no se puede."""
     if isinstance(valor, datetime):
         valor = valor.date()
     if isinstance(valor, date):
@@ -85,6 +93,7 @@ def fecha_local(valor):
 
 
 class Command(BaseCommand):
+    """Importa los mantenimientos de todos los equipos (radios, computadores, impresoras…) desde la hoja T.MANT del Google Sheet. Omite los que ya existen para el mismo equipo, día y tipo. Es una simulación salvo con --confirmar."""
     help = (
         "Importa los mantenimientos de todos los equipos (radios, "
         "computadores, impresoras…) desde la hoja T.MANT del Google Sheet. "
@@ -93,6 +102,12 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--usuario``: Usuario que figura como quien registró las intervenciones.
+        - ``--archivo``: Ruta a un .xlsx exportado del Google Sheet. Si se omite, se descarga el Sheet.
+        - ``--confirmar``: Guardar los cambios después de validar todo.
+        """
         parser.add_argument(
             "--usuario",
             required=True,
@@ -112,6 +127,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         try:
             usuario = get_user_model().objects.get(
                 username=options["usuario"]
@@ -152,6 +171,11 @@ class Command(BaseCommand):
         )
 
     def planear(self, filas, usuario):
+        """Calcula qué mantenimientos se crearían, sin guardar.
+
+        Cuenta los que ya existen, los repetidos en el Sheet y los que no tienen
+        equipo en la plataforma.
+        """
         plan = {
             "crear": [],
             "existentes": 0,
@@ -262,6 +286,7 @@ class Command(BaseCommand):
         return plan
 
     def mostrar(self, plan):
+        """Imprime el resumen del plan."""
         self.stdout.write(f"Mantenimientos a crear: {len(plan['crear'])}")
         self.stdout.write(f"Ya registrados en la plataforma: {plan['existentes']}")
         self.stdout.write(f"Repetidos dentro del Sheet: {plan['repetidos']}")

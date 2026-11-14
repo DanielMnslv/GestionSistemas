@@ -10,21 +10,28 @@ from .base import Columna, Filtro, Informe
 
 
 def _momento(valor):
+    """Convierte una fecha en fecha y hora (para ordenar los eventos juntos)."""
     if isinstance(valor, datetime):
         return valor
     return datetime.combine(valor, time.min, tzinfo=ZONA_COLOMBIA)
 
 
 def _usuario(u):
+    """Nombre del usuario, o vacío si no hay."""
     return (u.get_full_name() or u.get_username()) if u else ""
 
 
 def _recortar(texto, largo=300):
+    """Texto en una línea, recortado a ``largo`` caracteres."""
     texto = " ".join((texto or "").split())
     return texto if len(texto) <= largo else texto[: largo - 1] + "…"
 
 
 class HistorialEquipo(Informe):
+    """Informe «Hoja de vida de un equipo».
+
+    Todo lo que ha pasado con un equipo: mantenimientos, entregas, verificaciones, renovaciones y bajas. Escribe la placa.
+    """
     clave = "historial_equipo"
     titulo = "Hoja de vida de un equipo"
     categoria = "Equipos de TI"
@@ -37,12 +44,14 @@ class HistorialEquipo(Informe):
     filtros = (Filtro("placa", "Placa o serial", ayuda="Escribe la placa o el serial exacto del equipo."),)
 
     def _buscar(self, texto):
+        """Busca el equipo por placa o por serial (sin importar mayúsculas)."""
         if not texto:
             return None
         base = Equipo.objects.select_related("radio")
         return base.filter(placa__iexact=texto).first() or base.filter(serial__iexact=texto).first()
 
     def aviso(self, valores, filas):
+        """Mensaje si falta la placa o si el equipo no existe."""
         if not valores["placa"]:
             return "Escribe la placa o el serial de un equipo para ver su hoja de vida."
         equipo = self._buscar(valores["placa"])
@@ -53,12 +62,14 @@ class HistorialEquipo(Informe):
                 f" · Serial {equipo.serial or 'sin dato'}")
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Hoja de vida de un equipo» según los filtros elegidos (``valores``)."""
         equipo = self._buscar(valores["placa"])
         if equipo is None:
             return []
         eventos = []
 
         def agregar(fecha, evento, detalle="", responsable="", clase=""):
+            """Agrega un evento a la hoja de vida."""
             eventos.append({"fecha": fecha, "evento": evento, "detalle": _recortar(detalle),
                             "responsable": responsable, "_momento": _momento(fecha), "_clase": clase})
 
@@ -116,6 +127,7 @@ class HistorialEquipo(Informe):
         return eventos
 
     def resumen(self, filas):
+        """Totales del encabezado: Eventos, Mantenimientos, Entregas."""
         return [("Eventos", len(filas)),
                 ("Mantenimientos", sum(1 for f in filas if f["_clase"] == "mantenimiento")),
                 ("Entregas", sum(1 for f in filas if f["_clase"] == "entrega"))]

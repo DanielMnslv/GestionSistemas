@@ -44,6 +44,7 @@ def conteos_menu():
 
 
 def menu(request):
+    """Procesador de contexto: agrega los contadores del menú lateral si hay sesión."""
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return {}
     return {"menu_conteos": conteos_menu()}

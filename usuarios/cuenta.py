@@ -15,10 +15,16 @@ class RecuperarClaveForm(PasswordResetForm):
     contraseña (cuentas nuevas sin contraseña)."""
 
     def get_users(self, email):
+        """Cuentas activas con ese correo (sin importar mayúsculas).
+
+        A diferencia de Django, también incluye cuentas que aún no tienen
+        contraseña, para que puedan crearla en su primer ingreso.
+        """
         return get_user_model()._default_manager.filter(email__iexact=email, is_active=True)
 
 
 def enlace_crear_clave(usuario):
+    """Enlace para que el usuario cree su contraseña (vale 7 días: ``PASSWORD_RESET_TIMEOUT``)."""
     uid = urlsafe_base64_encode(force_bytes(usuario.pk))
     token = default_token_generator.make_token(usuario)
     return settings.SITIO_URL_PUBLICO.rstrip("/") + reverse("crear_clave", args=[uid, token])

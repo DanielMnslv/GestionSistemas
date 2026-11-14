@@ -1,4 +1,8 @@
-﻿
+﻿"""Comando ``procesar_alertas_mantenimiento``: revisa los mantenimientos que vencen hoy. Por defecto simula y no envía correos.
+
+Uso: ``python manage.py procesar_alertas_mantenimiento`` (opciones en ``--help``).
+"""
+
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
@@ -32,6 +36,7 @@ INTERVALO_REINTENTO_MINUTOS = 30
 
 
 def fecha_base_intervencion(intervencion):
+    """Fecha local (Colombia) de la intervención, desde la que se cuentan los 6 meses."""
     return timezone.localtime(
         intervencion.fecha_intervencion,
         ZONA_COLOMBIA,
@@ -48,6 +53,7 @@ def ubicacion(equipo):
 
 
 class Command(BaseCommand):
+    """Revisa los mantenimientos que vencen hoy. Por defecto simula y no envía correos."""
     help = (
         "Revisa los mantenimientos que vencen hoy. "
         "Por defecto simula y no envía correos."
@@ -55,6 +61,12 @@ class Command(BaseCommand):
 
     
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--enviar``: Envía las alertas que vencen hoy.
+        - ``--probar-correo``: Envía un correo de prueba al destinatario configurado, sin crear alertas ni modificar registros.
+        - ``--fecha-prueba``: Simula la revisión en una fecha específica, sin enviar correos ni crear alertas.
+        """
         parser.add_argument(
             "--enviar",
             action="store_true",
@@ -81,6 +93,10 @@ class Command(BaseCommand):
         )
     
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--enviar`` solo muestra lo que haría; no envía correos.
+        """
         enviar = options["enviar"]
         probar_correo = options["probar_correo"]
         fecha_prueba = options.get("fecha_prueba")

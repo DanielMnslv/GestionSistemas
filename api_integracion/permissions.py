@@ -1,3 +1,4 @@
+"""Permisos de la API de integración."""
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
@@ -18,4 +19,5 @@ class SoloLecturaIntegracion(BasePermission):
     )
 
     def has_permission(self, request, view):
+        """Permite solo GET, HEAD y OPTIONS."""
         return request.method in SAFE_METHODS

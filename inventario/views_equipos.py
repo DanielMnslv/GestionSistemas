@@ -63,6 +63,11 @@ def detalle_de(equipo):
 
 
 def formulario_detalle(equipo, data=None, usuario=None):
+    """Devuelve el formulario de detalle según el tipo del equipo, o None si el tipo no tiene.
+
+    Si el formulario maneja licencias, solo las muestra a quien tiene el
+    permiso "licencias".
+    """
     clase = FORMULARIOS_DETALLE.get(equipo.tipo)
     if clase is None:
         return None
@@ -187,6 +192,7 @@ def repartir_columnas(secciones):
 
     def peso(filas):
         # Las listas de más de 6 filas se muestran en dos columnas.
+        """Calcula cuántas columnas ocupa un grupo según cuántas filas y qué tan largas son."""
         total = 2
         cortas = 0
         for _, v in filas:
@@ -227,6 +233,7 @@ def ficha_modal(equipo, usuario):
 
     def limpiar(filas):
         # Se conservan los vacíos para mostrarlos con el marcador uniforme de la ficha.
+        """Devuelve las filas tal cual; los vacíos se pintan como "Sin dato"."""
         return list(filas)
 
     secciones = []
@@ -366,6 +373,7 @@ def ficha_modal(equipo, usuario):
     datos_de_baja = ("Fecha de baja", "Motivo de baja")
 
     def cuenta(filas):
+        """Filas que cuentan para la ficha; en equipos activos se omiten los datos de baja."""
         return [
             (e, v) for e, v in filas
             if not (equipo.activo and e in datos_de_baja)
@@ -606,6 +614,7 @@ def _junto(*partes):
 
 
 def _rel(equipo, nombre):
+    """Devuelve el detalle relacionado ``nombre`` del equipo, o None si no existe."""
     try:
         return getattr(equipo, nombre)
     except Exception:
@@ -669,6 +678,17 @@ COLUMNAS_POR_TIPO = {
 
 @login_required
 def equipos_lista(request):
+    """Lista de equipos con búsqueda, filtros, pestañas por tipo y paginación.
+
+    Parámetros GET principales:
+        q: busca por placa, serial, marca, modelo, responsable, cliente o puesto.
+        tipo: tipo de equipo (pestañas); cambia las columnas de la tabla.
+        estado: "activos" (por defecto), "baja" o vacío para todos.
+        Además: estado operativo, asignación, disponibilidad, revisión,
+        accesorios y datos incompletos.
+
+    Con ``exportar`` descarga a Excel lo que está filtrado.
+    """
     equipos = Equipo.objects.select_related("radio", "gps", "computador", "impresora", "alarma")
 
     busqueda = request.GET.get("q", "").strip()
@@ -989,6 +1009,11 @@ def _volver_a_pestanas(placa, pestana="resumen"):
 
 
 def pasos_formulario_equipo(formulario, detalle):
+    """Agrupa los campos del formulario de equipo en pasos (Identificación, Responsable…).
+
+    La plantilla los muestra como secciones; los campos del detalle por tipo
+    van en su propio paso.
+    """
     pasos = []
     campos_comunes = {
         "Identificación": (
@@ -1036,6 +1061,12 @@ def render_equipo_pestanas(
     request, equipo, formulario_edicion=None, detalle_edicion=None,
     pestana_inicial=None, formulario_entrega=None,
 ):
+    """Pinta la ficha del equipo con sus pestañas (resumen, detalle, entregas,
+    mantenimientos, política, historial).
+
+    Se usa para mostrarla normalmente y para volver a pintarla con los
+    errores de un formulario de edición o entrega.
+    """
     pestana_inicial = pestana_inicial or request.GET.get("pestana", "resumen")
     # Los datos vacíos no se ocultan: la plantilla los marca como "Sin dato".
     secciones_detalle = [
@@ -1088,6 +1119,7 @@ def render_equipo_pestanas(
 @login_required
 @xframe_options_sameorigin
 def equipo_hoja_vida(request, placa):
+    """Hoja de vida imprimible del equipo: datos, características, entregas y mantenimientos."""
     equipo = get_object_or_404(Equipo, placa=placa)
     # Características agrupadas (Hardware, Red, Licencias…), solo con datos.
     secciones_detalle = [
@@ -1116,6 +1148,11 @@ def equipo_hoja_vida(request, placa):
 @login_required
 @requiere_permiso("equipos")
 def equipo_crear(request):
+    """Registro de un equipo nuevo.
+
+    Sin ``tipo`` muestra la elección de tipo; los radios tienen su propio
+    formulario (``radio_crear``).
+    """
     tipo = request.GET.get("tipo", "")
     if tipo == Equipo.Tipo.RADIO:
         return redirect("inventario:radio_crear")
@@ -1133,6 +1170,11 @@ def equipo_crear(request):
 @login_required
 @requiere_permiso("equipos")
 def equipo_editar(request, placa):
+    """Edición de un equipo; los radios se redirigen a su propio formulario.
+
+    Con ``embed=1`` el formulario viene de la ficha y, si hay errores, se
+    vuelve a pintar la ficha con ellos.
+    """
     equipo = get_object_or_404(Equipo, placa=placa)
     if equipo.tipo == Equipo.Tipo.RADIO and hasattr(equipo, "radio"):
         return redirect("inventario:radio_editar", equipo.radio.pk)
@@ -1160,6 +1202,7 @@ def equipo_editar(request, placa):
 
 
 def guardar_equipo(request, equipo, titulo):
+    """Valida y guarda el equipo junto con su detalle por tipo, o muestra el formulario."""
     datos = request.POST if request.method == "POST" else None
     formulario = EquipoForm(datos, instance=equipo)
     detalle = formulario_detalle(equipo, datos, request.user)
@@ -1186,6 +1229,7 @@ def guardar_equipo(request, equipo, titulo):
 @login_required
 @requiere_permiso("equipos")
 def equipo_dar_baja(request, placa):
+    """Da de baja un equipo (que no sea radio) con su motivo. Solo por POST."""
     equipo = get_object_or_404(Equipo, placa=placa)
     if request.method != "POST" or equipo.tipo == Equipo.Tipo.RADIO:
         return _volver_a_pestanas(placa)
@@ -1209,6 +1253,7 @@ def equipo_dar_baja(request, placa):
 @login_required
 @requiere_permiso("equipos")
 def equipo_reactivar(request, placa):
+    """Vuelve a activar un equipo dado de baja y borra los datos de la baja. Solo por POST."""
     equipo = get_object_or_404(Equipo, placa=placa)
     if request.method == "POST" and not equipo.activo and (
         equipo.tipo != Equipo.Tipo.RADIO
@@ -1227,6 +1272,7 @@ ORDEN_ESTADO = {codigo: posicion for posicion, (codigo, _) in enumerate(ESTADOS)
 
 
 def _contiene(texto, aguja):
+    """Indica si ``aguja`` (en minúsculas) está dentro de ``texto``."""
     return aguja in (texto or "").lower()
 
 
@@ -1292,6 +1338,11 @@ def _exportar_mantenimientos(equipos, hoy):
 
 @login_required
 def panel_mantenimientos(request):
+    """Tablero de mantenimientos: semáforo por tipo de equipo y lista de equipos
+    con su estado (vigente, próximo, vencido, sin registro).
+
+    Admite filtros por tipo, estado y búsqueda.
+    """
     hoy = hoy_colombia()
     equipos = equipos_con_estado(
         Equipo.objects.filter(activo=True).select_related("radio"), hoy
@@ -1305,6 +1356,7 @@ def panel_mantenimientos(request):
         fila[equipo.estado_mantenimiento] += 1
 
     def porcentaje_al_dia(conteos):
+        """Porcentaje de equipos vigentes o próximos sobre el total."""
         total = sum(conteos.values())
         if not total:
             return 0
@@ -1486,6 +1538,7 @@ def equipo_entregar(request, placa):
 @login_required
 @requiere_permiso("entregas")
 def equipo_devolver(request, asignacion_id):
+    """Registra la devolución de un equipo entregado a un funcionario. Solo por POST."""
     if request.method != "POST":
         return redirect("inventario:equipos_lista")
     with transaction.atomic():
@@ -1516,6 +1569,7 @@ def equipo_devolver(request, asignacion_id):
 @login_required
 @xframe_options_sameorigin
 def equipo_acta(request, asignacion_id):
+    """Acta de entrega de un equipo a un funcionario, lista para imprimir."""
     asignacion = get_object_or_404(
         AsignacionEquipo.objects.select_related(
             "equipo", "funcionario", "entregado_por"
@@ -1537,6 +1591,7 @@ def equipo_acta(request, asignacion_id):
 @login_required
 @requiere_permiso("equipos")
 def equipo_cambio_gps(request, placa):
+    """Registra un cambio de línea, operador o vehículo de un GPS y actualiza su detalle."""
     equipo = get_object_or_404(Equipo, placa=placa, tipo=Equipo.Tipo.GPS)
     gps = getattr(equipo, "gps", None) or DetalleGPS(equipo=equipo)
     formulario = CambioGPSForm(request.POST or None, initial={
@@ -1589,6 +1644,10 @@ def _abrir_politica_en_ventana(**parametros):
 @login_required
 @requiere_permiso("mantenimientos")
 def politica_registrar(request, placa):
+    """Verificación de la política de seguridad de un computador o tableta.
+
+    Se abre en ventana emergente sobre la pantalla de política.
+    """
     equipo = get_object_or_404(Equipo, placa=placa, tipo__in=TIPOS_CON_POLITICA)
     if not pide_modal(request):
         return _abrir_politica_en_ventana(abrir="verificar", equipo=equipo.placa)
@@ -1626,6 +1685,7 @@ def politica_registrar(request, placa):
 
 @login_required
 def politica_detalle(request, pk):
+    """Muestra una verificación de política con la respuesta de cada punto."""
     from .politica import PUNTOS
 
     verificacion = get_object_or_404(
@@ -1730,6 +1790,9 @@ def _exportar_politica(equipos, hoy):
 
 @login_required
 def politica_lista(request):
+    """Pantalla de la política de seguridad: estado de cada computador
+    (al día, por vencer, vencida, sin verificar) y del antivirus.
+    """
     from . import politica
 
     hoy = hoy_colombia()
@@ -1875,6 +1938,7 @@ def politica_lista(request):
 @login_required
 @requiere_permiso("licencias")
 def equipo_renovar_antivirus(request, placa):
+    """Registra la renovación del antivirus de un computador y actualiza su detalle."""
     equipo = get_object_or_404(Equipo, placa=placa, tipo__in=TIPOS_CON_POLITICA)
     detalle = getattr(equipo, "computador", None) or DetalleComputador(equipo=equipo)
     formulario = RenovacionAntivirusForm(request.POST or None, initial={

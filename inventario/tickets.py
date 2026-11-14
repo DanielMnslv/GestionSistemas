@@ -24,14 +24,17 @@ DIAS_CIERRE_AUTOMATICO = 3
 
 
 class TransicionInvalida(Exception):
+    """La solicitud no puede pasar al estado pedido desde su estado actual."""
     pass
 
 
 def puede_pasar(ticket, estado):
+    """Indica si la solicitud puede pasar a ``estado`` (ver ``TRANSICIONES``)."""
     return estado in TRANSICIONES[ticket.estado]
 
 
 def _validar(ticket, estado):
+    """Lanza ``TransicionInvalida`` si el cambio de estado no está permitido."""
     if not puede_pasar(ticket, estado):
         raise TransicionInvalida(
             f"El ticket {ticket.numero} está {ticket.get_estado_display().lower()} "
@@ -40,6 +43,10 @@ def _validar(ticket, estado):
 
 
 def registrar_evento(ticket, tipo, usuario=None, texto="", publico=True):
+    """Agrega un evento al historial de la solicitud.
+
+    ``publico`` indica si el solicitante lo ve en su página del caso.
+    """
     return EventoTicket.objects.create(
         ticket=ticket, tipo=tipo, usuario=usuario, texto=texto, publico=publico
     )
@@ -47,6 +54,7 @@ def registrar_evento(ticket, tipo, usuario=None, texto="", publico=True):
 
 def _avisar(ticket, evento):
     # Importación tardía: notificaciones usa este módulo.
+    """Envía el correo del evento cuando la transacción termina bien."""
     from .notificaciones import notificar_ticket
 
     transaction.on_commit(lambda: notificar_ticket(ticket, evento))
@@ -54,6 +62,7 @@ def _avisar(ticket, evento):
 
 @transaction.atomic
 def crear(usuario=None, **datos):
+    """Crea una solicitud, registra el evento "Creado" y avisa por correo."""
     ticket = Ticket.objects.create(creado_por=usuario, **datos)
     registrar_evento(
         ticket, EventoTicket.Tipo.CREADO, usuario,
@@ -66,6 +75,7 @@ def crear(usuario=None, **datos):
 @transaction.atomic
 def asignar(ticket, tecnico, usuario, fecha_programada=None, franja="",
             prioridad=None):
+    """Asigna o reprograma la solicitud: técnico, fecha, franja y prioridad."""
     _validar(ticket, E.ASIGNADO)
     reprogramacion = ticket.estado == E.ASIGNADO
     if prioridad:
@@ -92,6 +102,7 @@ def asignar(ticket, tecnico, usuario, fecha_programada=None, franja="",
 
 @transaction.atomic
 def iniciar_atencion(ticket, usuario):
+    """Marca la solicitud en atención; si no tenía técnico, queda quien la inicia."""
     _validar(ticket, E.EN_ATENCION)
     ticket.estado = E.EN_ATENCION
     ticket.atencion_en = timezone.now()
@@ -106,6 +117,11 @@ def iniciar_atencion(ticket, usuario):
 @transaction.atomic
 def resolver(ticket, usuario, solucion, firma="", firma_nombre="",
              intervencion=None):
+    """Marca la solicitud como resuelta con la solución, la firma y la intervención.
+
+    El solicitante tiene ``DIAS_CIERRE_AUTOMATICO`` días para confirmar o
+    reabrir; si no responde, se cierra sola.
+    """
     _validar(ticket, E.RESUELTO)
     ahora = timezone.now()
     ticket.estado = E.RESUELTO
@@ -126,6 +142,7 @@ def resolver(ticket, usuario, solucion, firma="", firma_nombre="",
 
 
 def _cerrar(ticket, tipo, texto, usuario=None, automatico=False):
+    """Cierra la solicitud y registra el evento."""
     _validar(ticket, E.CERRADO)
     ticket.estado = E.CERRADO
     ticket.cerrado_en = timezone.now()
@@ -144,6 +161,10 @@ def confirmar(ticket, usuario=None):
 
 @transaction.atomic
 def cerrar_automaticamente(ticket):
+    """Cierra una solicitud resuelta sin respuesta del solicitante en el plazo.
+
+    La usa el comando ``cerrar_tickets_resueltos``.
+    """
     return _cerrar(
         ticket, EventoTicket.Tipo.CERRADO,
         f"Cerrado automáticamente: pasaron {DIAS_CIERRE_AUTOMATICO} días sin "
@@ -154,6 +175,7 @@ def cerrar_automaticamente(ticket):
 
 @transaction.atomic
 def reabrir(ticket, motivo, usuario=None):
+    """Reabre una solicitud resuelta: vuelve a asignada si tenía técnico, si no a abierta."""
     destino = E.ASIGNADO if ticket.tecnico_id else E.ABIERTO
     _validar(ticket, destino)
     ticket.estado = destino
@@ -167,6 +189,7 @@ def reabrir(ticket, motivo, usuario=None):
 
 @transaction.atomic
 def cancelar(ticket, motivo, usuario):
+    """Cancela la solicitud con su motivo."""
     _validar(ticket, E.CANCELADO)
     ticket.estado = E.CANCELADO
     ticket.cerrado_en = timezone.now()
@@ -176,6 +199,7 @@ def cancelar(ticket, motivo, usuario):
 
 
 def comentar(ticket, texto, usuario, publico=False):
+    """Agrega un comentario al historial (interno salvo que ``publico`` sea verdadero)."""
     return registrar_evento(
         ticket, EventoTicket.Tipo.COMENTARIO, usuario, texto, publico
     )

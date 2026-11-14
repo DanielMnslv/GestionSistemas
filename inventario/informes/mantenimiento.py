@@ -15,6 +15,7 @@ FILTRO_TIPO_MANT = Filtro("tipo_mant", "Tipo de mantenimiento", "select",
 
 
 def _rango(consulta, valores, campo):
+    """Filtra la consulta entre las fechas ``desde`` y ``hasta`` de los filtros."""
     if valores.get("desde"):
         consulta = consulta.filter(**{f"{campo}__gte": valores["desde"]})
     if valores.get("hasta"):
@@ -23,6 +24,7 @@ def _rango(consulta, valores, campo):
 
 
 class _SemaforoBase(Informe):
+    """Base común de los informes del semáforo de mantenimiento."""
     categoria = CATEGORIA
     columnas = (
         Columna("placa", "Placa", 1), Columna("tipo", "Tipo", 1), Columna("marca", "Marca y modelo", 1.8),
@@ -34,6 +36,7 @@ class _SemaforoBase(Informe):
     estados_incluidos = None
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de del informe según los filtros elegidos (``valores``)."""
         consulta = Equipo.objects.filter(activo=True).select_related("radio")
         if valores.get("tipo"):
             consulta = consulta.filter(tipo=valores["tipo"])
@@ -58,6 +61,7 @@ class _SemaforoBase(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos."""
         etiquetas = [e for _, e in ESTADOS]
         conteo = {e: 0 for e in etiquetas}
         for f in filas:
@@ -66,6 +70,10 @@ class _SemaforoBase(Informe):
 
 
 class SemaforoMantenimiento(_SemaforoBase):
+    """Informe «Estado del mantenimiento preventivo».
+
+    Cada equipo activo con su último mantenimiento y cuándo vence el siguiente (cada 6 meses).
+    """
     clave = "mantenimiento_semaforo"
     titulo = "Estado del mantenimiento preventivo"
     descripcion = "Cada equipo activo con su último mantenimiento y cuándo vence el siguiente (cada 6 meses)."
@@ -73,6 +81,10 @@ class SemaforoMantenimiento(_SemaforoBase):
 
 
 class MantenimientosVencidos(_SemaforoBase):
+    """Informe «Equipos con mantenimiento vencido o sin mantenimiento».
+
+    Lista de trabajo: los equipos que ya deberían haber tenido mantenimiento, del más atrasado al menos atrasado.
+    """
     clave = "mantenimiento_vencidos"
     titulo = "Equipos con mantenimiento vencido o sin mantenimiento"
     descripcion = "Lista de trabajo: los equipos que ya deberían haber tenido mantenimiento, del más atrasado al menos atrasado."
@@ -81,6 +93,10 @@ class MantenimientosVencidos(_SemaforoBase):
 
 
 class MantenimientosProximos(_SemaforoBase):
+    """Informe «Mantenimientos por vencer (próximos 30 días)».
+
+    Equipos cuyo mantenimiento vence pronto, para programar las visitas.
+    """
     clave = "mantenimiento_proximos"
     titulo = "Mantenimientos por vencer (próximos 30 días)"
     descripcion = "Equipos cuyo mantenimiento vence pronto, para programar las visitas."
@@ -89,6 +105,7 @@ class MantenimientosProximos(_SemaforoBase):
 
 
 def _clasificar(g, tipo):
+    """Suma el mantenimiento al contador de su clase (preventivo, correctivo u otro)."""
     if tipo == MantenimientoEquipo.Tipo.PREVENTIVO:
         g["preventivos"] += 1
     elif tipo in (MantenimientoEquipo.Tipo.CORRECTIVO, MantenimientoEquipo.Tipo.REPARACION):
@@ -98,6 +115,10 @@ def _clasificar(g, tipo):
 
 
 class MantenimientosRealizados(Informe):
+    """Informe «Mantenimientos realizados».
+
+    Historial de intervenciones por rango de fechas, tipo, técnico y resultado.
+    """
     clave = "mantenimientos_realizados"
     titulo = "Mantenimientos realizados"
     categoria = CATEGORIA
@@ -119,6 +140,7 @@ class MantenimientosRealizados(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Mantenimientos realizados» según los filtros elegidos (``valores``)."""
         consulta = MantenimientoEquipo.objects.select_related("equipo")
         consulta = _rango(consulta, valores, "fecha_intervencion__date")
         if valores["tipo_mant"]:
@@ -140,6 +162,7 @@ class MantenimientosRealizados(Informe):
         } for m in consulta.order_by("-fecha_intervencion", "-id")]
 
     def resumen(self, filas):
+        """Totales del encabezado: Intervenciones, Preventivos, Correctivos, Equipos atendidos."""
         return [("Intervenciones", len(filas)),
                 ("Preventivos", sum(1 for f in filas if "preventivo" in f["tipo"].lower())),
                 ("Correctivos", sum(1 for f in filas if "correctivo" in f["tipo"].lower())),
@@ -147,6 +170,10 @@ class MantenimientosRealizados(Informe):
 
 
 class MantenimientosPorTecnico(Informe):
+    """Informe «Mantenimientos por técnico».
+
+    Cuántas intervenciones hizo cada técnico y con qué resultado.
+    """
     clave = "mantenimientos_por_tecnico"
     titulo = "Mantenimientos por técnico"
     categoria = CATEGORIA
@@ -161,6 +188,7 @@ class MantenimientosPorTecnico(Informe):
     filtros = (Filtro("desde", "Desde", "date"), Filtro("hasta", "Hasta", "date"))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Mantenimientos por técnico» según los filtros elegidos (``valores``)."""
         consulta = _rango(MantenimientoEquipo.objects.all(), valores, "fecha_intervencion__date")
         grupos = {}
         for m in consulta.values("tecnico_responsable", "tipo", "resultado", "equipo_id", "fecha_intervencion"):
@@ -186,10 +214,15 @@ class MantenimientosPorTecnico(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Técnicos, Intervenciones."""
         return [("Técnicos", len(filas)), ("Intervenciones", sum(f["total"] for f in filas))]
 
 
 class MantenimientosPorMes(Informe):
+    """Informe «Mantenimientos por mes».
+
+    Cuántas intervenciones se hicieron cada mes, para ver la carga de trabajo.
+    """
     clave = "mantenimientos_por_mes"
     titulo = "Mantenimientos por mes"
     categoria = CATEGORIA
@@ -205,6 +238,7 @@ class MantenimientosPorMes(Informe):
              "agosto", "septiembre", "octubre", "noviembre", "diciembre")
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Mantenimientos por mes» según los filtros elegidos (``valores``)."""
         consulta = _rango(MantenimientoEquipo.objects.all(), valores, "fecha_intervencion__date")
         grupos = {}
         for m in consulta.values("tipo", "equipo_id", "fecha_intervencion"):
@@ -221,10 +255,15 @@ class MantenimientosPorMes(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Meses con actividad, Intervenciones."""
         return [("Meses con actividad", len(filas)), ("Intervenciones", sum(f["total"] for f in filas))]
 
 
 class TrabajoPendiente(Informe):
+    """Informe «Equipos con trabajo pendiente tras el último mantenimiento».
+
+    Equipos cuyo último mantenimiento quedó parcial, pendiente, no operativo o en pruebas.
+    """
     clave = "mantenimiento_trabajo_pendiente"
     titulo = "Equipos con trabajo pendiente tras el último mantenimiento"
     categoria = CATEGORIA
@@ -238,6 +277,7 @@ class TrabajoPendiente(Informe):
     filtros = (FILTRO_TIPO_EQUIPO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos con trabajo pendiente tras el último mantenimiento» según los filtros elegidos (``valores``)."""
         consulta = MantenimientoEquipo.objects.filter(equipo__activo=True).select_related("equipo")
         if valores["tipo"]:
             consulta = consulta.filter(equipo__tipo=valores["tipo"])
@@ -259,10 +299,15 @@ class TrabajoPendiente(Informe):
         return ordenar_por_placa(filas)
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos con trabajo pendiente."""
         return [("Equipos con trabajo pendiente", len(filas))]
 
 
 class MantenimientosProgramados(Informe):
+    """Informe «Mantenimientos programados».
+
+    Visitas programadas, cuáles se cumplieron y cuáles están atrasadas.
+    """
     clave = "mantenimientos_programados"
     titulo = "Mantenimientos programados"
     categoria = CATEGORIA
@@ -281,6 +326,7 @@ class MantenimientosProgramados(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Mantenimientos programados» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         consulta = MantenimientoProgramado.objects.select_related("equipo", "creado_por")
         estado = valores["estado"]
@@ -307,12 +353,17 @@ class MantenimientosProgramados(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Programados, Atrasados, Completados, Cancelados."""
         estados = [f["estado"] for f in filas]
         return [("Programados", len(filas)), ("Atrasados", estados.count("Atrasado")),
                 ("Completados", estados.count("Completado")), ("Cancelados", estados.count("Cancelado"))]
 
 
 class AlertasMantenimientoInforme(Informe):
+    """Informe «Alertas de mantenimiento enviadas».
+
+    Avisos de vencimiento generados por el sistema: enviados, pendientes y con error.
+    """
     clave = "alertas_mantenimiento"
     titulo = "Alertas de mantenimiento enviadas"
     categoria = CATEGORIA
@@ -329,6 +380,7 @@ class AlertasMantenimientoInforme(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Alertas de mantenimiento enviadas» según los filtros elegidos (``valores``)."""
         consulta = AlertaMantenimiento.objects.select_related("equipo")
         if valores["estado"]:
             consulta = consulta.filter(estado=valores["estado"])
@@ -341,6 +393,7 @@ class AlertasMantenimientoInforme(Informe):
         } for a in consulta.order_by("-fecha_vencimiento", "equipo__placa")]
 
     def resumen(self, filas):
+        """Totales del encabezado: Alertas, Enviadas, Pendientes, Con error."""
         estados = [f["estado"] for f in filas]
         return [("Alertas", len(filas)), ("Enviadas", estados.count("Enviada")),
                 ("Pendientes", estados.count("Pendiente")), ("Con error", estados.count("Error"))]

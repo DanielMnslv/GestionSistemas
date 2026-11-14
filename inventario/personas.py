@@ -23,6 +23,7 @@ from .models import (
 
 
 def _ced(valor):
+    """Cédula sin espacios en los extremos."""
     return (valor or "").strip()
 
 
@@ -103,6 +104,7 @@ def conteos_por_cedula():
 
 
 def retiro_en_proceso(funcionario):
+    """Retiro en proceso del funcionario, o None."""
     return funcionario.retiros.filter(
         estado=RetiroFuncionario.Estado.EN_PROCESO
     ).first()
@@ -128,6 +130,7 @@ def sincronizar_items(retiro):
 
 @transaction.atomic
 def iniciar_retiro(funcionario, motivo, fecha_retiro, observaciones, usuario):
+    """Crea el retiro y su lista de equipos por validar."""
     retiro = RetiroFuncionario.objects.create(
         funcionario=funcionario, motivo=motivo, fecha_retiro=fecha_retiro,
         observaciones=observaciones, creado_por=usuario,
@@ -137,6 +140,7 @@ def iniciar_retiro(funcionario, motivo, fecha_retiro, observaciones, usuario):
 
 
 def _cerrar_entrega_equipo(asignacion, usuario, nota):
+    """Marca como devuelta la entrega de un equipo al validar el retiro."""
     asignacion.estado = AsignacionEquipo.Estado.DEVUELTO
     asignacion.fecha_devolucion = timezone.now()
     asignacion.recibido_por = usuario
@@ -145,6 +149,7 @@ def _cerrar_entrega_equipo(asignacion, usuario, nota):
 
 
 def _cerrar_entrega_radio(asignacion, usuario, nota):
+    """Marca como devuelta la entrega de un radio al validar el retiro."""
     asignacion.estado = AsignacionRadio.Estado.DEVUELTO
     asignacion.fecha_devolucion = timezone.now()
     asignacion.recibido_por = usuario
@@ -156,6 +161,7 @@ def _cerrar_entrega_radio(asignacion, usuario, nota):
 
 
 def _entrega_vigente_radio(item):
+    """Entrega de radio del ítem si sigue vigente, o None."""
     a = item.asignacion_radio
     if a and a.estado == AsignacionRadio.Estado.ASIGNADO:
         return a
@@ -277,6 +283,9 @@ def validar_item(item, resultado, usuario, observaciones="", reasignado_a=None):
 
 
 def resumen_retiro(retiro):
+    """Cuenta los equipos del retiro: total, pendientes y con novedad, y si ya
+    se puede emitir el paz y salvo.
+    """
     items = list(retiro.items.all())
     total = len(items)
     pendientes = sum(1 for i in items if i.resultado == ItemRetiro.Resultado.PENDIENTE)
@@ -298,6 +307,10 @@ def resumen_retiro(retiro):
 
 @transaction.atomic
 def emitir_paz_y_salvo(retiro, usuario):
+    """Emite el paz y salvo y deja inactivo al funcionario.
+
+    Lanza ``ValueError`` si quedan equipos sin validar, dañados o faltantes.
+    """
     retiro = RetiroFuncionario.objects.select_for_update().get(pk=retiro.pk)
     sincronizar_items(retiro)
     if not resumen_retiro(retiro)["puede_emitir"]:

@@ -1,3 +1,7 @@
+"""Comando ``procesar_eventos_gestion_tic``: procesa Inbox de Gestión TIC y actualiza proyecciones remotas de solo lectura.
+
+Uso: ``python manage.py procesar_eventos_gestion_tic`` (opciones en ``--help``).
+"""
 import uuid
 
 from django.core.management.base import BaseCommand
@@ -14,13 +18,20 @@ ENTIDADES_PERMITIDAS = {
 
 
 class Command(BaseCommand):
+    """Procesa Inbox de Gestión TIC y actualiza proyecciones remotas de solo lectura."""
     help = "Procesa Inbox de Gestión TIC y actualiza proyecciones remotas de solo lectura."
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--limit``
+        - ``--retry-errors``
+        """
         parser.add_argument("--limit", type=int, default=100)
         parser.add_argument("--retry-errors", action="store_true")
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         estados = ["RECIBIDO"]
         if options["retry_errors"]:
             estados.append("ERROR")

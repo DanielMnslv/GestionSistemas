@@ -1,3 +1,7 @@
+"""Comando ``generar_revision_fisica``: genera un Excel con los radios que necesitan revisión física: seriales repetidos o dudosos, radios sin inventario físico y registros del Sheet que no se pudieron cruzar.
+
+Uso: ``python manage.py generar_revision_fisica`` (opciones en ``--help``).
+"""
 import re
 from datetime import date
 from pathlib import Path
@@ -36,6 +40,7 @@ LINEA_OMITIDO = re.compile(r"Fila (\d+) \(([^)]*)\): (.*)")
 
 
 class Command(BaseCommand):
+    """Genera un Excel con los radios que necesitan revisión física: seriales repetidos o dudosos, radios sin inventario físico y registros del Sheet que no se pudieron cruzar."""
     help = (
         "Genera un Excel con los radios que necesitan revisión física: "
         "seriales repetidos o dudosos, radios sin inventario físico y "
@@ -43,6 +48,11 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--salida``: Ruta del Excel a generar (por defecto, en la carpeta del proyecto).
+        """
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
         parser.add_argument(
             "--salida",
@@ -51,6 +61,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         salida = Path(
             options["salida"]
             or Path(settings.BASE_DIR)
@@ -190,6 +201,7 @@ class Command(BaseCommand):
         )
 
     def desde_omitidos(self, lineas, hoja, verificar):
+        """Convierte las líneas de "omitidos" de una importación en filas para revisar."""
         filas = []
         for linea in lineas:
             coincidencia = LINEA_OMITIDO.match(linea)
@@ -211,6 +223,7 @@ class Command(BaseCommand):
         return filas
 
     def escribir(self, salida, filas):
+        """Escribe el Excel de revisión física con formato y encabezados."""
         libro = openpyxl.Workbook()
         hoja = libro.active
         hoja.title = "Revisión"

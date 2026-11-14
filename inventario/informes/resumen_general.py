@@ -13,14 +13,20 @@ from .seguridad import AntivirusVencimientos, EstadoPolitica
 
 
 def _contar(filas, clave, valor):
+    """Cuántas filas tienen ``valor`` en ``clave``."""
     return sum(1 for f in filas if f[clave] == valor)
 
 
 def _filas(informe, **filtros):
+    """Filas de otro informe con los filtros dados (para reutilizar sus cálculos)."""
     return informe.obtener_filas(informe.validar_filtros(filtros))
 
 
 class ResumenGeneral(Informe):
+    """Informe «Resumen general del inventario».
+
+    Las cifras clave de equipos, radios, mantenimiento, seguridad, entregas y clientes en una sola página.
+    """
     clave = "resumen_general"
     titulo = "Resumen general del inventario"
     categoria = "General"
@@ -30,10 +36,12 @@ class ResumenGeneral(Informe):
     filtros = ()
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Resumen general del inventario» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         filas = []
 
         def agregar(area, indicador, valor):
+            """Agrega un indicador al resumen."""
             filas.append({"area": area, "indicador": indicador, "valor": valor})
 
         activos = Equipo.objects.filter(activo=True)
@@ -88,7 +96,9 @@ class ResumenGeneral(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos en servicio, Radios en servicio, Mantenimientos vencidos, Antivirus vencidos, Radios entregados."""
         def valor(indicador):
+            """Valor de un indicador ya calculado (0 si no está)."""
             return next((f["valor"] for f in filas if f["indicador"] == indicador), 0)
         return [("Equipos en servicio", valor("Equipos en servicio")),
                 ("Radios en servicio", valor("Radios en servicio")),

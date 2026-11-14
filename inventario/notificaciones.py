@@ -13,22 +13,26 @@ T = EventoTicket.Tipo
 
 
 def enlace_caso(ticket):
+    """Enlace público del caso para el solicitante (con su clave secreta)."""
     return settings.SITIO_URL_PUBLICO.rstrip("/") + reverse("soporte_caso", args=[ticket.token])
 
 
 def enlace_interno(ticket):
+    """Enlace al detalle de la solicitud dentro de la plataforma."""
     return settings.SITIO_URL.rstrip("/") + reverse(
         "inventario:ticket_detalle", args=[ticket.numero]
     )
 
 
 def destinatarios_ti():
+    """Correos del área de TI que reciben los avisos."""
     from .management.commands.procesar_alertas_mantenimiento import DESTINATARIOS
 
     return list(DESTINATARIOS)
 
 
 def resumen(ticket):
+    """Texto con los datos principales de la solicitud para los correos."""
     lineas = [f"Caso: {ticket.numero}", f"Tipo: {ticket.get_tipo_display()}"]
     if ticket.equipo_id:
         lineas.append(
@@ -115,6 +119,11 @@ def mensajes_para(ticket, evento):
 
 
 def notificar_ticket(ticket, evento):
+    """Envía los correos que corresponden a un evento de la solicitud.
+
+    Las solicitudes importadas del Sheet no generan correos. Un error de envío
+    no interrumpe el flujo: queda en la bitácora.
+    """
     if ticket.origen == Ticket.Origen.IMPORTADO:
         return
     for destinatarios, asunto, cuerpo in mensajes_para(ticket, evento):

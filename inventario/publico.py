@@ -14,6 +14,7 @@ RUTAS_PUBLICAS = ("/soporte/", "/mi-soporte/", "/cuenta/", "/login/", "/logout/"
 
 
 def es_host_publico(request):
+    """Indica si la petición llega por un dominio público (``HOSTS_PUBLICOS``)."""
     hosts = getattr(settings, "HOSTS_PUBLICOS", [])
     if not hosts:
         return False
@@ -31,10 +32,16 @@ def ip_cliente(request):
 
 
 class SoloSoportePublicoMiddleware:
+    """En el dominio público solo deja abrir el soporte y el portal.
+
+    Cualquier otra ruta (inventario, administración…) responde 404.
+    """
     def __init__(self, get_response):
+        """Recibe el siguiente paso de la cadena de Django."""
         self.get_response = get_response
 
     def __call__(self, request):
+        """Redirige la raíz al portal y bloquea las rutas no públicas."""
         if es_host_publico(request):
             ruta = request.path
             if ruta == "/":
@@ -52,9 +59,11 @@ class SoloPortalSolicitanteMiddleware:
     """Las cuentas de funcionarios (rol Solicitante) solo ven Mi soporte."""
 
     def __init__(self, get_response):
+        """Recibe el siguiente paso de la cadena de Django."""
         self.get_response = get_response
 
     def __call__(self, request):
+        """Si la cuenta es solo de solicitante, la lleva al portal fuera de sus rutas."""
         from .permisos import solo_solicitante
 
         if solo_solicitante(request.user):

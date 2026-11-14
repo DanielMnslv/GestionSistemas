@@ -49,14 +49,17 @@ def festivos(anio):
 
 
 def es_habil(dia):
+    """Indica si el día es hábil: de lunes a viernes y no festivo en Colombia."""
     return dia.weekday() < 5 and dia not in festivos(dia.year)
 
 
 def nombre_dia(dia):
+    """Nombre corto del día para mostrar, por ejemplo "Lunes 17 nov"."""
     return f"{DIAS_SEMANA[dia.weekday()]} {dia.day} {MESES[dia.month - 1]}"
 
 
 def franjas():
+    """Franjas de visita (mañana, tarde) definidas en el modelo Ticket."""
     from .models import Ticket
     return list(Ticket.Franja.choices)
 
@@ -77,6 +80,7 @@ def ocupacion(desde, hasta):
 
 
 def dias_habiles(desde, cantidad):
+    """Los siguientes ``cantidad`` días hábiles a partir de ``desde`` (incluido)."""
     dias, dia = [], desde
     while len(dias) < cantidad:
         if es_habil(dia):
@@ -119,4 +123,5 @@ def leer_valor(valor):
 
 
 def hay_cupo(fecha, franja):
+    """Indica si la franja de ese día tiene cupos libres (máximo ``CUPOS_POR_FRANJA``)."""
     return ocupacion(fecha, fecha).get((fecha, franja), 0) < CUPOS_POR_FRANJA

@@ -1,3 +1,9 @@
+"""Vistas de radios, mantenimientos (registrados y programados) y entregas de radios.
+
+Las vistas de equipos, personas, mesa de ayuda y catálogos están en los
+archivos ``views_*.py``. Cada vista exige sesión y, si cambia datos, el
+permiso de su acción (``requiere_permiso``; ver ``inventario/permisos.py``).
+"""
 
 from datetime import date
 
@@ -38,6 +44,7 @@ from .models import (
 )
 
 def _fecha_iso_valida(valor):
+    """Indica si ``valor`` es una fecha válida en formato AAAA-MM-DD."""
     try:
         return date.fromisoformat(valor).isoformat() == valor
     except (ValueError, TypeError):
@@ -127,6 +134,7 @@ def filas_por_pagina(request, defecto):
 
 
 def _volver_a_equipos(radio_id):
+    """Redirige a la lista de equipos buscando la placa del radio."""
     radio = get_object_or_404(
         Radio.objects.select_related("equipo"), pk=radio_id
     )
@@ -136,6 +144,7 @@ def _volver_a_equipos(radio_id):
 
 
 def _volver_a_pestana_radio(radio_id, pestana):
+    """Redirige a la ficha del radio abierta en la pestaña indicada."""
     radio = get_object_or_404(
         Radio.objects.select_related("equipo"), pk=radio_id
     )
@@ -148,6 +157,7 @@ def _volver_a_pestana_radio(radio_id, pestana):
 
 
 def _render_radio_editar_con_errores(request, radio, formulario):
+    """Vuelve a pintar la ficha del radio con los errores del formulario de edición."""
     return render(request, "inventario/radio_pestanas.html", {
         "radio": radio,
         "asignaciones": [],
@@ -163,12 +173,14 @@ def _render_radio_editar_con_errores(request, radio, formulario):
 @login_required
 @xframe_options_sameorigin
 def radio_detalle(request, radio_id):
+    """Enlace antiguo al detalle del radio: lleva a la lista de equipos."""
     return _volver_a_equipos(radio_id)
 
 
 @login_required
 @requiere_permiso("radios")
 def radio_crear(request):
+    """Registro de un radio nuevo."""
     formulario = RadioForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
         radio = formulario.save()
@@ -186,6 +198,7 @@ def radio_crear(request):
 @xframe_options_sameorigin
 @requiere_permiso("radios")
 def radio_editar(request, radio_id):
+    """Guarda la edición de un radio enviada desde su ficha. Solo por POST."""
     radio = get_object_or_404(Radio, pk=radio_id)
     if request.method != "POST":
         return _volver_a_equipos(radio.pk)
@@ -212,6 +225,11 @@ def radio_editar(request, radio_id):
 @xframe_options_sameorigin
 @requiere_permiso("radios")
 def radio_transferir_componentes(request, radio_id):
+    """Pasa piezas (batería, antena, cargador…) de un radio a otro radio activo.
+
+    El radio de origen queda sin esas piezas y el destino las recibe con su
+    estado. Queda registrado en la auditoría.
+    """
     if request.method != "POST":
         return _volver_a_equipos(radio_id)
 
@@ -323,6 +341,7 @@ def radio_transferir_componentes(request, radio_id):
 @xframe_options_sameorigin
 @requiere_permiso("radios")
 def radio_dar_baja(request, radio_id):
+    """Da de baja un radio con su motivo. Si tiene una entrega vigente, no se permite."""
     radio = get_object_or_404(Radio, pk=radio_id)
     formulario = RadioBajaForm(request.POST or None)
     if request.method != "POST":
@@ -360,6 +379,7 @@ def radio_dar_baja(request, radio_id):
 @xframe_options_sameorigin
 @requiere_permiso("radios")
 def radio_reactivar(request, radio_id):
+    """Vuelve a activar un radio dado de baja; su estado queda por indicar."""
     radio = get_object_or_404(Radio, pk=radio_id)
     if request.method != "POST":
         return _volver_a_equipos(radio.pk)
@@ -382,6 +402,9 @@ def radio_reactivar(request, radio_id):
 
 @login_required
 def mantenimientos_lista(request):
+    """Lista de mantenimientos registrados con búsqueda y filtros por tipo,
+    clase de mantenimiento, especialista y fechas.
+    """
     mantenimientos = MantenimientoEquipo.objects.select_related(
         "equipo", "equipo__radio", "registrado_por"
     ).all()
@@ -511,6 +534,10 @@ def mantenimientos_lista(request):
 @login_required
 @requiere_permiso("mantenimientos")
 def mantenimiento_crear(request):
+    """Registro de un mantenimiento (en ventana emergente).
+
+    Con ``equipo`` en la URL el equipo queda fijo.
+    """
     if not pide_modal(request):
         return abrir_en_ventana(request, "registrar")
 
@@ -553,6 +580,7 @@ def mantenimiento_crear(request):
 
 @login_required
 def mantenimientos_programados_lista(request):
+    """Lista de visitas programadas, filtrada por estado (por defecto, programadas)."""
     programaciones = (
         MantenimientoProgramado.objects.select_related(
             "equipo", "equipo__radio", "creado_por"
@@ -630,6 +658,7 @@ def mantenimientos_programados_lista(request):
 @login_required
 @requiere_permiso("programar")
 def mantenimiento_programado_crear(request):
+    """Programación de una visita de mantenimiento (en ventana emergente)."""
     if not pide_modal(request):
         return abrir_en_ventana(request, "programar")
 
@@ -663,6 +692,10 @@ def mantenimiento_programado_crear(request):
 @login_required
 @requiere_permiso("mantenimientos")
 def mantenimiento_programado_completar(request, programacion_id):
+    """Completa una visita programada registrando el mantenimiento realizado.
+
+    La programación queda como realizada y enlazada al mantenimiento.
+    """
     if not pide_modal(request):
         return abrir_completar_en_ventana(programacion_id)
 
@@ -760,6 +793,7 @@ def mantenimiento_programado_completar(request, programacion_id):
 @login_required
 @requiere_permiso("programar")
 def mantenimiento_programado_cancelar(request, programacion_id):
+    """Cancela una visita programada. Solo por POST."""
     if request.method != "POST":
         return redirect("inventario:mantenimientos_programados_lista")
 
@@ -880,6 +914,7 @@ def asignacion_crear(request):
 @login_required
 @xframe_options_sameorigin
 def asignacion_acta(request, asignacion_id):
+    """Acta de entrega de un radio a un puesto, lista para imprimir."""
     asignacion = get_object_or_404(
         AsignacionRadio.objects.select_related("radio", "entregado_por"),
         pk=asignacion_id,
@@ -894,6 +929,7 @@ def asignacion_acta(request, asignacion_id):
 @xframe_options_sameorigin
 @requiere_permiso("entregas")
 def asignacion_devolver(request, asignacion_id):
+    """Registra la devolución de un radio entregado y su estado al volver. Solo por POST."""
     if request.method != "POST":
         return redirect("inventario:equipos_lista")
 

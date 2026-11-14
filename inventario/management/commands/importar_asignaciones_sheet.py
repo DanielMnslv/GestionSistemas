@@ -1,3 +1,7 @@
+"""Comando ``importar_asignaciones_sheet``: importa el historial de entregas de radios desde la hoja RESPUESTA-RADIOS del Google Sheet. Cada respuesta del formulario es una entrega; la anterior del mismo radio se cierra como devuelta. Solo agrega respuestas posteriores a la última asignación registrada en la plataforma. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_asignaciones_sheet`` (opciones en ``--help``).
+"""
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -53,6 +57,7 @@ def destino(entrega):
 
 
 class Command(BaseCommand):
+    """Importa el historial de entregas de radios desde la hoja RESPUESTA-RADIOS del Google Sheet. Cada respuesta del formulario es una entrega; la anterior del mismo radio se cierra como devuelta. Solo agrega respuestas posteriores a la última asignación registrada en la plataforma. Es una simulación salvo con --confirmar."""
     help = (
         "Importa el historial de entregas de radios desde la hoja "
         "RESPUESTA-RADIOS del Google Sheet. Cada respuesta del formulario "
@@ -63,6 +68,13 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--usuario``: Usuario que figura como responsable de las entregas.
+        - ``--archivo``: Ruta a un .xlsx exportado del Google Sheet. Si se omite, se descarga el Sheet.
+        - ``--confirmar``: Guardar los cambios después de validar todo.
+        - ``--detalle``: Mostrar cada entrega que se registraría.
+        """
         parser.add_argument(
             "--usuario",
             required=True,
@@ -87,6 +99,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         try:
             usuario = get_user_model().objects.get(
                 username=options["usuario"]
@@ -139,6 +155,7 @@ class Command(BaseCommand):
         )
 
     def cerrar(self, asignacion, siguiente, usuario):
+        """Marca la entrega como devuelta en la fecha de la entrega siguiente del mismo radio."""
         asignacion.estado = AsignacionRadio.Estado.DEVUELTO
         asignacion.fecha_devolucion = siguiente["fecha_entrega"]
         asignacion.recibido_por = usuario
@@ -150,6 +167,11 @@ class Command(BaseCommand):
         asignacion.save()
 
     def planear(self, filas):
+        """Calcula qué entregas se registrarían sin guardar nada.
+
+        Devuelve un plan con las entregas por radio, las filas omitidas (con su
+        motivo) y cuántas ya estaban registradas.
+        """
         plan = {"radios": [], "omitidos": [], "sin_cambios": 0}
 
         radios = list(Radio.objects.all())
@@ -249,6 +271,7 @@ class Command(BaseCommand):
         return plan
 
     def mostrar(self, plan, detalle):
+        """Imprime el resumen del plan (y el detalle si se pidió)."""
         total = sum(len(e) for _, e in plan["radios"])
         self.stdout.write(
             f"Entregas a registrar: {total} en {len(plan['radios'])} radios"

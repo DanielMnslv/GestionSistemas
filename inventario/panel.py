@@ -33,10 +33,12 @@ PLURAL_TIPO = {
 
 
 def _dia(fecha):
+    """Fecha local (sin hora) de un momento dado."""
     return timezone.localtime(fecha).date() if timezone.is_aware(fecha) else fecha.date()
 
 
 def _pct(parte, total):
+    """Porcentaje entero de ``parte`` sobre ``total`` (0 si no hay total)."""
     return round(parte * 100 / total) if total else 0
 
 
@@ -60,6 +62,7 @@ def _pcts(c, total):
 
 
 def _tipos(activos):
+    """Conteo de equipos activos por tipo y estado (bueno, regular, malo, sin dato)."""
     etiquetas = dict(Equipo.Tipo.choices)
     por_tipo = defaultdict(lambda: {"ok": 0, "reg": 0, "mal": 0, "sin": 0})
     for e in activos.select_related("radio"):
@@ -113,6 +116,7 @@ def _mapa():
     sin = {"total": 0, "malos": 0, "puestos": 0, "tipos": defaultdict(int)}
 
     def sumar(clave, ubicacion, tipo, malo):
+        """Suma un equipo a su punto del mapa, o a "sin ubicación" si no tiene."""
         if ubicacion is None:
             sin["total"] += 1
             sin["malos"] += malo
@@ -153,6 +157,7 @@ def _mapa():
         sumar(ubicacion, u, tipo, estado == Equipo.EstadoOperativo.NO_OPERATIVO)
 
     def resumen_tipos(tipos):
+        """Texto con cuántos equipos de cada tipo hay en un punto ("3 radios")."""
         return [
             {"tipo": str(t), "nombre": etiquetas.get(t, t), "n": n,
              "texto": f"{n} {(NOMBRE_TIPO if n == 1 else PLURAL_TIPO).get(t, etiquetas.get(t, t))}"}
@@ -286,6 +291,7 @@ def _entregados():
 
 
 def _antivirus(hoy):
+    """Antivirus vencidos y por vencer en los próximos ``DIAS_ANTIVIRUS`` días."""
     limite = hoy + timedelta(days=DIAS_ANTIVIRUS)
     base = DetalleComputador.objects.filter(
         equipo__activo=True, vencimiento_antivirus__isnull=False
@@ -299,6 +305,7 @@ def _antivirus(hoy):
 
 
 def _politica(hoy):
+    """Conteo de computadores por estado de la verificación de política."""
     from . import politica
     from .views_equipos import _equipos_con_estado_politica
 
@@ -372,6 +379,9 @@ def _actividad(limite=7):
 
 
 def datos_inicio():
+    """Todos los datos del tablero de inicio: indicadores, gráficos, mapa,
+    equipos que requieren atención y actividad reciente.
+    """
     from .estado_mantenimiento import PROXIMO, SIN_MANTENIMIENTO, VENCIDO, VIGENTE
 
     hoy = timezone.localdate()

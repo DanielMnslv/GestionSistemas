@@ -38,10 +38,15 @@ EXCLUIDOS = {"registroauditoria"}
 
 
 class AuditoriaMiddleware:
+    """Guarda la petición en curso (usuario, IP y ruta) para que las señales
+    sepan quién hizo cada cambio.
+    """
     def __init__(self, get_response):
+        """Recibe el siguiente paso de la cadena de Django."""
         self.get_response = get_response
 
     def __call__(self, request):
+        """Atiende la petición con su contexto de auditoría y lo borra al terminar."""
         from .publico import ip_cliente
 
         ip = ip_cliente(request)
@@ -53,6 +58,10 @@ class AuditoriaMiddleware:
 
 
 def _actor():
+    """Devuelve (usuario, nombre, IP, ruta) de quien hace el cambio.
+
+    Fuera de una petición (comandos, tareas) es "Proceso automático".
+    """
     ctx = _contexto.get()
     if not ctx:
         return None, "Proceso automático", "", ""
@@ -64,6 +73,7 @@ def _actor():
 
 
 def _texto(valor):
+    """Convierte un valor en texto legible para la bitácora (Sí/No, fechas locales…)."""
     if valor is None or valor == "":
         return ""
     if isinstance(valor, bool):
@@ -103,6 +113,7 @@ def _valores(instancia):
 
 
 def _fk_texto(instancia, campo, pk):
+    """Texto del objeto relacionado ``pk`` del campo ``campo``, o ``#pk`` si ya no existe."""
     if pk is None:
         return ""
     modelo = instancia._meta.get_field(campo).related_model
@@ -111,6 +122,7 @@ def _fk_texto(instancia, campo, pk):
 
 
 def _etiqueta(instancia, campo):
+    """Nombre visible del campo, o su nombre interno si no se encuentra."""
     try:
         return str(instancia._meta.get_field(campo).verbose_name).capitalize()
     except Exception:
@@ -135,6 +147,7 @@ def _referencia(instancia):
 
 
 def _se_audita(sender):
+    """Indica si los cambios de este modelo se registran en la bitácora."""
     meta = sender._meta
     if meta.model_name in EXCLUIDOS or meta.proxy:
         return False
@@ -142,6 +155,7 @@ def _se_audita(sender):
 
 
 def _guardar(accion, instancia, cambios, descripcion=""):
+    """Crea un registro de auditoría con la acción, el objeto y la lista de cambios."""
     Registro = apps.get_model("inventario", "RegistroAuditoria")
     usuario, nombre, ip, ruta = _actor()
     try:
@@ -159,6 +173,7 @@ def _guardar(accion, instancia, cambios, descripcion=""):
 
 
 def antes_de_guardar(sender, instance, raw=False, **kwargs):
+    """Señal pre_save: guarda los valores anteriores para compararlos después."""
     if raw or not _se_audita(sender) or instance.pk is None:
         return
     anterior = sender._default_manager.filter(pk=instance.pk).first()
@@ -166,6 +181,7 @@ def antes_de_guardar(sender, instance, raw=False, **kwargs):
 
 
 def despues_de_guardar(sender, instance, created, raw=False, update_fields=None, **kwargs):
+    """Señal post_save: registra la creación o los campos que cambiaron (antes → después)."""
     if raw or not _se_audita(sender):
         return
     Registro = apps.get_model("inventario", "RegistroAuditoria")
@@ -193,6 +209,7 @@ def despues_de_guardar(sender, instance, created, raw=False, update_fields=None,
 
 
 def despues_de_eliminar(sender, instance, **kwargs):
+    """Señal post_delete: registra la eliminación con los últimos valores."""
     if not _se_audita(sender):
         return
     Registro = apps.get_model("inventario", "RegistroAuditoria")
@@ -205,6 +222,7 @@ def despues_de_eliminar(sender, instance, **kwargs):
 
 
 def al_ingresar(sender, request, user, **kwargs):
+    """Registra el ingreso de un usuario a la plataforma."""
     Registro = apps.get_model("inventario", "RegistroAuditoria")
     _, _, ip, ruta = _actor()
     Registro.objects.create(
@@ -216,6 +234,7 @@ def al_ingresar(sender, request, user, **kwargs):
 
 
 def al_salir(sender, request, user, **kwargs):
+    """Registra la salida de un usuario."""
     if user is None:
         return
     Registro = apps.get_model("inventario", "RegistroAuditoria")
@@ -229,6 +248,7 @@ def al_salir(sender, request, user, **kwargs):
 
 
 def al_fallar_ingreso(sender, credentials, request=None, **kwargs):
+    """Registra un intento de ingreso fallido con el usuario escrito."""
     Registro = apps.get_model("inventario", "RegistroAuditoria")
     _, _, ip, ruta = _actor()
     nombre = str((credentials or {}).get("username", ""))[:100]
@@ -241,6 +261,7 @@ def al_fallar_ingreso(sender, credentials, request=None, **kwargs):
 
 
 def conectar():
+    """Conecta todas las señales de auditoría. Se llama una vez al arrancar la app."""
     pre_save.connect(antes_de_guardar, dispatch_uid="jano_auditoria_pre_save")
     post_save.connect(despues_de_guardar, dispatch_uid="jano_auditoria_post_save")
     post_delete.connect(despues_de_eliminar, dispatch_uid="jano_auditoria_post_delete")

@@ -43,14 +43,17 @@ METRICAS = {
 
 
 def _fin_del_dia(fecha):
+    """Inicio del día siguiente (hora de Colombia), como límite superior del día."""
     return timezone.make_aware(datetime.combine(fecha + timedelta(days=1), time.min), ZONA_COLOMBIA)
 
 
 def _inicio_del_dia(fecha):
+    """Inicio del día (00:00, hora de Colombia)."""
     return timezone.make_aware(datetime.combine(fecha, time.min), ZONA_COLOMBIA)
 
 
 def _metrica(clave, descripcion, valor, meta, unidad="equipos", pendientes=None):
+    """Arma una métrica con su valor, meta, porcentaje de cumplimiento y pendientes."""
     pct = round(valor * 100 / meta, 1) if meta else None
     return {
         "clave": clave,
@@ -66,6 +69,7 @@ def _metrica(clave, descripcion, valor, meta, unidad="equipos", pendientes=None)
 
 
 def _mantenimiento(clave, equipos, corte, descripcion):
+    """Métrica de equipos con mantenimiento vigente a la fecha de corte."""
     limite = _fin_del_dia(corte)
     consulta = equipos.annotate(
         ultima=Max(
@@ -88,6 +92,12 @@ def _mantenimiento(clave, equipos, corte, descripcion):
 
 
 def resumen_indicadores(desde, hasta, hoy=None):
+    """Indicadores de JANO para Gestión TIC en el período ``desde``–``hasta``.
+
+    La fecha de corte es el final del período o hoy, lo que ocurra primero.
+    Incluye cada métrica de ``METRICAS`` (mantenimiento al día, programación
+    ejecutada, política, antivirus y paz y salvo), cada una con su meta.
+    """
     hoy = hoy or hoy_colombia()
     corte = min(hasta, hoy)
     activos = Equipo.objects.filter(activo=True)

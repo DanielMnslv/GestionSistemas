@@ -40,13 +40,20 @@ def _valores(modelo, datos):
 
 
 class Command(BaseCommand):
+    """Carga los tickets exportados del servidor antiguo."""
     help = "Carga los tickets exportados del servidor antiguo."
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``archivo``
+        - ``--guardar``: Cargar (sin esto solo revisa).
+        """
         parser.add_argument("archivo")
         parser.add_argument("--guardar", action="store_true", help="Cargar (sin esto solo revisa).")
 
     def handle(self, archivo, guardar=False, **opciones):
+        """Ejecuta el comando con las opciones recibidas."""
         try:
             with open(archivo, encoding="utf-8") as f:
                 casos = json.load(f)["tickets"]

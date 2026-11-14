@@ -29,6 +29,7 @@ def funcionario_de(usuario):
 
 
 def _equipos(funcionario):
+    """Equipos a cargo del funcionario, con su estado de mantenimiento."""
     from .estado_mantenimiento import equipos_con_estado
 
     equipos = [d["equipo"] for d in personas.equipos_a_cargo(funcionario)]
@@ -41,10 +42,12 @@ def _equipos(funcionario):
 
 
 def _sin_funcionario(request):
+    """Página de aviso cuando la cuenta no está enlazada a un funcionario."""
     return render(request, "portal/sin_funcionario.html", status=403)
 
 
 def _fotos(request):
+    """Lee las fotos adjuntas y devuelve (fotos, errores) según cantidad y tamaño máximos."""
     fotos = request.FILES.getlist("fotos")
     errores = []
     if len(fotos) > FOTOS_MAXIMAS:
@@ -58,6 +61,7 @@ def _fotos(request):
 
 
 def _crear(request, funcionario, fotos, **datos):
+    """Crea la solicitud del funcionario con sus fotos en una sola transacción."""
     with transaction.atomic():
         ticket = flujo.crear(
             origen=Ticket.Origen.FORMULARIO,
@@ -73,6 +77,7 @@ def _crear(request, funcionario, fotos, **datos):
 
 @login_required
 def mi_soporte(request):
+    """Inicio del portal Mi soporte: casos del funcionario y sus equipos."""
     funcionario = funcionario_de(request.user)
     if funcionario is None:
         return _sin_funcionario(request)
@@ -95,6 +100,7 @@ def mi_soporte(request):
 
 @login_required
 def mi_soporte_nueva(request):
+    """Formulario para que el funcionario pida soporte sobre uno de sus equipos."""
     funcionario = funcionario_de(request.user)
     if funcionario is None:
         return _sin_funcionario(request)
@@ -126,6 +132,7 @@ def mi_soporte_nueva(request):
 
 
 class AgendarMantenimientoForm(forms.Form):
+    """Solicitud de visita de mantenimiento desde el portal."""
     visita = forms.ChoiceField(label="Día y franja de la visita")
     ubicacion = forms.CharField(label="¿Dónde está el equipo? (sede, oficina o puesto)", max_length=200)
     correo = forms.EmailField(label="Correo para avisarte")
@@ -136,6 +143,7 @@ class AgendarMantenimientoForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Ofrece los días y franjas con cupo libre en la agenda."""
         super().__init__(*args, **kwargs)
         self.fields["visita"].choices = [("", "Elige un día y una franja")] + [
             (c["valor"], f"{c['etiqueta']} ({c['libres']} cupo{'s' if c['libres'] != 1 else ''})")
@@ -143,6 +151,7 @@ class AgendarMantenimientoForm(forms.Form):
         ]
 
     def clean_visita(self):
+        """Verifica que la franja elegida exista y siga teniendo cupo."""
         fecha, franja = agenda.leer_valor(self.cleaned_data["visita"])
         if fecha is None:
             raise forms.ValidationError("Elige el día y la franja.")
@@ -154,6 +163,7 @@ class AgendarMantenimientoForm(forms.Form):
 
 @login_required
 def mi_soporte_agendar(request, equipo_id):
+    """El funcionario agenda una visita de mantenimiento para uno de sus equipos."""
     funcionario = funcionario_de(request.user)
     if funcionario is None:
         return _sin_funcionario(request)

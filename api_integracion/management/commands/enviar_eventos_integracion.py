@@ -1,3 +1,7 @@
+"""Comando ``enviar_eventos_integracion``: entrega eventos pendientes de JANO a Gestión TIC.
+
+Uso: ``python manage.py enviar_eventos_integracion`` (opciones en ``--help``).
+"""
 import hashlib
 import hmac
 import json
@@ -13,13 +17,20 @@ from api_integracion.models import IntegrationOutbox, IntegrationDelivery
 
 
 class Command(BaseCommand):
+    """Entrega eventos pendientes de JANO a Gestión TIC."""
     help = "Entrega eventos pendientes de JANO a Gestión TIC."
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--limit``
+        - ``--timeout``
+        """
         parser.add_argument("--limit", type=int, default=50)
         parser.add_argument("--timeout", type=int, default=15)
 
     def handle(self, *args, **opts):
+        """Ejecuta el comando con las opciones recibidas."""
         url = getattr(settings, "INTEGRACION_GESTION_TIC_URL", "")
         secret = getattr(settings, "INTEGRACION_GESTION_TIC_SECRET", "")
         if not url or not secret:

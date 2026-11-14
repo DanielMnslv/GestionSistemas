@@ -9,26 +9,35 @@ ETIQUETA_TIPO = dict(Equipo.Tipo.choices)
 
 
 def _usuario(u):
+    """Nombre del usuario, o vacío si no hay."""
     return "" if u is None else (u.get_full_name() or u.get_username())
 
 
 def _dias_desde(momento, hoy):
+    """Días transcurridos desde ``momento`` hasta ``hoy``."""
     return (hoy - fecha_local(momento)).days
 
 
 def _firma(a):
+    """"Firmada" o "Sin firma" según la entrega tenga firma dibujada o enlace."""
     return "Firmada" if (a.firma or a.enlace_firma) else "Sin firma"
 
 
 def _recibe(a):
+    """Nombre de quien recibe la entrega (escrito o del funcionario)."""
     return a.nombre_recibe or (a.funcionario.nombre_completo if a.funcionario else "")
 
 
 def _cedula(a):
+    """Cédula de quien recibe la entrega (escrita o del funcionario)."""
     return a.cedula_recibe or (a.funcionario.cedula if a.funcionario else "")
 
 
 class RadiosEntregados(Informe):
+    """Informe «Radios entregados actualmente».
+
+    En qué cliente y puesto está cada radio hoy, qué supervisor lo recibió y desde cuándo.
+    """
     clave = "radios_entregados"
     titulo = "Radios entregados actualmente"
     categoria = CATEGORIA
@@ -44,6 +53,7 @@ class RadiosEntregados(Informe):
                Filtro("q", "Buscar", ayuda="Radio, puesto, supervisor o cédula."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Radios entregados actualmente» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         consulta = AsignacionRadio.objects.filter(estado=AsignacionRadio.Estado.ASIGNADO).select_related("radio")
         if valores["cliente"]:
@@ -65,6 +75,7 @@ class RadiosEntregados(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Radios entregados, Puestos con radio, Clientes, Sin firma."""
         return [("Radios entregados", len(filas)),
                 ("Puestos con radio", len({(f["cliente"], f["puesto"]) for f in filas})),
                 ("Clientes", len({f["cliente"] for f in filas})),
@@ -72,6 +83,10 @@ class RadiosEntregados(Informe):
 
 
 class RadiosHistorialEntregas(Informe):
+    """Informe «Historial de entregas y devoluciones de radios».
+
+    Todas las entregas de radios por rango de fechas, con su devolución.
+    """
     clave = "radios_historial_entregas"
     titulo = "Historial de entregas y devoluciones de radios"
     categoria = CATEGORIA
@@ -91,6 +106,7 @@ class RadiosHistorialEntregas(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Historial de entregas y devoluciones de radios» según los filtros elegidos (``valores``)."""
         consulta = AsignacionRadio.objects.select_related("radio", "entregado_por", "recibido_por")
         if valores["desde"]:
             consulta = consulta.filter(fecha_entrega__date__gte=valores["desde"])
@@ -114,12 +130,17 @@ class RadiosHistorialEntregas(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Entregas, Vigentes, Devueltas."""
         return [("Entregas", len(filas)),
                 ("Vigentes", sum(1 for f in filas if f["estado"] == "Asignado")),
                 ("Devueltas", sum(1 for f in filas if f["estado"] == "Devuelto"))]
 
 
 class EntregasSinFirma(Informe):
+    """Informe «Entregas vigentes sin firma o sin cláusula aceptada».
+
+    Radios y equipos entregados cuya acta no tiene firma o cuya cláusula no fue aceptada.
+    """
     clave = "entregas_sin_firma"
     titulo = "Entregas vigentes sin firma o sin cláusula aceptada"
     categoria = CATEGORIA
@@ -132,10 +153,12 @@ class EntregasSinFirma(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Entregas vigentes sin firma o sin cláusula aceptada» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         filas = []
 
         def faltas(a):
+            """Lista de lo que le falta al acta: firma, cláusula, etc."""
             lista = []
             if not (a.firma or a.enlace_firma):
                 lista.append("Firma")
@@ -166,12 +189,17 @@ class EntregasSinFirma(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Entregas por regularizar, Radios, Otros equipos."""
         return [("Entregas por regularizar", len(filas)),
                 ("Radios", sum(1 for f in filas if f["clase"] == "Radio")),
                 ("Otros equipos", sum(1 for f in filas if f["clase"] != "Radio"))]
 
 
 class TransferenciasComponentes(Informe):
+    """Informe «Transferencias de accesorios entre radios».
+
+    Trazabilidad de los accesorios (antenas, baterías, cargadores...) que se pasaron de un radio a otro.
+    """
     clave = "radios_transferencias"
     titulo = "Transferencias de accesorios entre radios"
     categoria = CATEGORIA
@@ -184,6 +212,7 @@ class TransferenciasComponentes(Informe):
     filtros = (Filtro("desde", "Desde", "date"), Filtro("hasta", "Hasta", "date"))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Transferencias de accesorios entre radios» según los filtros elegidos (``valores``)."""
         consulta = TransferenciaComponentesRadio.objects.select_related("registrado_por")
         if valores["desde"]:
             consulta = consulta.filter(fecha__date__gte=valores["desde"])
@@ -196,10 +225,15 @@ class TransferenciasComponentes(Informe):
         } for t in consulta]
 
     def resumen(self, filas):
+        """Totales del encabezado: Transferencias."""
         return [("Transferencias", len(filas))]
 
 
 class EquiposEntregados(Informe):
+    """Informe «Equipos entregados actualmente».
+
+    Computadores, tabletas, impresoras y otros equipos que hoy están a cargo de un funcionario.
+    """
     clave = "equipos_entregados"
     titulo = "Equipos entregados actualmente"
     categoria = CATEGORIA
@@ -215,6 +249,7 @@ class EquiposEntregados(Informe):
                Filtro("q", "Buscar", ayuda="Placa, serial, quien recibe, cédula o área."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos entregados actualmente» según los filtros elegidos (``valores``)."""
         hoy = hoy_colombia()
         consulta = AsignacionEquipo.objects.filter(estado=AsignacionEquipo.Estado.ASIGNADO).select_related(
             "equipo", "funcionario")
@@ -236,10 +271,15 @@ class EquiposEntregados(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos entregados, Personas."""
         return [("Equipos entregados", len(filas)), ("Personas", len({f["recibe"] for f in filas}))]
 
 
 class EquiposHistorialEntregas(Informe):
+    """Informe «Historial de entregas y devoluciones de equipos».
+
+    Todas las entregas de computadores y otros equipos por rango de fechas.
+    """
     clave = "equipos_historial_entregas"
     titulo = "Historial de entregas y devoluciones de equipos"
     categoria = CATEGORIA
@@ -259,6 +299,7 @@ class EquiposHistorialEntregas(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Historial de entregas y devoluciones de equipos» según los filtros elegidos (``valores``)."""
         consulta = AsignacionEquipo.objects.select_related("equipo", "funcionario", "entregado_por", "recibido_por")
         if valores["desde"]:
             consulta = consulta.filter(fecha_entrega__date__gte=valores["desde"])
@@ -284,6 +325,7 @@ class EquiposHistorialEntregas(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Entregas, Vigentes, Devueltas."""
         return [("Entregas", len(filas)),
                 ("Vigentes", sum(1 for f in filas if f["estado"] == "Asignado")),
                 ("Devueltas", sum(1 for f in filas if f["estado"] == "Devuelto"))]

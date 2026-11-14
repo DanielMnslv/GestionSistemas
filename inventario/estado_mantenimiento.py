@@ -32,6 +32,7 @@ ESTADOS = [
 
 
 def sumar_seis_meses(fecha):
+    """Suma seis meses a una fecha (si el día no existe, usa el último del mes)."""
     mes_total = fecha.month - 1 + 6
     anio = fecha.year + mes_total // 12
     mes = mes_total % 12 + 1
@@ -40,6 +41,7 @@ def sumar_seis_meses(fecha):
 
 
 def fecha_local(momento):
+    """Fecha en hora de Colombia de un momento dado."""
     return timezone.localtime(momento, ZONA_COLOMBIA).date()
 
 
@@ -62,6 +64,7 @@ def estado(ultima, hoy):
 
 
 def _plural(cantidad, singular, plural):
+    """Texto con la cantidad y la palabra en singular o plural ("1 día", "3 días")."""
     return f"{cantidad} {singular if cantidad == 1 else plural}"
 
 

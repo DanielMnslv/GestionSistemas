@@ -1,3 +1,7 @@
+"""Comando ``importar_entregas_equipos_sheet``: importa el historial de entregas de computadores (ASIG-COMPUTADOR) e impresoras (resp_imp) a funcionarios, y los cambios de GPS (RPTAGPS). Cada entrega cierra la anterior del mismo equipo y en ejecuciones siguientes solo se agregan respuestas nuevas. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_entregas_equipos_sheet`` (opciones en ``--help``).
+"""
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -51,15 +55,18 @@ GPS = {
 
 
 def limpio(valor):
+    """Texto de la celda; "N/A", "NONE" y "-" cuentan como vacío."""
     texto = texto_celda(valor)
     return "" if texto.upper() in ("N/A", "NA", "NONE", "-") else texto
 
 
 def aware(fecha):
+    """Fecha y hora del formulario con la zona horaria de Colombia."""
     return timezone.make_aware(fecha.replace(microsecond=0), ZONA_FORMULARIO)
 
 
 class Command(BaseCommand):
+    """Importa el historial de entregas de computadores (ASIG-COMPUTADOR) e impresoras (resp_imp) a funcionarios, y los cambios de GPS (RPTAGPS). Cada entrega cierra la anterior del mismo equipo y en ejecuciones siguientes solo se agregan respuestas nuevas. Es una simulación salvo con --confirmar."""
     help = (
         "Importa el historial de entregas de computadores (ASIG-COMPUTADOR) "
         "e impresoras (resp_imp) a funcionarios, y los cambios de GPS "
@@ -69,6 +76,12 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--usuario``: Usuario responsable de las entregas.
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--confirmar``: Guardar los cambios.
+        """
         parser.add_argument("--usuario", required=True,
                             help="Usuario responsable de las entregas.")
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
@@ -76,6 +89,10 @@ class Command(BaseCommand):
                             help="Guardar los cambios.")
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         try:
             usuario = get_user_model().objects.get(username=options["usuario"])
         except get_user_model().DoesNotExist:
@@ -146,6 +163,7 @@ class Command(BaseCommand):
         ))
 
     def buscar_equipo(self, placa, equipos, por_clave):
+        """Busca el equipo por placa exacta o, si no, por placa normalizada (si hay uno solo)."""
         equipo = equipos.get(placa)
         if equipo is None:
             candidatos = por_clave.get(clave_placa(placa), [])
@@ -153,6 +171,7 @@ class Command(BaseCommand):
         return equipo
 
     def planear(self, filas):
+        """Calcula qué entregas de computadores e impresoras se registrarían, sin guardar."""
         equipos = {
             e.placa: e for e in Equipo.objects.exclude(tipo=Equipo.Tipo.RADIO)
         }
@@ -221,6 +240,7 @@ class Command(BaseCommand):
         return plan
 
     def planear_gps(self, filas):
+        """Calcula qué cambios de GPS se registrarían, sin repetir los que ya existen."""
         gps = {
             e.placa: e for e in Equipo.objects.filter(tipo=Equipo.Tipo.GPS)
         }

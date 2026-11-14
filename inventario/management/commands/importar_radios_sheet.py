@@ -1,3 +1,7 @@
+"""Comando ``importar_radios_sheet``: sincroniza radios desde la hoja BASEDATOS-RADIOS del Google Sheet: completa campos vacíos de los radios existentes (cruce por serial) y crea los que faltan. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_radios_sheet`` (opciones en ``--help``).
+"""
 import re
 from datetime import date, datetime
 
@@ -48,6 +52,10 @@ MOTIVO_CREADO = (
 
 
 def distancia(a, b):
+    """Distancia de edición (Levenshtein) entre dos textos.
+
+    Se usa para detectar seriales casi iguales (un dígito mal escrito).
+    """
     anterior = list(range(len(b) + 1))
     for i, ca in enumerate(a, 1):
         actual = [i]
@@ -113,6 +121,7 @@ def convertir(campo, valor):
 
 
 class Command(BaseCommand):
+    """Sincroniza radios desde la hoja BASEDATOS-RADIOS del Google Sheet: completa campos vacíos de los radios existentes (cruce por serial) y crea los que faltan. Es una simulación salvo con --confirmar."""
     help = (
         "Sincroniza radios desde la hoja BASEDATOS-RADIOS del Google Sheet: "
         "completa campos vacíos de los radios existentes (cruce por serial) "
@@ -120,6 +129,12 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx exportado del Google Sheet. Si se omite, se descarga el Sheet.
+        - ``--confirmar``: Guardar los cambios después de validar todo.
+        - ``--detalle``: Mostrar cada campo que se completaría.
+        """
         parser.add_argument(
             "--archivo",
             help=(
@@ -139,6 +154,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         confirmar = options["confirmar"]
         detalle = options["detalle"]
 
@@ -194,6 +213,7 @@ class Command(BaseCommand):
         )
 
     def planear(self, filas):
+        """Calcula qué radios se crearían o completarían, sin guardar, y cuáles se omiten."""
         plan = {
             "actualizar": [],
             "crear": [],
@@ -344,6 +364,7 @@ class Command(BaseCommand):
         return plan
 
     def mostrar(self, plan, detalle):
+        """Imprime el resumen del plan (y el detalle si se pidió)."""
         campos_completados = sum(len(c) for _, c in plan["actualizar"])
         self.stdout.write(
             f"Radios a actualizar: {len(plan['actualizar'])} "

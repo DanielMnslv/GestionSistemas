@@ -24,6 +24,7 @@ _VERDE = ("operativ", "vigente", "al día", "solucionad", "enviada", "reporta",
 
 
 def formatear_valor(valor):
+    """Convierte un valor en texto para la tabla (fechas en hora de Colombia, Sí/No…)."""
     if valor is None:
         return ""
     if isinstance(valor, datetime):
@@ -36,6 +37,7 @@ def formatear_valor(valor):
 
 
 def tono_texto(texto):
+    """Tono de color (green, amber, red, gray) según el texto de un estado."""
     t = (texto or "").strip().lower()
     if not t:
         return ""
@@ -54,16 +56,19 @@ def tono_texto(texto):
 
 
 def _nombre_archivo(informe, extension):
+    """Nombre del archivo descargado: ``<clave>_<AAAAMMDD_HHMM>.<extension>``."""
     return f"{informe.clave}_{timezone.localtime(timezone.now(), ZONA_COLOMBIA):%Y%m%d_%H%M}.{extension}"
 
 
 def _quien(usuario):
+    """Nombre de quien genera el informe."""
     if usuario is None:
         return ""
     return usuario.get_full_name() or usuario.get_username()
 
 
 def _generado(usuario):
+    """Texto "Generado el … por …" para el encabezado."""
     ahora = timezone.localtime(timezone.now(), ZONA_COLOMBIA)
     texto = f"Generado el {ahora:%d/%m/%Y a las %H:%M}"
     quien = _quien(usuario)
@@ -77,6 +82,10 @@ def _limpio(texto):
 
 # ---------------------------------------------------------------- Excel
 def exportar_xlsx(informe, filas, valores, usuario=None):
+    """Genera el informe en Excel (.xlsx) con encabezado, filtros, totales y tabla.
+
+    Devuelve la respuesta HTTP con el archivo para descargar.
+    """
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
@@ -138,6 +147,12 @@ def exportar_xlsx(informe, filas, valores, usuario=None):
 
 # ------------------------------------------------------------------ PDF
 def exportar_pdf(informe, filas, valores, usuario=None):
+    """Genera el informe en PDF con los colores de JANO.
+
+    Incluye encabezado, filtros aplicados, totales y la tabla; la orientación
+    se elige según el número de columnas. Devuelve la respuesta HTTP con el
+    archivo para descargar.
+    """
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.styles import ParagraphStyle
@@ -166,6 +181,7 @@ def exportar_pdf(informe, filas, valores, usuario=None):
     alinea = {"izq": 0, "centro": 1, "der": 2}
 
     def parrafo(texto, estilo, alinear="izq", color=None, negrilla=False):
+        """Párrafo con alineación, color y negrilla para una celda del PDF."""
         e = ParagraphStyle("x", parent=estilo, alignment=alinea[alinear])
         if color:
             e.textColor = colors.HexColor(color)
@@ -228,6 +244,7 @@ def exportar_pdf(informe, filas, valores, usuario=None):
         historia.append(tabla)
 
     def pie(lienzo, doc):
+        """Dibuja la franja superior y el pie de página con el número de página."""
         lienzo.saveState()
         lienzo.setFillColor(lima)
         lienzo.rect(0, pagina[1] - 4 * mm, pagina[0], 4 * mm, stroke=0, fill=1)

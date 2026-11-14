@@ -184,8 +184,10 @@ def tipo_de_clave(catalogo):
 
 
 def claves_validas(catalogo, tipo_equipo):
+    """Claves de ``catalogo`` permitidas para ``tipo_equipo`` (incluye "Otros")."""
     return {c for c, _ in catalogo.get(tipo_equipo, [])} | {OTROS[0]}
 
 
 def textos(claves):
+    """Convierte una lista de claves en sus textos visibles."""
     return [TEXTOS.get(c, c) for c in claves or []]

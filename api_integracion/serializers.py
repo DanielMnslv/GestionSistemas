@@ -1,3 +1,4 @@
+"""Datos de equipos y radios que JANO comparte con Gestión TIC por la API."""
 from rest_framework import serializers
 
 from inventario.models import Equipo, Radio

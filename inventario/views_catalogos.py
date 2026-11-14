@@ -12,24 +12,28 @@ from .views import filas_por_pagina, paginar
 
 
 class ClienteForm(forms.ModelForm):
+    """Registro de un cliente: nombre y NIT."""
     class Meta:
         model = Cliente
         fields = ["nombre", "nit"]
         labels = {"nit": "NIT"}
 
     def __init__(self, *args, **kwargs):
+        """Aplica el estilo de la plataforma a los campos."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
 
 
 class PuestoForm(forms.ModelForm):
+    """Registro de un puesto de un cliente: sede y nombre."""
     class Meta:
         model = Puesto
         fields = ["sede", "nombre"]
         labels = {"nombre": "Nombre del puesto"}
 
     def __init__(self, *args, **kwargs):
+        """Aplica el estilo de la plataforma a los campos."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
@@ -48,6 +52,7 @@ def puestos_json(request):
 
 @login_required
 def clientes_lista(request):
+    """Lista de clientes con búsqueda, estado (activos/inactivos) y número de puestos activos."""
     clientes = Cliente.objects.annotate(
         total_puestos=Count("puestos", filter=Q(puestos__activo=True))
     )
@@ -93,6 +98,7 @@ def clientes_lista(request):
 @login_required
 @requiere_permiso("entregas")
 def cliente_crear(request):
+    """Registro de un cliente nuevo."""
     formulario = ClienteForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
         cliente = formulario.save()
@@ -104,6 +110,7 @@ def cliente_crear(request):
 
 @login_required
 def cliente_detalle(request, pk):
+    """Ficha del cliente con sus puestos y el formulario para agregar otro."""
     cliente = get_object_or_404(Cliente, pk=pk)
     return render(request, "inventario/cliente_detalle.html", {
         "cliente": cliente,
@@ -115,6 +122,7 @@ def cliente_detalle(request, pk):
 @login_required
 @requiere_permiso("entregas")
 def puesto_crear(request, pk):
+    """Agrega un puesto al cliente."""
     cliente = get_object_or_404(Cliente, pk=pk)
     formulario = PuestoForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
@@ -130,6 +138,7 @@ def puesto_crear(request, pk):
 @login_required
 @requiere_permiso("entregas")
 def cliente_cambiar_estado(request, pk):
+    """Activa o desactiva un cliente. Solo por POST."""
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == "POST":
         cliente.activo = not cliente.activo
@@ -143,6 +152,7 @@ def cliente_cambiar_estado(request, pk):
 @login_required
 @requiere_permiso("entregas")
 def puesto_cambiar_estado(request, pk):
+    """Activa o desactiva un puesto. Solo por POST."""
     puesto = get_object_or_404(Puesto, pk=pk)
     if request.method == "POST":
         puesto.activo = not puesto.activo

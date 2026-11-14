@@ -16,6 +16,7 @@ ORDEN_CATEGORIAS = [
 
 
 def _todos():
+    """Lista de todos los informes en el orden en que se muestran."""
     lista = [resumen_general.INFORME]
     for modulo in (equipos, radios, mantenimiento, entregas, seguridad, clientes):
         lista.extend(modulo.INFORMES)
@@ -29,10 +30,12 @@ assert len(_POR_CLAVE) == len(INFORMES), "Hay claves de informe repetidas"
 
 
 def obtener_informe(clave):
+    """Informe con esa clave. Lanza KeyError si no existe."""
     return _POR_CLAVE[clave]  # KeyError si no existe
 
 
 def informes_por_categoria():
+    """Informes agrupados por categoría, en el orden de ``ORDEN_CATEGORIAS``."""
     grupos = {}
     for informe in INFORMES:
         grupos.setdefault(informe.categoria, []).append(informe)

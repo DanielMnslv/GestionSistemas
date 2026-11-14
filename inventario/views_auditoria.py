@@ -12,6 +12,7 @@ from .views import paginar
 
 
 def _fecha(texto):
+    """Convierte 'AAAA-MM-DD' en fecha; si no es válida, devuelve None."""
     try:
         return datetime.strptime(texto, "%Y-%m-%d").date()
     except (TypeError, ValueError):
@@ -21,6 +22,7 @@ def _fecha(texto):
 @login_required
 @requiere_permiso("auditoria")
 def auditoria_lista(request):
+    """Bitácora de auditoría con filtros por texto, acción, modelo, usuario y fechas."""
     registros = RegistroAuditoria.objects.select_related("usuario")
     q = request.GET.get("q", "").strip()
     accion = request.GET.get("accion", "")

@@ -1,3 +1,4 @@
+"""Rutas de la API de integración (prefijo ``/api/v1/``)."""
 from django.urls import path
 from .views import EquiposAPI, IndicadoresAPI, RadiosAPI, recibir_evento_gestion_tic
 

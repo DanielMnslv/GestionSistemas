@@ -40,6 +40,7 @@ ACCIONES = {
 
 
 def roles_de(usuario):
+    """Nombres de los roles (grupos) del usuario; se guardan en memoria por petición."""
     if not hasattr(usuario, "_roles_jano"):
         usuario._roles_jano = set(
             usuario.groups.values_list("name", flat=True)
@@ -48,6 +49,10 @@ def roles_de(usuario):
 
 
 def puede(usuario, accion):
+    """Indica si el usuario puede realizar ``accion`` (ver ``ACCIONES``).
+
+    El superusuario puede todo; sin sesión no se puede nada.
+    """
     if usuario is None or not usuario.is_authenticated:
         return False
     if usuario.is_superuser:
@@ -72,9 +77,16 @@ def solo_solicitante(usuario):
 
 
 def requiere_permiso(accion):
+    """Decorador de vistas: exige que el usuario pueda realizar ``accion``.
+
+    Si no puede, muestra "Tu rol no permite realizar esta acción" y lo
+    lleva al inicio.
+    """
     def decorador(vista):
+        """Envuelve la vista con la verificación del permiso."""
         @wraps(vista)
         def envoltura(request, *args, **kwargs):
+            """Verifica el permiso y, si lo tiene, ejecuta la vista."""
             if not puede(request.user, accion):
                 messages.error(
                     request,

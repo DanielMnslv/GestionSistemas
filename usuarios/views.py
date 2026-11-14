@@ -1,3 +1,8 @@
+"""Vistas de ingreso, inicio y administración de cuentas de la plataforma.
+
+La administración de cuentas (lista, crear, editar) es solo para
+superusuarios: menú Control › Accesos a la plataforma.
+"""
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, get_user_model
@@ -8,6 +13,7 @@ from .forms import UsuarioCreationForm, UsuarioEditarForm
 
 
 def login_view(request):
+    """Pantalla de ingreso con usuario y contraseña."""
     if request.user.is_authenticated:
         return redirect("inicio")
 
@@ -35,6 +41,11 @@ def login_view(request):
 
 @login_required
 def inicio(request):
+    """Tablero de inicio según el rol.
+
+    Los solicitantes van al portal Mi soporte; Talento humano, a la lista de personas;
+    el resto ve el tablero con indicadores (``inventario/panel.py``).
+    """
     from inventario.panel import datos_inicio
     from inventario.permisos import solo_solicitante, solo_talento
 
@@ -52,6 +63,7 @@ def inicio(request):
     login_url="inicio",
 )
 def usuarios_lista(request):
+    """Lista de cuentas de la plataforma (solo superusuarios)."""
     Usuario = get_user_model()
     usuarios = Usuario.objects.all().order_by("username")
 
@@ -68,6 +80,7 @@ def usuarios_lista(request):
     login_url="inicio",
 )
 def usuario_crear(request):
+    """Creación de una cuenta con su rol (solo superusuarios)."""
     if request.method == "POST":
         form = UsuarioCreationForm(request.POST)
 
@@ -94,6 +107,10 @@ def usuario_crear(request):
     login_url="inicio",
 )
 def usuario_editar(request, usuario_id):
+    """Edición de una cuenta: datos, rol y si está activa (solo superusuarios).
+
+    Nadie puede desactivar su propia cuenta.
+    """
     usuario = get_object_or_404(get_user_model(), pk=usuario_id)
     form = UsuarioEditarForm(request.POST or None, instance=usuario)
 

@@ -35,6 +35,11 @@ def puede_atender(usuario, ticket):
 
 @login_required
 def tickets_lista(request):
+    """Bandeja de solicitudes de soporte con filtros por estado, técnico,
+    tipo de equipo, prioridad y búsqueda.
+
+    Por defecto muestra las activas (sin cerrar ni cancelar).
+    """
     consulta = Ticket.objects.select_related("equipo", "tecnico")
 
     estado = request.GET.get("estado", "activos")
@@ -117,6 +122,7 @@ def tickets_lista(request):
 @login_required
 @requiere_permiso("tickets_crear")
 def ticket_crear(request):
+    """Registro de una solicitud por parte de TI (por teléfono o en persona)."""
     formulario = TicketForm(
         request.POST or None,
         initial={"equipo": equipo_de_la_url(request)},
@@ -135,6 +141,9 @@ def ticket_crear(request):
 
 @login_required
 def ticket_detalle(request, numero):
+    """Detalle de la solicitud: datos, historial de eventos, fotos, comentarios y
+    los formularios que el usuario puede usar según su rol y el estado.
+    """
     ticket = get_object_or_404(
         Ticket.objects.select_related("equipo", "tecnico", "funcionario"),
         numero=numero,
@@ -167,6 +176,7 @@ def ticket_detalle(request, numero):
 @login_required
 @requiere_permiso("tickets_asignar")
 def ticket_asignar(request, numero):
+    """Asigna la solicitud a un técnico con prioridad y fecha de visita."""
     ticket = get_object_or_404(Ticket, numero=numero)
     formulario = AsignarTicketForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
@@ -187,6 +197,7 @@ def ticket_asignar(request, numero):
 
 @login_required
 def ticket_iniciar(request, numero):
+    """El técnico marca que empezó a atender la solicitud. Solo por POST."""
     ticket = get_object_or_404(Ticket, numero=numero)
     if request.method == "POST" and puede_atender(request.user, ticket):
         try:
@@ -198,6 +209,12 @@ def ticket_iniciar(request, numero):
 
 @login_required
 def ticket_atender(request, numero):
+    """Cierre técnico de la solicitud: solución, intervención de mantenimiento
+    sobre el equipo (si aplica) y firma de quien recibe.
+
+    La solicitud queda resuelta; se cierra cuando el solicitante confirma o
+    pasados 3 días.
+    """
     ticket = get_object_or_404(
         Ticket.objects.select_related("equipo"), numero=numero
     )
@@ -267,6 +284,7 @@ def ticket_atender(request, numero):
 @login_required
 @requiere_permiso("tickets_asignar")
 def ticket_cancelar(request, numero):
+    """Cancela la solicitud con un motivo."""
     ticket = get_object_or_404(Ticket, numero=numero)
     formulario = TextoTicketForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
@@ -282,6 +300,7 @@ def ticket_cancelar(request, numero):
 
 @login_required
 def ticket_comentar(request, numero):
+    """Agrega un comentario a la solicitud (interno o visible para el solicitante)."""
     ticket = get_object_or_404(Ticket, numero=numero)
     permitido = puede(request.user, "tickets_crear") or puede(
         request.user, "tickets_asignar"
@@ -297,6 +316,7 @@ def ticket_comentar(request, numero):
 
 @login_required
 def ticket_foto(request, pk):
+    """Entrega una foto adjunta a la solicitud."""
     foto = get_object_or_404(FotoTicket, pk=pk)
     try:
         return FileResponse(foto.archivo.open("rb"))
@@ -305,11 +325,15 @@ def ticket_foto(request, pk):
 
 
 def horas(delta):
+    """Convierte un intervalo de tiempo en horas, con un decimal."""
     return round(delta.total_seconds() / 3600, 1)
 
 
 @login_required
 def tickets_indicadores(request):
+    """Indicadores de la mesa de ayuda de los últimos 90 días: solicitudes por
+    estado, tiempos promedio de atención por técnico y por tipo de equipo.
+    """
     from collections import defaultdict
     from datetime import timedelta
 
@@ -348,6 +372,7 @@ def tickets_indicadores(request):
             grupo["tiempos"].append(t.tiempo_respuesta)
 
     def filas(grupos):
+        """Convierte los grupos en filas ordenadas con cantidad y tiempo promedio."""
         resultado = []
         for nombre, g in sorted(grupos.items()):
             promedio = (

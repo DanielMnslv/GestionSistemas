@@ -1,3 +1,7 @@
+"""Comando ``simular_vencimientos_mantenimiento``: simula los vencimientos semestrales de mantenimiento sin modificar registros ni enviar correos.
+
+Uso: ``python manage.py simular_vencimientos_mantenimiento``.
+"""
 
 from calendar import monthrange
 from datetime import date
@@ -14,6 +18,7 @@ FECHA_REFERENCIA = date(2026, 10, 16)
 
 
 def sumar_seis_meses(fecha):
+    """Suma seis meses a una fecha (si el día no existe, usa el último del mes)."""
     mes_total = fecha.month - 1 + 6
     anio = fecha.year + mes_total // 12
     mes = mes_total % 12 + 1
@@ -22,12 +27,14 @@ def sumar_seis_meses(fecha):
 
 
 class Command(BaseCommand):
+    """Simula los vencimientos semestrales de mantenimiento sin modificar registros ni enviar correos."""
     help = (
         "Simula los vencimientos semestrales de mantenimiento "
         "sin modificar registros ni enviar correos."
     )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         hoy = timezone.now().astimezone(ZONA_COLOMBIA).date()
 
         estados = {

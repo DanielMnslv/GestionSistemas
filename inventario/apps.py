@@ -1,3 +1,8 @@
+"""Configuración de la app ``inventario``.
+
+Al arrancar conecta la auditoría y cambia el texto de la opción vacía de
+las listas desplegables.
+"""
 from django.apps import AppConfig
 
 # Texto de la opción vacía en las listas desplegables (Django trae "---------").
@@ -15,6 +20,7 @@ def _opcion_vacia_clara():
         return
 
     def __init__(self, queryset, *, empty_label=OPCION_VACIA, **kwargs):
+        """Igual que el original, pero con la opción vacía en texto claro."""
         if empty_label == "---------":
             empty_label = OPCION_VACIA
         original(self, queryset, empty_label=empty_label, **kwargs)
@@ -24,10 +30,12 @@ def _opcion_vacia_clara():
 
 
 class InventarioConfig(AppConfig):
+    """Configuración de la app de inventario."""
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'inventario'
 
     def ready(self):
+        """Conecta las señales de auditoría y ajusta la opción vacía al arrancar."""
         from . import auditoria
         auditoria.conectar()
         _opcion_vacia_clara()

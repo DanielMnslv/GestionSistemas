@@ -9,10 +9,15 @@ OPCIONES_ESTADO_PERSONA = (("activos", "Activos"), ("inactivos", "Inactivos"), (
 
 
 def _normal(texto):
+    """Texto en minúsculas y con un solo espacio, para agrupar nombres escritos distinto."""
     return " ".join((texto or "").lower().split())
 
 
 class ClientesPuestos(Informe):
+    """Informe «Clientes y puestos de servicio».
+
+    Cada puesto con su cliente, sede y cuántos radios tiene asignados.
+    """
     clave = "clientes_puestos"
     titulo = "Clientes y puestos de servicio"
     categoria = CATEGORIA
@@ -27,6 +32,7 @@ class ClientesPuestos(Informe):
                Filtro("q", "Buscar", ayuda="Cliente, sede o puesto."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Clientes y puestos de servicio» según los filtros elegidos (``valores``)."""
         radios_por_puesto = {}
         for cliente, puesto in Radio.objects.filter(activo=True).exclude(puesto_asignado="").values_list(
                 "cliente_asignado", "puesto_asignado"):
@@ -51,11 +57,16 @@ class ClientesPuestos(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Puestos, Clientes, Puestos sin radio."""
         return [("Puestos", len(filas)), ("Clientes", len({f["cliente"] for f in filas})),
                 ("Puestos sin radio", sum(1 for f in filas if not f["radios"]))]
 
 
 class ClientesResumen(Informe):
+    """Informe «Clientes: puestos y radios».
+
+    Una línea por cliente con su número de puestos y de radios en uso.
+    """
     clave = "clientes_resumen"
     titulo = "Clientes: puestos y radios"
     categoria = CATEGORIA
@@ -69,6 +80,7 @@ class ClientesResumen(Informe):
     filtros = (Filtro("estado", "Estado", "select", OPCIONES_ESTADO_PERSONA, inicial="activos"),)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Clientes: puestos y radios» según los filtros elegidos (``valores``)."""
         radios = {}
         for cliente in Radio.objects.filter(activo=True).exclude(cliente_asignado="").values_list(
                 "cliente_asignado", flat=True):
@@ -87,6 +99,7 @@ class ClientesResumen(Informe):
         } for c in consulta.order_by("nombre")]
 
     def resumen(self, filas):
+        """Totales del encabezado: Clientes, Puestos, Radios."""
         return [("Clientes", len(filas)), ("Puestos", sum(f["puestos"] for f in filas)),
                 ("Radios", sum(f["radios"] for f in filas))]
 

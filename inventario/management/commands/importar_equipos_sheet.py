@@ -1,3 +1,7 @@
+"""Comando ``importar_equipos_sheet``: importa computadores, tabletas, impresoras, escáneres, GPS, UPS y alarmas desde el Google Sheet, y los funcionarios de LISTADO PERSONAL. Crea los equipos que faltan y solo completa campos vacíos de los existentes. Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_equipos_sheet`` (opciones en ``--help``).
+"""
 import re
 from datetime import date, datetime
 
@@ -188,6 +192,7 @@ TIPOS_COMPUTADOR2 = {
 
 
 def limpio(valor):
+    """Texto de la celda; los valores de ``VACIOS`` (N/A, NO TIENE…) cuentan como vacío."""
     texto = texto_celda(valor)
     if texto.upper() in VACIOS:
         return ""
@@ -197,6 +202,7 @@ def limpio(valor):
 
 
 def fecha(valor):
+    """Convierte el valor de la celda en fecha, o None si no se puede."""
     if isinstance(valor, datetime):
         return valor.date()
     if isinstance(valor, date):
@@ -211,6 +217,7 @@ def fecha(valor):
 
 
 def fecha_hora(valor):
+    """Convierte el valor de la celda en fecha y hora (00:00 si solo trae fecha)."""
     if isinstance(valor, datetime):
         return valor
     dia = fecha(valor)
@@ -226,10 +233,12 @@ def placa_y_baja(valor):
 
 
 def unir(*partes):
+    """Une los textos no vacíos con un espacio."""
     return " ".join(p for p in (limpio(x) for x in partes) if p)
 
 
 def estado_operativo(valor):
+    """Traduce el estado escrito en el Sheet (BUENO, DAÑADO…) al estado de la plataforma."""
     texto = limpio(valor).upper()
     if texto.startswith("BUEN"):
         return Equipo.EstadoOperativo.OPERATIVO
@@ -239,6 +248,7 @@ def estado_operativo(valor):
 
 
 def registro(hoja, fila, placa, tipo, baja=False, equipo=None, detalle=None):
+    """Arma el registro de un equipo leído del Sheet con su hoja, fila y datos."""
     return {
         "hoja": hoja,
         "fila": fila,
@@ -251,6 +261,7 @@ def registro(hoja, fila, placa, tipo, baja=False, equipo=None, detalle=None):
 
 
 class Command(BaseCommand):
+    """Importa computadores, tabletas, impresoras, escáneres, GPS, UPS y alarmas desde el Google Sheet, y los funcionarios de LISTADO PERSONAL. Crea los equipos que faltan y solo completa campos vacíos de los existentes. Es una simulación salvo con --confirmar."""
     help = (
         "Importa computadores, tabletas, impresoras, escáneres, GPS, UPS y "
         "alarmas desde el Google Sheet, y los funcionarios de LISTADO "
@@ -259,6 +270,12 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--confirmar``: Guardar los cambios después de validar todo.
+        - ``--detalle``: Mostrar cada equipo que se crearía o completaría.
+        """
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
         parser.add_argument(
             "--confirmar", action="store_true",
@@ -270,6 +287,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         self.omitidos = []
         with libro_del_sheet(options["archivo"], self.stdout) as archivo:
             registros = (
@@ -323,6 +344,7 @@ class Command(BaseCommand):
     # --- Lectura -------------------------------------------------------
 
     def filas_por_posicion(self, archivo, hoja, columnas):
+        """Lee una hoja por posición de columna (para hojas con encabezados repetidos)."""
         libro = openpyxl.load_workbook(archivo, read_only=True, data_only=True)
         try:
             if hoja not in libro.sheetnames:
@@ -351,6 +373,7 @@ class Command(BaseCommand):
             libro.close()
 
     def por_nombre(self, archivo, hoja, columnas):
+        """Lee una hoja por nombre de encabezado y renombra las columnas a campos."""
         filas = leer_hoja(archivo, hoja, list(columnas.values()))
         return [
             {**{campo: f[col] for campo, col in columnas.items()},
@@ -359,6 +382,10 @@ class Command(BaseCommand):
         ]
 
     def leer_computador2(self, archivo):
+        """Lee la hoja BASEDATOS-COMPUTADOR2 (la más reciente de computadores).
+
+        Si el Excel no la trae, avisa y sigue con las demás.
+        """
         hoja = "BASEDATOS-COMPUTADOR2"
         registros = []
         # El Excel exportado a mano puede no traer esta hoja (solo la versión
@@ -430,6 +457,7 @@ class Command(BaseCommand):
         return registros
 
     def leer_computador1(self, archivo):
+        """Lee la hoja BASEDATOS-COMPUTADOR (versión anterior de computadores)."""
         hoja = "BASEDATOS-COMPUTADOR"
         registros = []
         for f in self.por_nombre(archivo, hoja, COMPUTADOR1):
@@ -457,6 +485,7 @@ class Command(BaseCommand):
         return registros
 
     def leer_impresoras(self, archivo):
+        """Lee la hoja BASEDATOS_IMP de impresoras y escáneres."""
         hoja = "BASEDATOS_IMP"
         registros = []
         for f in self.por_nombre(archivo, hoja, IMPRESORAS):
@@ -484,6 +513,7 @@ class Command(BaseCommand):
         return registros
 
     def leer_gps(self, archivo):
+        """Lee la hoja BASEDATOS_GPS."""
         hoja = "BASEDATOS_GPS"
         registros = []
         for f in self.por_nombre(archivo, hoja, GPS):
@@ -514,6 +544,7 @@ class Command(BaseCommand):
         return registros
 
     def leer_alarmas(self, archivo):
+        """Lee la hoja BASEDATOS_ALARMAS con la cantidad y el estado de cada componente."""
         hoja = "BASEDATOS_ALARMAS"
         columnas = dict(ALARMAS)
         for nombre, cantidad, estado in COMPONENTES_ALARMA:
@@ -558,6 +589,7 @@ class Command(BaseCommand):
         return registros
 
     def leer_funcionarios(self, archivo):
+        """Lee la hoja LISTADO PERSONAL: cédula, nombre, cargo y correo."""
         filas = leer_hoja(
             archivo, "LISTADO PERSONAL", ["CEDULA", "NOMBRE", "CARGO", "CORREO"]
         )
@@ -599,6 +631,10 @@ class Command(BaseCommand):
         return list(por_placa.values())
 
     def planear(self, registros, funcionarios):
+        """Calcula qué equipos se crearían y qué campos vacíos se completarían, sin guardar.
+
+        También lista los funcionarios nuevos que se crearían.
+        """
         plan = {"crear": [], "completar": [], "sin_cambios": 0,
                 "funcionarios_crear": []}
         existentes = {
@@ -661,6 +697,7 @@ class Command(BaseCommand):
         return plan
 
     def mostrar(self, plan, detalle):
+        """Imprime el resumen del plan por tipo de equipo (y el detalle si se pidió)."""
         por_tipo = {}
         for reg in plan["crear"]:
             por_tipo[reg["tipo"]] = por_tipo.get(reg["tipo"], 0) + 1

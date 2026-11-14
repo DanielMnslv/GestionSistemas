@@ -14,10 +14,15 @@ FILTRO_ESTADO = Filtro("estado", "Estado", "select", OPCIONES_ACTIVO, inicial="a
 
 
 def _estado_equipo(equipo):
+    """Estado operativo del equipo, o "Sin dato"."""
     return equipo.estado_texto or "Sin dato"
 
 
 class InventarioEquipos(Informe):
+    """Informe «Inventario general de equipos».
+
+    Todos los equipos con su tipo, estado, responsable y ubicación.
+    """
     clave = "equipos_inventario"
     titulo = "Inventario general de equipos"
     categoria = CATEGORIA
@@ -35,6 +40,7 @@ class InventarioEquipos(Informe):
                Filtro("q", "Buscar", ayuda="Placa, serial, marca, modelo o responsable."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Inventario general de equipos» según los filtros elegidos (``valores``)."""
         consulta = Equipo.objects.select_related("radio")
         if valores["tipo"]:
             consulta = consulta.filter(tipo=valores["tipo"])
@@ -56,6 +62,7 @@ class InventarioEquipos(Informe):
         return ordenar_por_placa(filas)
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos, Operativos, Regulares, Dañados / no operativos, Dados de baja."""
         estados = [f["estado"] for f in filas]
         return [
             ("Equipos", len(filas)),
@@ -67,6 +74,10 @@ class InventarioEquipos(Informe):
 
 
 class EquiposPorTipo(Informe):
+    """Informe «Equipos por tipo y estado».
+
+    Cuántos equipos hay de cada tipo, cuántos operan y cuántos están de baja.
+    """
     clave = "equipos_por_tipo"
     titulo = "Equipos por tipo y estado"
     categoria = CATEGORIA
@@ -80,6 +91,7 @@ class EquiposPorTipo(Informe):
     orientacion = "horizontal"
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos por tipo y estado» según los filtros elegidos (``valores``)."""
         por_tipo = {}
         for e in Equipo.objects.values("tipo", "activo", "estado_operativo", "requiere_revision"):
             f = por_tipo.setdefault(e["tipo"], dict.fromkeys(
@@ -108,12 +120,17 @@ class EquiposPorTipo(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos registrados, En servicio, De baja, Por revisar."""
         total = filas[-1] if filas else {}
         return [("Equipos registrados", total.get("total", 0)), ("En servicio", total.get("activos", 0)),
                 ("De baja", total.get("baja", 0)), ("Por revisar", total.get("revision", 0))]
 
 
 class EquiposBaja(Informe):
+    """Informe «Equipos dados de baja».
+
+    Equipos retirados del servicio, con la fecha y el motivo de la baja.
+    """
     clave = "equipos_baja"
     titulo = "Equipos dados de baja"
     categoria = CATEGORIA
@@ -126,6 +143,7 @@ class EquiposBaja(Informe):
     filtros = (FILTRO_TIPO, Filtro("desde", "Baja desde", "date"), Filtro("hasta", "Baja hasta", "date"))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos dados de baja» según los filtros elegidos (``valores``)."""
         consulta = Equipo.objects.filter(activo=False)
         if valores["tipo"]:
             consulta = consulta.filter(tipo=valores["tipo"])
@@ -141,10 +159,15 @@ class EquiposBaja(Informe):
         return sorted(filas, key=lambda f: f["fecha_baja"] or date.min, reverse=True)
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos dados de baja."""
         return [("Equipos dados de baja", len(filas))]
 
 
 class EquiposPorRevisar(Informe):
+    """Informe «Equipos marcados para revisión».
+
+    Equipos con datos dudosos o incompletos que alguien debe verificar.
+    """
     clave = "equipos_por_revisar"
     titulo = "Equipos marcados para revisión"
     categoria = CATEGORIA
@@ -157,6 +180,7 @@ class EquiposPorRevisar(Informe):
     filtros = (FILTRO_TIPO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos marcados para revisión» según los filtros elegidos (``valores``)."""
         consulta = Equipo.objects.filter(activo=True, requiere_revision=True)
         if valores["tipo"]:
             consulta = consulta.filter(tipo=valores["tipo"])
@@ -167,10 +191,15 @@ class EquiposPorRevisar(Informe):
         } for e in consulta])
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos por revisar."""
         return [("Equipos por revisar", len(filas))]
 
 
 class EquiposPorResponsable(Informe):
+    """Informe «Equipos por responsable».
+
+    Qué equipos tiene a cargo cada persona (útil para actas y paz y salvos).
+    """
     clave = "equipos_por_responsable"
     titulo = "Equipos por responsable"
     categoria = CATEGORIA
@@ -184,6 +213,7 @@ class EquiposPorResponsable(Informe):
     filtros = (FILTRO_TIPO, Filtro("q", "Responsable o cédula", ayuda="Parte del nombre o de la cédula."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Equipos por responsable» según los filtros elegidos (``valores``)."""
         consulta = Equipo.objects.filter(activo=True).exclude(responsable_nombre="")
         if valores["tipo"]:
             consulta = consulta.filter(tipo=valores["tipo"])
@@ -201,10 +231,15 @@ class EquiposPorResponsable(Informe):
         return filas
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos asignados, Personas."""
         return [("Equipos asignados", len(filas)), ("Personas", len({f["responsable"] for f in filas}))]
 
 
 class Computadores(Informe):
+    """Informe «Computadores y tabletas: hardware y software».
+
+    Ficha técnica de cada computador: procesador, memoria, disco, sistema operativo, red y antivirus.
+    """
     clave = "computadores_hardware"
     titulo = "Computadores y tabletas: hardware y software"
     categoria = CATEGORIA
@@ -226,6 +261,7 @@ class Computadores(Informe):
     )
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Computadores y tabletas: hardware y software» según los filtros elegidos (``valores``)."""
         consulta = DetalleComputador.objects.select_related("equipo")
         if valores["tipo"]:
             consulta = consulta.filter(equipo__tipo=valores["tipo"])
@@ -250,12 +286,17 @@ class Computadores(Informe):
         return ordenar_por_placa(filas)
 
     def resumen(self, filas):
+        """Totales del encabezado: Equipos, Sin sistema operativo registrado, Sin antivirus registrado."""
         return [("Equipos", len(filas)),
                 ("Sin sistema operativo registrado", sum(1 for f in filas if not f["so"])),
                 ("Sin antivirus registrado", sum(1 for f in filas if not f["antivirus"]))]
 
 
 class SoftwareInstalado(Informe):
+    """Informe «Sistemas operativos, Office y antivirus en uso».
+
+    Cuántos computadores usan cada versión de sistema operativo, Office y antivirus.
+    """
     clave = "software_instalado"
     titulo = "Sistemas operativos, Office y antivirus en uso"
     categoria = CATEGORIA
@@ -266,6 +307,7 @@ class SoftwareInstalado(Informe):
     filtros = (FILTRO_ESTADO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Sistemas operativos, Office y antivirus en uso» según los filtros elegidos (``valores``)."""
         consulta = aplicar_activo(DetalleComputador.objects.all(), valores["estado"], "equipo__activo")
         conteos = {"Sistema operativo": {}, "Office": {}, "Antivirus": {}}
         for d in consulta:
@@ -278,10 +320,15 @@ class SoftwareInstalado(Informe):
                 for n, q in sorted(nombres.items(), key=lambda x: (-x[1], x[0]))]
 
     def resumen(self, filas):
+        """Totales del encabezado: Combinaciones."""
         return [("Combinaciones", len(filas))]
 
 
 class GPS(Informe):
+    """Informe «GPS: líneas, vehículos y plataforma».
+
+    Dispositivos GPS con su IMEI, línea, operador, vehículo y estado en la plataforma.
+    """
     clave = "gps_lineas"
     titulo = "GPS: líneas, vehículos y plataforma"
     categoria = CATEGORIA
@@ -295,6 +342,7 @@ class GPS(Informe):
     filtros = (FILTRO_ESTADO, Filtro("q", "Buscar", ayuda="IMEI, línea, placa del vehículo o nombre."))
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «GPS: líneas, vehículos y plataforma» según los filtros elegidos (``valores``)."""
         consulta = aplicar_activo(DetalleGPS.objects.select_related("equipo"),
                                   valores["estado"], "equipo__activo")
         filas = []
@@ -312,12 +360,17 @@ class GPS(Informe):
         return ordenar_por_placa(filas)
 
     def resumen(self, filas):
+        """Totales del encabezado: GPS, Reportan, Sin línea registrada."""
         reporta = sum(1 for f in filas if (f["plataforma"] or "").lower().startswith("reporta"))
         return [("GPS", len(filas)), ("Reportan", reporta),
                 ("Sin línea registrada", sum(1 for f in filas if not f["linea"]))]
 
 
 class Alarmas(Informe):
+    """Informe «Alarmas y comunicadores».
+
+    Sistemas de alarma, si reportan a la central y el estado de su comunicador.
+    """
     clave = "alarmas"
     titulo = "Alarmas y comunicadores"
     categoria = CATEGORIA
@@ -332,6 +385,7 @@ class Alarmas(Informe):
     filtros = (FILTRO_ESTADO,)
 
     def obtener_filas(self, valores, usuario=None):
+        """Filas de «Alarmas y comunicadores» según los filtros elegidos (``valores``)."""
         consulta = aplicar_activo(DetalleAlarma.objects.select_related("equipo"),
                                   valores["estado"], "equipo__activo")
         return ordenar_por_placa([{
@@ -341,6 +395,7 @@ class Alarmas(Informe):
         } for a in consulta])
 
     def resumen(self, filas):
+        """Totales del encabezado: Alarmas."""
         return [("Alarmas", len(filas))]
 
 

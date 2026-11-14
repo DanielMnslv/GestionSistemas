@@ -13,10 +13,12 @@ __all__ = [
 
 
 def opciones_con_todos(opciones, etiqueta="Todos"):
+    """Agrega la opción "Todos" (valor vacío) al inicio de una lista de opciones."""
     return (("", etiqueta),) + tuple((str(v), e) for v, e in opciones)
 
 
 def aplicar_activo(consulta, valor, campo="activo"):
+    """Filtra por estado: "activos", "bajas" o cualquier otro valor para todos."""
     if valor == "activos":
         return consulta.filter(**{campo: True})
     if valor == "bajas":
@@ -25,6 +27,7 @@ def aplicar_activo(consulta, valor, campo="activo"):
 
 
 def _simple(texto):
+    """Texto en minúsculas y sin tildes, para comparar."""
     texto = unicodedata.normalize("NFKD", str(texto or "").lower())
     return "".join(c for c in texto if not unicodedata.combining(c))
 
@@ -47,10 +50,12 @@ def clave_placa(placa):
 
 
 def ordenar_por_placa(filas, campo="placa"):
+    """Ordena las filas por placa en orden natural (JN-2 antes que JN-10)."""
     return sorted(filas, key=lambda f: clave_placa(f.get(campo)))
 
 
 def texto_componente(c):
+    """Texto de un componente de alarma ("2 sensores") o el texto tal cual."""
     if isinstance(c, dict):
         nombre = c.get("nombre", "")
         cantidad = c.get("cantidad", 1)

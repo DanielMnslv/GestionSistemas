@@ -1,3 +1,8 @@
+"""Piezas de un radio que se pueden pasar a otro radio.
+
+Lo usa la vista ``radio_transferir_componentes``: qué piezas tiene el radio
+de origen, cuáles le faltan al destino y a qué radios se pueden pasar.
+"""
 import json
 
 
@@ -19,6 +24,7 @@ COMPONENTES_TRANSFERIBLES_RADIO = (
 
 
 def _cantidad_baterias(radio):
+    """Cuántas baterías tiene el radio (0, 1 o 2)."""
     return sum(
         getattr(radio, campo) is True
         for campo in ("bateria_1", "bateria_2")
@@ -26,6 +32,7 @@ def _cantidad_baterias(radio):
 
 
 def componentes_presentes_radio(radio):
+    """Piezas que tiene el radio, con su nombre, cantidad y estado."""
     presentes = []
     for clave, nombre, campo, campo_estado in COMPONENTES_TRANSFERIBLES_RADIO:
         if clave == "baterias":
@@ -45,6 +52,7 @@ def componentes_presentes_radio(radio):
 
 
 def componentes_faltantes_radio(origen, destino):
+    """Piezas del origen que le faltan al destino (y que por eso se le pueden pasar)."""
     faltantes = []
     for componente in componentes_presentes_radio(origen):
         if componente["clave"] == "baterias":
@@ -63,6 +71,7 @@ def componentes_faltantes_radio(origen, destino):
 
 
 def destinos_radio_para_transferencia(origen, radios_activos):
+    """Radios activos que pueden recibir alguna pieza del radio de origen."""
     destinos = []
     if not origen.activo:
         return destinos

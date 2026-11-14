@@ -1,3 +1,7 @@
+"""Comando ``inspeccionar_valores_excel``: inspecciona los valores del Excel sin modificar la base de datos.
+
+Uso: ``python manage.py inspeccionar_valores_excel``.
+"""
 
 from pathlib import Path
 
@@ -12,9 +16,11 @@ ARCHIVO = Path(
 
 
 class Command(BaseCommand):
+    """Inspecciona los valores del Excel sin modificar la base de datos."""
     help = "Inspecciona los valores del Excel sin modificar la base de datos."
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         if not ARCHIVO.is_file():
             raise CommandError(f"No se encontró el archivo: {ARCHIVO}")
 

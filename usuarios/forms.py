@@ -1,3 +1,4 @@
+"""Formularios de administración de cuentas (solo superusuarios)."""
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -6,6 +7,11 @@ from django.contrib.auth.models import Group
 
 
 class UsuarioCreationForm(UserCreationForm):
+    """Creación de una cuenta con nombre, correo, contraseña y un rol.
+
+    Los roles son grupos de Django; cada cuenta tiene uno (ver
+    ``inventario/permisos.py``).
+    """
     ROLES = [
         ("Encargado de inventario", "Encargado de inventario"),
         ("Técnico de mantenimiento", "Técnico de mantenimiento"),
@@ -49,6 +55,7 @@ class UsuarioCreationForm(UserCreationForm):
         }
 
     def save(self, commit=True):
+        """Guarda la cuenta con sus datos y le asigna el rol elegido."""
         usuario = super().save(commit=False)
 
         usuario.first_name = self.cleaned_data["first_name"]
@@ -67,6 +74,7 @@ class UsuarioCreationForm(UserCreationForm):
 
 
 class UsuarioEditarForm(forms.ModelForm):
+    """Edición de una cuenta: datos, rol y si está activa."""
     rol = forms.ChoiceField(
         label="Rol del usuario",
         choices=UsuarioCreationForm.ROLES,
@@ -83,6 +91,7 @@ class UsuarioEditarForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Muestra marcado el rol actual de la cuenta."""
         super().__init__(*args, **kwargs)
         roles = dict(UsuarioCreationForm.ROLES)
         actual = self.instance.groups.filter(name__in=roles).first()
@@ -90,6 +99,7 @@ class UsuarioEditarForm(forms.ModelForm):
             self.fields["rol"].initial = actual.name
 
     def save(self, commit=True):
+        """Guarda la cuenta y reemplaza su rol por el elegido."""
         usuario = super().save(commit=commit)
         if commit:
             # Un rol por usuario: se reemplaza el anterior.

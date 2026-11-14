@@ -23,9 +23,17 @@ from usuarios.cuenta import enviar_bienvenida
 
 
 class Command(BaseCommand):
+    """Crea las cuentas de los funcionarios (rol Solicitante) y envía el enlace de contraseña."""
     help = "Crea las cuentas de los funcionarios (rol Solicitante) y envía el enlace de contraseña."
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--enviar``: Crear las cuentas y enviar los correos.
+        - ``--cedula``: Solo estas cédulas.
+        - ``--reenviar``: Reenviar el enlace a cuentas ya creadas que aún no tienen contraseña.
+        - ``--pausa``: Segundos entre correos.
+        """
         parser.add_argument("--enviar", action="store_true", help="Crear las cuentas y enviar los correos.")
         parser.add_argument("--cedula", action="append", default=[], help="Solo estas cédulas.")
         parser.add_argument("--reenviar", action="store_true",
@@ -33,6 +41,10 @@ class Command(BaseCommand):
         parser.add_argument("--pausa", type=float, default=1.0, help="Segundos entre correos.")
 
     def handle(self, *args, **opciones):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--enviar`` solo muestra lo que haría; no envía correos.
+        """
         User = get_user_model()
         enviar = opciones["enviar"]
         grupo = Group.objects.get_or_create(name=SOLICITANTE)[0] if enviar else None

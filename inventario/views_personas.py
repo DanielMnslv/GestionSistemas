@@ -40,6 +40,7 @@ TIPOS_CORTOS = [
 
 
 class FuncionarioForm(forms.ModelForm):
+    """Registro y edición de un funcionario: nombre, cédula, cargo y correo."""
     class Meta:
         model = Funcionario
         fields = ["nombre_completo", "cedula", "cargo", "correo"]
@@ -49,13 +50,16 @@ class FuncionarioForm(forms.ModelForm):
         }
 
     def clean_cedula(self):
+        """Quita los espacios de los extremos de la cédula."""
         return self.cleaned_data["cedula"].strip()
 
     def clean_nombre_completo(self):
+        """Deja el nombre en mayúsculas y con un solo espacio entre palabras."""
         return " ".join(self.cleaned_data["nombre_completo"].split()).upper()
 
 
 class RetiroForm(forms.ModelForm):
+    """Inicio del retiro de un funcionario: motivo, fecha y observaciones."""
     class Meta:
         model = RetiroFuncionario
         fields = ["motivo", "fecha_retiro", "observaciones"]
@@ -87,6 +91,9 @@ def _tipos_de(conteo):
 
 @login_required
 def personas_lista(request):
+    """Lista de funcionarios con búsqueda, cuántos equipos tiene cada uno y si
+    tiene un retiro en proceso.
+    """
     conteos = conteos_por_cedula()
     en_retiro = set(
         RetiroFuncionario.objects.filter(
@@ -144,6 +151,9 @@ def personas_lista(request):
 
 @login_required
 def persona_detalle(request, pk):
+    """Ficha del funcionario: equipos a su cargo con su estado de mantenimiento,
+    entregas, solicitudes de soporte y retiros.
+    """
     persona = get_object_or_404(Funcionario, pk=pk)
     a_cargo = equipos_a_cargo(persona)
     con_estado = {
@@ -199,6 +209,7 @@ def persona_detalle(request, pk):
 @login_required
 @requiere_permiso("personas")
 def persona_crear(request):
+    """Registro de un funcionario nuevo."""
     formulario = FuncionarioForm(request.POST or None)
     if request.method == "POST" and formulario.is_valid():
         persona = formulario.save()
@@ -210,6 +221,7 @@ def persona_crear(request):
 @login_required
 @requiere_permiso("personas")
 def persona_editar(request, pk):
+    """Edición de los datos de un funcionario."""
     persona = get_object_or_404(Funcionario, pk=pk)
     formulario = FuncionarioForm(request.POST or None, instance=persona)
     if request.method == "POST" and formulario.is_valid():
@@ -222,6 +234,10 @@ def persona_editar(request, pk):
 @login_required
 @requiere_permiso("retiros")
 def retiro_iniciar(request, pk):
+    """Inicia el proceso de retiro (paz y salvo) de un funcionario. Solo por POST.
+
+    Si ya hay uno en proceso, lleva a ese.
+    """
     persona = get_object_or_404(Funcionario, pk=pk)
     if request.method != "POST":
         return redirect("inventario:persona_detalle", pk=pk)
@@ -246,6 +262,10 @@ def retiro_iniciar(request, pk):
 
 @login_required
 def retiro_detalle(request, pk):
+    """Detalle del retiro: lista de equipos por validar (devuelto o reasignado).
+
+    Antes de mostrarla se sincroniza con los equipos que tiene a cargo hoy.
+    """
     retiro = get_object_or_404(
         RetiroFuncionario.objects.select_related("funcionario", "creado_por", "cerrado_por"), pk=pk
     )
@@ -268,6 +288,7 @@ def retiro_detalle(request, pk):
 @login_required
 @requiere_permiso("validar_retiro")
 def retiro_item_validar(request, pk):
+    """Valida un equipo del retiro: devuelto o reasignado a otro funcionario."""
     item = get_object_or_404(ItemRetiro.objects.select_related("retiro"), pk=pk)
     if request.method == "POST":
         reasignado = None
@@ -289,6 +310,10 @@ def retiro_item_validar(request, pk):
 @login_required
 @requiere_permiso("retiros")
 def retiro_emitir(request, pk):
+    """Emite el paz y salvo cuando todos los equipos están validados.
+
+    El funcionario queda inactivo.
+    """
     retiro = get_object_or_404(RetiroFuncionario, pk=pk)
     if request.method == "POST":
         try:
@@ -302,6 +327,7 @@ def retiro_emitir(request, pk):
 @login_required
 @requiere_permiso("retiros")
 def retiro_cancelar(request, pk):
+    """Cancela un retiro en proceso."""
     retiro = get_object_or_404(RetiroFuncionario, pk=pk)
     if request.method == "POST":
         try:
@@ -314,6 +340,7 @@ def retiro_cancelar(request, pk):
 
 @login_required
 def paz_y_salvo(request, pk):
+    """Documento de paz y salvo, listo para imprimir."""
     retiro = get_object_or_404(
         RetiroFuncionario.objects.select_related("funcionario", "cerrado_por"),
         pk=pk, estado=RetiroFuncionario.Estado.PAZ_Y_SALVO,
@@ -326,6 +353,7 @@ def paz_y_salvo(request, pk):
 
 @login_required
 def retiros_lista(request):
+    """Lista de retiros filtrada por estado (por defecto, en proceso)."""
     estado = request.GET.get("estado", "EN_PROCESO")
     retiros = RetiroFuncionario.objects.select_related("funcionario", "creado_por")
     if estado in RetiroFuncionario.Estado.values:

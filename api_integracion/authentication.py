@@ -1,3 +1,4 @@
+"""Autenticación por token para las consultas de Gestión TIC a la API."""
 from rest_framework.authentication import TokenAuthentication
 
 

@@ -2,6 +2,10 @@
 
 
 def tono_estado(texto):
+    """Color de la insignia según el texto del estado: green, amber, red o gray.
+
+    Se usa para estados escritos a mano (por ejemplo, los del Sheet).
+    """
     t = (texto or "").lower()
     if any(p in t for p in ("bueno", "operativ", "excelente", "nuevo")):
         return "green"

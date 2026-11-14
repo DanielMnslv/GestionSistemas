@@ -1,3 +1,7 @@
+"""Comando ``importar_politica_sheet``: importa las verificaciones de la política de seguridad de la hoja VERIFICACION POLITICA. Omite las ya importadas (mismo equipo y fecha). Es una simulación salvo con --confirmar.
+
+Uso: ``python manage.py importar_politica_sheet`` (opciones en ``--help``).
+"""
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -27,6 +31,7 @@ VACIOS = {"", "NINGUNA", "N/A", "NA", "SIN NOVEDAD"}
 
 
 class Command(BaseCommand):
+    """Importa las verificaciones de la política de seguridad de la hoja VERIFICACION POLITICA. Omite las ya importadas (mismo equipo y fecha). Es una simulación salvo con --confirmar."""
     help = (
         "Importa las verificaciones de la política de seguridad de la hoja "
         "VERIFICACION POLITICA. Omite las ya importadas (mismo equipo y "
@@ -34,11 +39,20 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--archivo``: Ruta a un .xlsx del Sheet.
+        - ``--confirmar``: Guardar los cambios.
+        """
         parser.add_argument("--archivo", help="Ruta a un .xlsx del Sheet.")
         parser.add_argument("--confirmar", action="store_true",
                             help="Guardar los cambios.")
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         with libro_del_sheet(options["archivo"], self.stdout) as archivo:
             libro = openpyxl.load_workbook(archivo, read_only=True, data_only=True)
             try:

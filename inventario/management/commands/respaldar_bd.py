@@ -1,3 +1,7 @@
+"""Comando ``respaldar_bd``: copia la base de datos SQLite a una carpeta de respaldos y borra las copias automáticas más antiguas. Pensado para programarse a diario.
+
+Uso: ``python manage.py respaldar_bd`` (opciones en ``--help``).
+"""
 import os
 import sqlite3
 from datetime import datetime
@@ -12,6 +16,7 @@ PATRON = "respaldo_auto_*.sqlite3"
 
 
 class Command(BaseCommand):
+    """Copia la base de datos SQLite a una carpeta de respaldos y borra las copias automáticas más antiguas. Pensado para programarse a diario."""
     help = (
         "Copia la base de datos SQLite a una carpeta de respaldos y borra "
         "las copias automáticas más antiguas. Pensado para programarse a "
@@ -19,6 +24,11 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--destino``: Carpeta de respaldos. Por defecto JANO_RESPALDOS_DIR o la carpeta respaldos/ del proyecto.
+        - ``--conservar``: Cantidad de copias automáticas a conservar (por defecto 30).
+        """
         parser.add_argument(
             "--destino",
             help=(
@@ -34,6 +44,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         if connection.vendor != "sqlite":
             raise CommandError("respaldar_bd solo funciona con SQLite.")
         if options["conservar"] < 1:

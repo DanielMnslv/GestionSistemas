@@ -37,6 +37,7 @@ def normalizar_serial(valor):
 
 
 def normalizar_placa(valor):
+    """Placa sin espacios y en mayúsculas."""
     return re.sub(r"\s+", "", texto_celda(valor)).upper()
 
 
@@ -50,6 +51,7 @@ def clave_placa(valor):
 
 
 def texto_celda(valor):
+    """Texto limpio de una celda (sin ".0" en números enteros y con un solo espacio)."""
     if valor is None:
         return ""
     if isinstance(valor, float) and valor.is_integer():
@@ -58,6 +60,7 @@ def texto_celda(valor):
 
 
 def normalizar_encabezado(valor):
+    """Encabezado sin tildes, en minúsculas y con un solo espacio, para compararlo."""
     texto = unicodedata.normalize("NFKD", str(valor or ""))
     texto = "".join(c for c in texto if not unicodedata.combining(c))
     return re.sub(r"\s+", " ", texto).strip().casefold()

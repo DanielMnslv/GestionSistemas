@@ -1,3 +1,7 @@
+"""Comando ``validar_radios_excel``: valida el inventario Excel sin guardar ni modificar radios.
+
+Uso: ``python manage.py validar_radios_excel``.
+"""
 
 from collections import Counter
 from pathlib import Path
@@ -33,9 +37,11 @@ COLUMNAS_REQUERIDAS = [
 
 
 class Command(BaseCommand):
+    """Valida el inventario Excel sin guardar ni modificar radios."""
     help = "Valida el inventario Excel sin guardar ni modificar radios."
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas."""
         raise CommandError(
             "Este comando quedó obsoleto: el Excel antiguo identificaba los "
             "radios con un ID interno (RAD-xxx) que ya no existe. "

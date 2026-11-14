@@ -1,3 +1,7 @@
+"""Comando ``importar_radios_excel``: valida el Excel; solo importa con --confirmar.
+
+Uso: ``python manage.py importar_radios_excel`` (opciones en ``--help``).
+"""
 
 from pathlib import Path
 
@@ -34,9 +38,14 @@ ACCESORIOS = {
 
 
 class Command(BaseCommand):
+    """Valida el Excel; solo importa con --confirmar."""
     help = "Valida el Excel; solo importa con --confirmar."
 
     def add_arguments(self, parser):
+        """Opciones del comando:
+
+        - ``--confirmar``: Guardar los radios después de validar todo.
+        """
         parser.add_argument(
             "--confirmar",
             action="store_true",
@@ -44,6 +53,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """Ejecuta el comando con las opciones recibidas.
+
+        Sin ``--confirmar`` solo muestra lo que haría; no guarda nada.
+        """
         raise CommandError(
             "Este comando quedó obsoleto: el Excel antiguo identificaba los "
             "radios con un ID interno (RAD-xxx) que ya no existe. "
@@ -88,6 +101,7 @@ class Command(BaseCommand):
             ids = []
 
             def texto(fila, columna):
+                """Texto de una celda de la fila (sin ".0" en números enteros)."""
                 valor = fila[indices[columna]]
                 if valor is None:
                     return ""

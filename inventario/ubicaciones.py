@@ -103,6 +103,7 @@ PALABRAS = {
 
 
 def _norm(texto):
+    """Texto sin tildes y en minúsculas."""
     t = unicodedata.normalize("NFD", texto or "")
     return "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
 
@@ -123,6 +124,7 @@ def municipio_de(*textos):
 
 
 def _clave(texto):
+    """Texto normalizado solo con letras y números, para comparar nombres."""
     return re.sub(r"[^a-z0-9]+", " ", _norm(texto)).strip()
 
 
@@ -152,6 +154,11 @@ class Localizador:
                 self.cliente_muni[c] = (m[0], m[1], m[2], False)
 
     def de(self, cliente, puesto):
+        """Ubicación (municipio, latitud, longitud, si es aproximada) de un cliente y puesto.
+
+        Busca primero el municipio en el nombre del puesto o del cliente; los
+        puestos de Seguridad JANO sin municipio van a la sede principal.
+        """
         kc, kp = _clave(cliente), _clave(puesto)
         m = municipio_de(puesto, cliente)
         if not m and kc.startswith("seguridad jano"):

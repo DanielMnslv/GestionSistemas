@@ -1,3 +1,8 @@
+"""Vistas de la API de integración con Gestión TIC.
+
+Consultas (token): equipos, radios e indicadores, solo lectura y paginadas.
+Recepción: eventos de Gestión TIC firmados con HMAC SHA256.
+"""
 
 import hashlib
 import hmac
@@ -30,12 +35,14 @@ from inventario.models import Equipo, Radio
 
 
 class PaginacionIntegracion(PageNumberPagination):
+    """Paginación de la API: 50 por página, máximo 100 con ``page_size``."""
     page_size = 50
     page_size_query_param = "page_size"
     max_page_size = 100
 
 
 class BaseConsultaIntegracion(generics.ListAPIView):
+    """Base de las consultas: exige token y solo permite lectura."""
     authentication_classes = [AutenticacionIntegracion]
     permission_classes = [
         IsAuthenticated,
@@ -45,16 +52,20 @@ class BaseConsultaIntegracion(generics.ListAPIView):
 
 
 class EquiposAPI(BaseConsultaIntegracion):
+    """Lista de equipos para Gestión TIC."""
     serializer_class = EquipoIntegracionSerializer
 
     def get_queryset(self):
+        """Todos los equipos, ordenados por id."""
         return Equipo.objects.all().order_by("id")
 
 
 class RadiosAPI(BaseConsultaIntegracion):
+    """Lista de radios para Gestión TIC."""
     serializer_class = RadioIntegracionSerializer
 
     def get_queryset(self):
+        """Todos los radios, ordenados por id."""
         return Radio.objects.all().order_by("id")
 
 
@@ -165,6 +176,10 @@ class IndicadoresAPI(APIView):
     permission_classes = [IsAuthenticated, SoloLecturaIntegracion]
 
     def get(self, request):
+        """Devuelve los indicadores del período ``desde``/``hasta`` (por defecto, el trimestre).
+
+        Responde 400 si las fechas no son válidas.
+        """
         try:
             desde, hasta = periodo_desde_parametros(request.query_params)
         except (KeyError, ValueError):

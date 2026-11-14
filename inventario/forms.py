@@ -1,4 +1,22 @@
-﻿
+﻿"""Formularios de JANO Inventario.
+
+Cada formulario valida lo que el usuario escribe antes de guardarlo y aplica
+las reglas de negocio: placas y seriales sin repetir, una sola entrega vigente
+por equipo, actividades de mantenimiento según el tipo de equipo, firma válida
+en las actas, fechas de visita que no estén en el pasado, etc.
+
+Grupos:
+- Mantenimiento: MantenimientoEquipoForm, MantenimientoProgramadoForm.
+- Radios: RadioForm, RadioBajaForm, AsignacionRadioForm (entrega a un puesto).
+- Equipos: EquipoForm y los formularios de detalle por tipo
+  (DetalleComputadorForm, DetalleImpresoraForm, DetalleGPSForm,
+  DetalleAlarmaForm), AsignacionEquipoForm, CambioGPSForm.
+- Seguridad: VerificacionPoliticaForm, RenovacionAntivirusForm.
+- Mesa de ayuda: TicketForm, AsignarTicketForm, AtencionTicketForm,
+  IntervencionTicketForm, TextoTicketForm, CedulaSoporteForm, SoporteForm,
+  ReabrirForm.
+"""
+
 import base64
 import binascii
 import re
@@ -45,20 +63,27 @@ class _OpcionesConDatos:
     """Agrega atributos data-* a cada opción según su valor."""
 
     def __init__(self, *args, datos_opcion=None, **kwargs):
+        """Recibe ``datos_opcion``: {valor: {atributo: valor}} para cada opción."""
         self.datos_opcion = datos_opcion or {}
         super().__init__(*args, **kwargs)
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        """Agrega a la opción sus atributos ``data-*`` (los usa el JavaScript del formulario)."""
         opcion = super().create_option(name, value, label, selected, index, subindex, attrs)
         opcion["attrs"].update(self.datos_opcion.get(str(value), {}))
         return opcion
 
 
 class SelectConDatos(_OpcionesConDatos, forms.Select):
+    """Lista desplegable cuyas opciones llevan atributos ``data-*`` (por ejemplo, el tipo de cada equipo)."""
     pass
 
 
 class CasillasConDatos(_OpcionesConDatos, forms.CheckboxSelectMultiple):
+    """Casillas múltiples cuyas opciones llevan atributos ``data-*``.
+
+    Permite mostrar solo las actividades que aplican al tipo de equipo elegido.
+    """
     pass
 
 
@@ -81,6 +106,11 @@ class MantenimientoPorTipoMixin:
     """
 
     def _preparar_tipos(self):
+        """Limita el campo ``equipo`` a los tipos con mantenimiento y marca cada opción con su tipo.
+
+        Así la pantalla muestra solo las actividades y partes que corresponden
+        al equipo seleccionado.
+        """
         campo = self.fields["equipo"]
         configurar_campo_equipo(campo)
         campo.queryset = campo.queryset.filter(
@@ -116,6 +146,10 @@ class MantenimientoPorTipoMixin:
         ]
 
     def _validar_tipo_equipo(self, cleaned):
+        """Comprueba que el equipo sea del tipo elegido y devuelve el tipo final.
+
+        Si hay equipo, su tipo manda sobre lo que se haya escogido en la lista.
+        """
         equipo = cleaned.get("equipo")
         tipo_equipo = cleaned.get("tipo_equipo")
         if equipo is not None:
@@ -125,12 +159,22 @@ class MantenimientoPorTipoMixin:
         return cleaned.get("tipo_equipo") or ""
 
     def _casillas_ajenas(self, cleaned, campo, catalogo, tipo_equipo):
+        """Marca error si en ``campo`` hay opciones que no aplican a ``tipo_equipo``."""
         sobran = set(cleaned.get(campo) or []) - act.claves_validas(catalogo, tipo_equipo)
         if tipo_equipo and sobran:
             self.add_error(campo, "Hay opciones que no corresponden a este tipo de equipo.")
 
 
 class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
+    """Registro o edición de una intervención de mantenimiento.
+
+    Reglas:
+        - El especialista se elige de la lista de técnicos de TIC.
+        - Las actividades preventivas solo se guardan en un preventivo; las
+          partes intervenidas, solo en un correctivo.
+        - Solo se aceptan actividades y partes que correspondan al tipo de
+          equipo (ver ``inventario/actividades_mantenimiento.py``).
+    """
     tecnico_responsable = forms.ChoiceField(
         label="Especialista asignado",
         choices=[
@@ -185,6 +229,9 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Ajusta formatos de fecha, deja opcionales los textos que dependen del tipo
+        y carga las actividades ya marcadas al editar.
+        """
         super().__init__(*args, **kwargs)
         self.fields["fecha_intervencion"].input_formats = ["%Y-%m-%dT%H:%M"]
         self.fields["funcionario_responsable"].queryset = Funcionario.objects.filter(activo=True)
@@ -201,6 +248,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
 
     def clean(self):
+        """Valida el conjunto según el tipo de mantenimiento.
+
+        Borra lo que no aplica al tipo (actividades o partes) y exige los datos
+        mínimos de cada clase de intervención.
+        """
         cleaned = super().clean()
         tipo = cleaned.get("tipo")
         tipo_equipo = self._validar_tipo_equipo(cleaned)
@@ -227,6 +279,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
 
 
 class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
+    """Programación de una visita de mantenimiento.
+
+    Se marcan las actividades que se van a revisar; si la descripción queda
+    vacía, se arma con ellas. La fecha no puede estar en el pasado.
+    """
     actividades = forms.MultipleChoiceField(
         label="Qué se va a revisar", required=False,
         choices=act.CHOICES_PREVENTIVAS[:-1] + act.CHOICES_CORRECTIVAS,
@@ -258,6 +315,7 @@ class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Prepara la lista de equipos por tipo y carga las actividades al editar."""
         super().__init__(*args, **kwargs)
 
         self._preparar_tipos()
@@ -272,6 +330,9 @@ class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
 
     def clean(self):
+        """Deja solo las actividades válidas para el tipo de mantenimiento y de equipo
+        y arma la descripción si no se escribió.
+        """
         cleaned = super().clean()
         tipo = cleaned.get("tipo")
         tipo_equipo = self._validar_tipo_equipo(cleaned)
@@ -293,6 +354,7 @@ class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         return cleaned
 
     def clean_fecha_programada(self):
+        """Rechaza fechas anteriores a hoy."""
         fecha = self.cleaned_data["fecha_programada"]
 
         if fecha < timezone.localdate():
@@ -338,6 +400,16 @@ def validar_firma(firma):
 
 
 class AsignacionRadioForm(forms.ModelForm):
+    """Entrega de un radio a un puesto de un cliente (acta de entrega).
+
+    Recibe el supervisor del puesto (cédula opcional). Se registra el estado de
+    cada pieza, la aceptación de la cláusula y la firma dibujada.
+
+    Reglas:
+        - El radio no puede tener otra entrega vigente.
+        - Si se elige un puesto del catálogo, el cliente y el puesto se copian
+          de él; si no, hay que escribirlos.
+    """
     ESTADOS = [
         "estado_radio_entrega", "estado_base_entrega",
         "estado_cargador_entrega", "estado_antena_entrega",
@@ -384,6 +456,9 @@ class AsignacionRadioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Crea los campos de estado de cada pieza, la cláusula obligatoria y
+        prepara las listas de radios disponibles y de puestos activos.
+        """
         super().__init__(*args, **kwargs)
 
         for campo in self.ESTADOS:
@@ -440,6 +515,7 @@ class AsignacionRadioForm(forms.ModelForm):
                 field.widget.attrs["class"] = "form-control"
 
     def clean(self):
+        """Completa cliente y puesto desde el catálogo o exige escribirlos."""
         datos = super().clean()
         puesto = datos.get("puesto")
         if puesto:
@@ -454,6 +530,7 @@ class AsignacionRadioForm(forms.ModelForm):
         return datos
 
     def _post_clean(self):
+        """Pasa al modelo el cliente y el puesto que ``clean`` completó."""
         super()._post_clean()
         # clean() completa los textos desde el puesto; se pasan al modelo.
         for campo in ("cliente_asignado", "puesto_asignado"):
@@ -461,9 +538,11 @@ class AsignacionRadioForm(forms.ModelForm):
                 setattr(self.instance, campo, self.cleaned_data[campo])
 
     def clean_firma(self):
+        """Valida que la firma sea una imagen PNG dibujada (ver ``validar_firma``)."""
         return validar_firma(self.cleaned_data["firma"])
 
     def clean_radio(self):
+        """Rechaza el radio si ya tiene una entrega vigente sin devolver."""
         radio = self.cleaned_data["radio"]
 
         if AsignacionRadio.objects.filter(
@@ -478,6 +557,7 @@ class AsignacionRadioForm(forms.ModelForm):
         return radio
 
     def save(self, commit=True):
+        """Guarda la entrega. La vista completa quién entrega y actualiza el radio."""
         asignacion = super().save(commit=False)
         if commit:
             asignacion.save()
@@ -486,6 +566,15 @@ class AsignacionRadioForm(forms.ModelForm):
 
 
 class RadioForm(forms.ModelForm):
+    """Registro y edición de un radio con su estado y accesorios.
+
+    Reglas:
+        - La placa se guarda sin espacios y en mayúsculas, y no puede repetirse.
+        - El serial no puede repetirse (se compara normalizado, sin guiones ni
+          espacios).
+        - El estado del radio es uno de los 4 estados; los de las piezas usan
+          Bueno, Regular, Dañado o No tiene.
+    """
     ESTADOS = [
         ("", "Sin dato"),
         ("Bueno", "Bueno"),
@@ -546,6 +635,9 @@ class RadioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Arma las listas de estado de cada pieza y conserva valores antiguos que
+        no estén en la lista para no perderlos al editar.
+        """
         super().__init__(*args, **kwargs)
 
         for campo in ("estado_radio", "estado_base", "estado_cargador",
@@ -584,6 +676,7 @@ class RadioForm(forms.ModelForm):
                 field.widget.attrs["class"] = "form-control"
 
     def clean_placa(self):
+        """Normaliza la placa (sin espacios, mayúsculas) y verifica que no se repita."""
         placa = re.sub(r"\s+", "", self.cleaned_data["placa"]).upper()
         if placa and Radio.objects.filter(placa__iexact=placa).exclude(
             pk=self.instance.pk
@@ -592,6 +685,7 @@ class RadioForm(forms.ModelForm):
         return placa
 
     def clean_serial(self):
+        """Verifica que el serial normalizado no esté en otro radio."""
         serial = self.cleaned_data["serial"].strip()
         clave = normalizar_serial(serial)
         if clave:
@@ -607,6 +701,7 @@ class RadioForm(forms.ModelForm):
 
 
 class RadioBajaForm(forms.Form):
+    """Motivo por el que se da de baja un radio."""
     motivo_baja = forms.CharField(
         label="Motivo de la baja",
         widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
@@ -646,6 +741,12 @@ class EquipoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Prepara fechas y la lista de sedes para el campo de ubicación.
+
+        La ubicación se elige entre la sede principal y las sedes de los puestos
+        para que el equipo aparezca en el mapa del tablero; si el equipo tenía
+        un valor que no está en la lista, se conserva.
+        """
         super().__init__(*args, **kwargs)
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
         # La sede se elige de la lista (sede principal y sedes de los puestos)
@@ -669,6 +770,7 @@ class EquipoForm(forms.ModelForm):
                 field.widget.attrs["class"] = "form-control"
 
     def clean_placa(self):
+        """Normaliza la placa (sin espacios, mayúsculas) y verifica que sea única."""
         placa = re.sub(r"\s+", "", self.cleaned_data["placa"]).upper()
         if Equipo.objects.filter(placa__iexact=placa).exclude(
             pk=self.instance.pk
@@ -677,6 +779,7 @@ class EquipoForm(forms.ModelForm):
         return placa
 
     def clean_serial(self):
+        """Verifica que el serial normalizado no esté registrado en otro equipo."""
         serial = self.cleaned_data["serial"].strip()
         clave = normalizar_serial(serial)
         if clave:
@@ -694,6 +797,7 @@ class DetalleForm(forms.ModelForm):
     """Base de los formularios de detalle por tipo."""
 
     def __init__(self, *args, **kwargs):
+        """Aplica el estilo de la plataforma y el formato de fecha a todos los campos."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
@@ -702,6 +806,11 @@ class DetalleForm(forms.ModelForm):
 
 
 class DetalleComputadorForm(DetalleForm):
+    """Datos técnicos de un computador o tableta.
+
+    Las claves de licencia solo aparecen para quien tiene el permiso
+    "licencias"; sin él, ni se muestran ni se pueden modificar.
+    """
     LICENCIAS = ["licencia_so", "licencia_antivirus", "licencia_office"]
 
     class Meta:
@@ -744,6 +853,7 @@ class DetalleComputadorForm(DetalleForm):
         }
 
     def __init__(self, *args, ver_licencias=False, **kwargs):
+        """Quita los campos de licencia si ``ver_licencias`` es falso."""
         super().__init__(*args, **kwargs)
         if not ver_licencias:
             # Sin el permiso, las claves ni se muestran ni se modifican.
@@ -752,6 +862,7 @@ class DetalleComputadorForm(DetalleForm):
 
 
 class DetalleImpresoraForm(DetalleForm):
+    """Datos propios de una impresora o escáner."""
     class Meta:
         model = DetalleImpresora
         exclude = ["equipo"]
@@ -759,6 +870,10 @@ class DetalleImpresoraForm(DetalleForm):
 
 
 class DetalleGPSForm(DetalleForm):
+    """Datos del GPS: IMEI, línea, operador, vehículo y estado en la plataforma.
+
+    Los cambios posteriores de línea o vehículo se registran con CambioGPSForm.
+    """
     class Meta:
         model = DetalleGPS
         exclude = ["equipo", "fecha_asignacion"]
@@ -772,6 +887,10 @@ class DetalleGPSForm(DetalleForm):
 
 
 class DetalleAlarmaForm(DetalleForm):
+    """Datos de un panel de alarma y su lista de componentes.
+
+    Los componentes se escriben uno por línea: ``nombre; cantidad; estado``.
+    """
     componentes_texto = forms.CharField(
         label="Componentes",
         required=False,
@@ -791,6 +910,7 @@ class DetalleAlarmaForm(DetalleForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Muestra los componentes guardados en el formato de texto editable."""
         super().__init__(*args, **kwargs)
         self.fields["componentes_texto"].initial = "\n".join(
             "{}; {}; {}".format(
@@ -800,6 +920,11 @@ class DetalleAlarmaForm(DetalleForm):
         )
 
     def clean_componentes_texto(self):
+        """Convierte el texto en una lista de componentes y valida cada línea.
+
+        Cada línea debe tener tres partes separadas por punto y coma, y la
+        cantidad debe ser un número entero.
+        """
         componentes = []
         for numero, linea in enumerate(
             self.cleaned_data["componentes_texto"].splitlines(), start=1
@@ -818,6 +943,7 @@ class DetalleAlarmaForm(DetalleForm):
         return componentes
 
     def save(self, commit=True):
+        """Guarda la lista de componentes ya convertida."""
         self.instance.componentes = self.cleaned_data["componentes_texto"]
         return super().save(commit=commit)
 
@@ -845,6 +971,10 @@ CLAUSULA_EQUIPOS = (
 
 
 class AsignacionEquipoForm(forms.ModelForm):
+    """Entrega de un equipo (computador, impresora, tableta…) a un funcionario.
+
+    Exige funcionario activo, aceptación de la cláusula y firma dibujada.
+    """
     class Meta:
         model = AsignacionEquipo
         fields = [
@@ -864,6 +994,7 @@ class AsignacionEquipoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Lista solo funcionarios activos (nombre · cédula) y hace obligatoria la cláusula."""
         super().__init__(*args, **kwargs)
         self.fields["funcionario"].required = True
         self.fields["funcionario"].queryset = Funcionario.objects.filter(
@@ -885,10 +1016,12 @@ class AsignacionEquipoForm(forms.ModelForm):
                 field.widget.attrs["class"] = "form-control"
 
     def clean_firma(self):
+        """Valida que la firma sea una imagen PNG dibujada."""
         return validar_firma(self.cleaned_data["firma"])
 
 
 class CambioGPSForm(forms.ModelForm):
+    """Registro de un cambio de línea, operador o vehículo de un GPS."""
     class Meta:
         model = CambioGPS
         fields = [
@@ -904,6 +1037,7 @@ class CambioGPSForm(forms.ModelForm):
         widgets = {"observaciones": forms.Textarea(attrs={"rows": 2})}
 
     def __init__(self, *args, **kwargs):
+        """Ofrece la lista de qué cambia (vehículo, línea, ambos u otro)."""
         super().__init__(*args, **kwargs)
         self.fields["dato_actualizado"] = forms.ChoiceField(
             label=self.Meta.labels["dato_actualizado"],
@@ -919,6 +1053,11 @@ class CambioGPSForm(forms.ModelForm):
 
 
 class VerificacionPoliticaForm(forms.Form):
+    """Verificación de los 15 puntos de la política de seguridad informática.
+
+    Crea un campo por punto (``punto_<clave>``) con las respuestas de
+    ``inventario/politica.py``; por defecto todos quedan en "Cumple".
+    """
     especialista = forms.CharField(label="Especialista que verifica", max_length=200)
     responsable = forms.CharField(
         label="Funcionario responsable del equipo", max_length=200, required=False
@@ -933,6 +1072,7 @@ class VerificacionPoliticaForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Crea un campo de opción por cada punto de la política."""
         from .politica import CUMPLE, PUNTOS, RESPUESTAS
 
         super().__init__(*args, **kwargs)
@@ -946,9 +1086,11 @@ class VerificacionPoliticaForm(forms.Form):
                 field.widget.attrs["class"] = "form-control"
 
     def puntos(self):
+        """Campos de los puntos, en orden, para pintarlos en la plantilla."""
         return [self[n] for n in self.fields if n.startswith("punto_")]
 
     def respuestas(self):
+        """Respuestas como {clave_del_punto: respuesta} para guardar en la verificación."""
         return {
             nombre.removeprefix("punto_"): valor
             for nombre, valor in self.cleaned_data.items()
@@ -957,6 +1099,7 @@ class VerificacionPoliticaForm(forms.Form):
 
 
 class RenovacionAntivirusForm(forms.Form):
+    """Renovación del antivirus de un computador: producto, licencia y vencimiento."""
     antivirus = forms.CharField(label="Antivirus instalado", max_length=150)
     licencia = forms.CharField(label="Licencia", max_length=200, required=False)
     vencimiento = forms.DateField(
@@ -966,6 +1109,7 @@ class RenovacionAntivirusForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Aplica el estilo de la plataforma a todos los campos."""
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
@@ -1026,6 +1170,7 @@ class TicketForm(forms.ModelForm):
         widgets = {"descripcion": forms.Textarea(attrs={"rows": 4})}
 
     def __init__(self, *args, **kwargs):
+        """Prepara la lista de equipos (opcional: hay solicitudes sin equipo, como correo o red)."""
         super().__init__(*args, **kwargs)
         configurar_campo_equipo(self.fields["equipo"])
         self.fields["equipo"].required = False
@@ -1035,6 +1180,7 @@ class TicketForm(forms.ModelForm):
 
 
 class AsignarTicketForm(forms.Form):
+    """Asignación de una solicitud: técnico, prioridad y fecha y franja de la visita."""
     tecnico = forms.ModelChoiceField(
         queryset=get_user_model().objects.none(), label="Técnico",
         empty_label="Seleccione un técnico",
@@ -1051,6 +1197,7 @@ class AsignarTicketForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        """Lista solo los usuarios con rol de técnico, por su nombre."""
         super().__init__(*args, **kwargs)
         self.fields["tecnico"].queryset = tecnicos()
         self.fields["tecnico"].label_from_instance = (
@@ -1061,6 +1208,7 @@ class AsignarTicketForm(forms.Form):
 
 
 class AtencionTicketForm(forms.Form):
+    """Cierre técnico de una solicitud: solución y, si la hay, firma de quien recibe."""
     solucion = forms.CharField(
         label="Solución (la verá el solicitante)",
         widget=forms.Textarea(attrs={"rows": 3}),
@@ -1071,16 +1219,19 @@ class AtencionTicketForm(forms.Form):
     firma = forms.CharField(widget=forms.HiddenInput, required=False)
 
     def __init__(self, *args, **kwargs):
+        """Aplica el estilo de la plataforma (salvo al campo oculto de la firma)."""
         super().__init__(*args, **kwargs)
         for nombre, field in self.fields.items():
             if nombre != "firma":
                 field.widget.attrs["class"] = "form-control"
 
     def clean_firma(self):
+        """Valida la firma si se dibujó; es opcional."""
         firma = self.cleaned_data["firma"]
         return validar_firma(firma) if firma else ""
 
     def clean(self):
+        """Si hay firma, exige el nombre de quien firma."""
         datos = super().clean()
         if datos.get("firma") and not datos.get("firma_nombre"):
             self.add_error("firma_nombre", "Indica quién firma.")
@@ -1092,6 +1243,7 @@ class IntervencionTicketForm(MantenimientoEquipoForm):
     usan las mismas casillas por tipo de equipo que en mantenimiento."""
 
     def __init__(self, *args, equipo=None, **kwargs):
+        """Fija el equipo de la solicitud: el mantenimiento se registra sobre ese equipo."""
         super().__init__(*args, **kwargs)
         if equipo is not None:
             self.fields["equipo"].initial = equipo.pk
@@ -1101,6 +1253,7 @@ class IntervencionTicketForm(MantenimientoEquipoForm):
 
 
 class TextoTicketForm(forms.Form):
+    """Comentario sobre una solicitud; puede ser interno o visible para el solicitante."""
     texto = forms.CharField(
         label="Texto", widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
         max_length=2000,
@@ -1116,6 +1269,7 @@ class CedulaSoporteForm(forms.Form):
     sitio_web = forms.CharField(required=False, label="Sitio web")
 
     def __init__(self, *args, **kwargs):
+        """Prepara el campo de cédula y el campo trampa contra robots."""
         super().__init__(*args, **kwargs)
         self.funcionario = None
         self.fields["cedula"].widget.attrs.update({
@@ -1124,6 +1278,10 @@ class CedulaSoporteForm(forms.Form):
         self.fields["sitio_web"].widget.attrs.update({"tabindex": "-1", "autocomplete": "off"})
 
     def clean_cedula(self):
+        """Deja solo dígitos y verifica que la cédula sea de un funcionario activo.
+
+        Guarda el funcionario encontrado en ``self.funcionario``.
+        """
         cedula = re.sub(r"\D", "", self.cleaned_data["cedula"])
         funcionario = Funcionario.objects.filter(cedula=cedula, activo=True).first()
         if funcionario is None:
@@ -1135,6 +1293,7 @@ class CedulaSoporteForm(forms.Form):
         return cedula
 
     def clean_sitio_web(self):
+        """Campo trampa: si un robot lo llena, la solicitud se rechaza."""
         if self.cleaned_data["sitio_web"]:
             raise forms.ValidationError("Solicitud no válida.")
         return ""
@@ -1175,6 +1334,11 @@ class SoporteForm(forms.Form):
     )
 
     def __init__(self, *args, funcionario=None, equipos=(), **kwargs):
+        """Arma las opciones del formulario de soporte para un funcionario.
+
+        ``equipos`` son los equipos a su cargo (se ofrecen para elegir); la lista
+        de visitas muestra los cupos libres de la agenda (``inventario/agenda.py``).
+        """
         from . import agenda
 
         super().__init__(*args, **kwargs)
@@ -1200,6 +1364,11 @@ class SoporteForm(forms.Form):
                 field.widget.attrs["class"] = "form-control"
 
     def clean(self):
+        """Resuelve el equipo elegido (de la lista o por placa) y la visita pedida.
+
+        Si se escribe una placa, debe existir; la visita elegida debe seguir
+        teniendo cupo.
+        """
         datos = super().clean()
         eleccion = datos.get("equipo") or ""
         self.equipo = None
@@ -1226,6 +1395,7 @@ class SoporteForm(forms.Form):
 
 
 class ReabrirForm(forms.Form):
+    """Motivo con el que el solicitante reabre un caso que sigue fallando."""
     motivo = forms.CharField(
         label="¿Qué sigue fallando?",
         widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
