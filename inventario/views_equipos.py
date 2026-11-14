@@ -623,8 +623,7 @@ COLUMNAS_POR_TIPO = {
                                  getattr(_rel(e, "computador"), "tipo_ram", ""))),
         ("Disco", lambda e: _junto(getattr(_rel(e, "computador"), "capacidad_disco", ""),
                                    getattr(_rel(e, "computador"), "tipo_disco", ""))),
-        ("Sistema operativo", lambda e: getattr(_rel(e, "computador"), "sistema_operativo", "")),
-        ("Ubicación", lambda e: e.ubicacion),
+        ("Sistema", lambda e: getattr(_rel(e, "computador"), "sistema_operativo", "")),
     ],
     Equipo.Tipo.TABLETA: [
         ("Serial", lambda e: e.serial),

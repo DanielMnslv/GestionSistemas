@@ -324,7 +324,8 @@ def _actividad(limite=7):
     registros = list(
         RegistroAuditoria.objects.exclude(
             accion__in=[RegistroAuditoria.Accion.INGRESO, RegistroAuditoria.Accion.SALIDA]
-        ).order_by("-fecha", "-id")[:limite]
+        # La bitácora interna de cada ticket repite lo que ya dice el ticket.
+        ).exclude(modelo="Evento de ticket").order_by("-fecha", "-id")[:limite]
     )
     if registros:
         return [{

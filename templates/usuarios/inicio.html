@@ -119,7 +119,7 @@
             {% for t in tipos %}
             <a class="jx-type" href="{{ u_equipos }}?tipo={{ t.tipo }}" title="{{ t.ok }} operativos, {{ t.reg }} regulares, {{ t.mal }} con falla, {{ t.sin }} sin estado">
                 <span class="jx-type-name">{{ t.nombre }}<em>{{ t.total }}</em></span>
-                <span class="jx-stack"><i class="c-ok" style="width:{{ t.w_ok }}%"></i><i class="c-warn" style="width:{{ t.w_reg }}%"></i><i class="c-bad" style="width:{{ t.w_mal }}%"></i><i class="c-none" style="width:{{ t.w_sin }}%"></i></span>
+                <span class="jx-bar"><i class="c-ok" style="width:{{ t.w_ok }}%"></i><i class="c-warn" style="width:{{ t.w_reg }}%"></i><i class="c-bad" style="width:{{ t.w_mal }}%"></i><i class="c-none" style="width:{{ t.w_sin }}%"></i></span>
                 <span class="jx-type-pct">{{ t.pct_ok }}%</span>
             </a>
             {% empty %}

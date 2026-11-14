@@ -167,14 +167,14 @@ html.jx-mini .jx-user { justify-content: center; background: none; }
 
 .jx-search { position: relative; width: min(440px, 40vw); }
 .jx-search input {
-    width: 100%; height: 42px; padding: 0 64px 0 42px; border-radius: 12px;
+    width: 100%; height: 40px; padding: 0 64px 0 42px; border-radius: 11px;
     border: 1px solid var(--jx-line); background: var(--jx-surface-2); color: var(--jx-text);
     font: inherit; font-size: 13.5px;
 }
 .jx-search input::placeholder { color: var(--jx-muted); }
 .jx-search input:focus { outline: none; border-color: var(--jx-primary); background: var(--jx-surface); box-shadow: 0 0 0 4px var(--jx-primary-soft); }
-.jx-search > svg { position: absolute; left: 13px; top: 11px; color: var(--jx-muted); pointer-events: none; }
-.jx-kbd { position: absolute; right: 10px; top: 10px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--jx-line-strong); color: var(--jx-muted); font-size: 11px; font-weight: 700; background: var(--jx-surface); pointer-events: none; }
+.jx-search > svg { position: absolute; left: 13px; top: 10px; color: var(--jx-muted); pointer-events: none; }
+.jx-kbd { position: absolute; right: 10px; top: 9px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--jx-line-strong); color: var(--jx-muted); font-size: 11px; font-weight: 700; background: var(--jx-surface); pointer-events: none; }
 .jx-search-res {
     position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 60;
     max-height: min(70vh, 520px); overflow-y: auto; padding: 8px;
@@ -272,8 +272,9 @@ html[data-tema="dark"] .jx-btn-primary { color: #0d1020; }
 .jx-tone-teal { background: #0f9e93; }
 
 /* Indicadores */
-.jx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.jx-kpis + .jx-kpis { margin-top: 16px; }
+.jx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.jx-kpis + .jx-kpis { margin-top: 18px; }
+.jx-kpis + .jx-grid, .jx-grid + .jx-kpis { margin-top: 18px; }
 .jx-kpi {
     position: relative; display: flex; flex-direction: column; gap: 6px; padding: 18px 20px;
     background: var(--jx-surface); border: 1px solid var(--jx-line); border-radius: var(--jx-radius); box-shadow: var(--jx-shadow);
@@ -310,8 +311,8 @@ a.jx-kpi:hover .jx-kpi-arrow { opacity: 1; transform: translateX(2px); }
 .jx-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--jx-muted); }
 .jx-legend li { display: inline-flex; align-items: center; gap: 6px; }
 .jx-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.jx-stack { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--jx-neutral-soft); gap: 2px; }
-.jx-stack i { display: block; height: 100%; }
+.jx-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--jx-neutral-soft); gap: 2px; }
+.jx-bar i { display: block; height: 100%; }
 .c-ok { background: var(--jx-c-ok); } .c-warn { background: var(--jx-c-warn); } .c-bad { background: var(--jx-c-bad); } .c-none { background: var(--jx-c-none); }
 
 /* Listas de atención y actividad */
@@ -862,3 +863,173 @@ html[data-tema="dark"] .jx a.jx-btn.jx-btn-primary, html[data-tema="dark"] .jx a
 .lista-fija-page .jx-content { max-width: none; }
 .eq-tabla td.eq-c-dato { font-size: 12.5px; color: var(--jx-text-2, inherit); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lista-fija-page .eq-tabla td.eq-c-equipo, .lista-fija-page .eq-tabla td.col-extra { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ==========================================================================
+   Pantallas con marcado anterior (Mantenimiento, Clientes, Informes, Política,
+   formularios de radio y equipo): mismo aspecto del sistema nuevo, para que
+   botones, paneles, filtros y pestañas midan y se vean igual en toda la
+   plataforma. Va al final para mandar sobre las hojas viejas.
+   ========================================================================== */
+
+/* Un solo azul de marca en todo: las hojas viejas usaban tres tonos. */
+:root, html[data-tema="dark"] {
+    --jano-blue: var(--jx-primary); --lv-primary: var(--jx-primary); --lv-primary-strong: var(--jx-primary);
+    --jano-primary: var(--jx-primary); --jano-ui-primary: var(--jx-primary); --jano-brand: var(--jx-primary);
+    --jano-primary-hover: var(--jx-primary-600); --jano-ui-primary-hover: var(--jx-primary-600); --jano-brand-hover: var(--jx-primary-600);
+    --jano-brand-soft: var(--jx-primary-soft); --jano-ui-accent: var(--jx-lime); --jano-accent: var(--jx-lime);
+}
+
+/* Encabezado de página */
+.jx-content .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 22px; padding: 0; background: none; border: 0; box-shadow: none; }
+.jx-content .page-heading h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; color: var(--jx-text); }
+.jx-content .page-heading p { margin: 4px 0 0; color: var(--jx-muted); font-size: 14px; }
+.jx-content .mant-heading-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.jx-content .informe-migas { margin: 0 0 12px; font-size: 13px; color: var(--jx-muted); }
+.jx-content .informe-migas a { color: var(--jx-primary); font-weight: 600; text-decoration: none; }
+
+/* Botones: misma altura, radio y peso que .jx-btn */
+.jx-content .btn, .jx-content .ficha-form-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; min-height: 40px; padding: 0 16px; border-radius: 11px;
+    border: 1px solid var(--jx-line-strong); background: var(--jx-surface); color: var(--jx-text);
+    font: inherit; font-weight: 700; font-size: 13.5px; line-height: 1; letter-spacing: 0;
+    text-decoration: none; text-transform: none; box-shadow: none; white-space: nowrap; cursor: pointer;
+}
+.jx-content .btn:hover, .jx-content .ficha-form-button-secondary:hover { background: var(--jx-surface-2); border-color: var(--jx-muted); color: var(--jx-text); }
+.jx-content .btn-primary, .jx-content .ficha-form-button:not(.ficha-form-button-secondary) { background: var(--jx-primary); border-color: var(--jx-primary); color: #fff; }
+.jx-content .btn-primary:hover, .jx-content .ficha-form-button:not(.ficha-form-button-secondary):hover { background: var(--jx-primary-600); border-color: var(--jx-primary-600); color: #fff; }
+html[data-tema="dark"] .jx-content .btn-primary, html[data-tema="dark"] .jx-content .ficha-form-button:not(.ficha-form-button-secondary) { color: #0d1020; }
+
+/* Paneles como tarjetas */
+.jx-content .panel { background: var(--jx-surface); border: 1px solid var(--jx-line); border-radius: var(--jx-radius); box-shadow: var(--jx-shadow); }
+.jx-content .panel + .panel { margin-top: 16px; }
+
+/* Barra de filtros: campos en una fila, todos de 40 px, botón al final */
+.jx-content .mant-filtros { padding: 14px; margin-bottom: 16px; }
+.jx-content .filters { display: grid; gap: 10px; align-items: end; margin: 0; }
+.jx-content .filters .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0; }
+.jx-content .filters .field > label:not(.solo-lector) { font-size: 11px; font-weight: 700; color: var(--jx-muted); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+.jx-content .filters .field-check > label { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--jx-text); display: inline-flex; align-items: center; gap: 8px; height: 40px; }
+.jx-content .filters input:not([type="checkbox"]):not([type="radio"]),
+.jx-content .filters select {
+    width: 100%; min-width: 0; height: 40px; padding: 0 12px; border-radius: 10px;
+    border: 1px solid var(--jx-line); background-color: var(--jx-surface-2); color: var(--jx-text);
+    font: inherit; font-size: 13px; box-shadow: none;
+}
+.jx-content .filters input:focus, .jx-content .filters select:focus { outline: none; border-color: var(--jx-primary); background-color: var(--jx-surface); box-shadow: 0 0 0 3px var(--jx-primary-soft); }
+.jx-content .filters .actions { display: flex; gap: 8px; align-items: center; }
+.jx-content .filters.filters-cli { grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(150px, 1fr)) auto; }
+.jx-content .informe-filtros { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.jx-content .informe-filtros .actions { justify-content: flex-end; }
+.jx-content .mant-mas > summary { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--jx-primary); cursor: pointer; }
+
+/* Flecha propia en todas las listas desplegables (la del sistema cambia de navegador a navegador) */
+.jx-content select:not([multiple]):not([size]) {
+    appearance: none; -webkit-appearance: none; padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7189' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+}
+
+/* Campos de formulario: misma altura en texto, fecha y listas */
+.jx-content .form-control:not(textarea):not(div) { height: 44px; min-height: 44px; box-sizing: border-box; }
+.jx-content input[type="date"].form-control, .jx-content input[type="datetime-local"].form-control { padding-top: 0; padding-bottom: 0; }
+
+/* Pestañas de Mantenimiento con el aspecto de .jx-tabs */
+.jx-content .mant-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 0 16px; padding: 0; border: 0; border-bottom: 1px solid var(--jx-line); background: none; box-shadow: none; border-radius: 0; }
+.jx-content .mant-tab { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px 12px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--jx-muted); font-weight: 700; font-size: 13.5px; text-decoration: none; white-space: nowrap; }
+.jx-content .mant-tab:hover { color: var(--jx-text); background: none; }
+.jx-content .mant-tab.activa { color: var(--jx-primary); background: none; }
+.jx-content .mant-tab.activa::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--jx-primary); }
+.jx-content .mant-tab-n { min-width: 24px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--jx-neutral-soft); color: var(--jx-neutral); font-size: 11.5px; display: inline-grid; place-items: center; }
+.jx-content .mant-tab.activa .mant-tab-n { background: var(--jx-primary); color: #fff; }
+
+/* Tablas anteriores: encabezado igual al de .jx-table */
+.jx-content .table-wrap > table th, .jx-content .tabla-tarjetas th { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--jx-muted); background: var(--jx-surface-2); white-space: nowrap; }
+.jx-content .mant-hist td:nth-child(4) { min-width: 150px; }
+
+/* Lista de un solo tipo: columnas más angostas para que quepan sin desplazar */
+.lista-fija-page .eq-tabla td.eq-c-dato { max-width: 170px; }
+
+/* Botones de las tablas: área táctil mínima en celular */
+@media (max-width: 600px) {
+    .jx-content .tabla-tarjetas .btn, .jx-content .mant-acciones .btn, .jx-content .mant-acciones-celda .btn { height: 36px; min-height: 36px; }
+}
+
+@media (max-width: 900px) {
+    .jx-content .filters.filters-cli, .jx-content .filters.filters-prog { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .jx-content .filters.filters-cli > .field:first-child { grid-column: 1 / -1; }
+    .jx-content .page-heading { align-items: flex-start; }
+    /* "Más filtros" se despliega dentro de la barra y no por fuera de la pantalla. */
+    .jx-more { flex: 1 1 100%; }
+    .jx-more > summary { width: 100%; }
+    .jx-more-panel { position: static; width: auto; margin-top: 10px; box-shadow: none; }
+}
+@media (max-width: 600px) {
+    .jx-content .filters.filters-cli, .jx-content .filters.filters-prog, .jx-content .informe-filtros { grid-template-columns: minmax(0, 1fr); }
+    .jx-content .filters .actions > .btn { flex: 1; }
+    .jx-content .mant-heading-actions { width: 100%; }
+    .jx-content .mant-heading-actions > .btn { flex: 1; }
+}
+
+/* Las páginas anteriores ya separan sus bloques con "gap": sin márgenes extra. */
+.jx-content .mant-page > .panel { margin-top: 0; margin-bottom: 0; }
+.jx-content .mant-page { gap: 18px; }
+/* Leyenda del gráfico debajo del título, sin apretar el subtítulo. */
+.jx-card-head:has(> .jx-legend) { flex-wrap: wrap; align-items: flex-start; }
+.jx-card-head > .jx-legend { flex: 1 1 100%; gap: 6px 14px; }
+/* Lista de un solo tipo: celdas más compactas para que todas las columnas quepan en pantalla. */
+.lista-fija-page .eq-tabla:has(td.eq-c-dato) th, .lista-fija-page .eq-tabla:has(td.eq-c-dato) td { padding-left: 10px; padding-right: 10px; }
+.lista-fija-page .eq-tabla:has(td.eq-c-dato) td.eq-c-equipo, .lista-fija-page .eq-tabla:has(td.eq-c-dato) td.col-extra { max-width: 150px; }
+.lista-fija-page .eq-tabla:has(td.eq-c-dato) td.col-extra.eq-c-dato { max-width: 120px; }
+/* Vista previa de informes: el texto largo baja de línea en vez de cortarse. */
+.jx-content .informes-page .table-wrap td { white-space: normal; overflow-wrap: anywhere; max-width: 240px; }
+.jx-content .mant-page > .page-heading { margin-bottom: 0; }
+.jx-content .mant-page > .mant-tabs { margin-bottom: 0; }
+/* Acciones dentro de tablas: botón compacto para que las filas no crezcan. */
+.jx-content .tabla-tarjetas td .btn, .jx-content .table-wrap td .btn { height: 34px; min-height: 34px; padding: 0 12px; font-size: 13px; border-radius: 9px; }
+/* La placa se ve igual en todas las tablas: negrita, azul y sin subrayado. */
+.jx-content .tabla-tarjetas td:first-child > a:first-child { font-weight: 800; color: var(--jx-primary); text-decoration: none; }
+.jx-content .tabla-tarjetas td:first-child > a:first-child:hover { text-decoration: underline; }
+/* Informes: tarjetas de igual alto y botones alineados abajo. */
+.jx-content .informe-tarjeta { display: flex; flex-direction: column; }
+.jx-content .informe-tarjeta .informe-descargas { margin-top: auto; padding-top: 12px; }
+.jx-content .informe-tarjeta .btn { height: 34px; min-height: 34px; padding: 0 14px; font-size: 13px; border-radius: 9px; }
+
+/* Fichas con marcado "rd-" (radio, cliente): mismos botones, paneles y tablas. */
+.jx-content .rd-heading h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--jx-text); }
+.jx-content .rd-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.jx-content .rd-btn, .jx-content .radio-detalle .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; min-height: 40px; padding: 0 16px; border-radius: 11px;
+    border: 1px solid var(--jx-primary); background: var(--jx-primary); color: #fff;
+    font: inherit; font-weight: 700; font-size: 13.5px; line-height: 1; text-decoration: none; box-shadow: none; cursor: pointer; white-space: nowrap;
+}
+.jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover, .jx-content .radio-detalle .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover { background: var(--jx-primary-600); border-color: var(--jx-primary-600); color: #fff; }
+.jx-content .rd-btn-secondary, .jx-content .radio-detalle .rd-btn-secondary { background: var(--jx-surface); border-color: var(--jx-line-strong); color: var(--jx-text); }
+.jx-content .rd-btn-secondary:hover, .jx-content .radio-detalle .rd-btn-secondary:hover { background: var(--jx-surface-2); border-color: var(--jx-muted); color: var(--jx-text); }
+html[data-tema="dark"] .jx-content .rd-btn:not(.rd-btn-secondary) { color: #0d1020; }
+.jx-content .rd-table td .rd-btn { height: 34px; min-height: 34px; padding: 0 12px; font-size: 13px; border-radius: 9px; }
+.jx-content .rd-panel { background: var(--jx-surface); border: 1px solid var(--jx-line); border-radius: var(--jx-radius); box-shadow: var(--jx-shadow); }
+.jx-content .rd-panel-heading { padding: 18px 20px 14px; border-bottom: 1px solid var(--jx-line); }
+.jx-content .rd-panel-heading h2 { margin: 0; font-size: 16px; font-weight: 800; }
+.jx-content .rd-panel-body { padding: 18px 20px 20px; }
+.jx-content .rd-table th { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--jx-muted); background: var(--jx-surface-2); white-space: nowrap; }
+.jx-content .rd-table td { vertical-align: middle; }
+.jx-content .rd-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 0; }
+.jx-content .rd-badge.rd-green { background: var(--jx-ok-soft); color: var(--jx-ok); }
+.jx-content .rd-badge.rd-gray { background: var(--jx-neutral-soft); color: var(--jx-neutral); }
+.jx-content .rd-badge.rd-red { background: var(--jx-bad-soft); color: var(--jx-bad); }
+.jx-content .rd-badge.rd-yellow, .jx-content .rd-badge.rd-orange { background: var(--jx-warn-soft); color: var(--jx-warn); }
+
+/* Tarjetas de tipos de equipo: el resumen siempre al pie, a la misma altura. */
+.jx-tile { display: flex; flex-direction: column; }
+.jx-tile .jx-tile-meta { margin-top: auto; }
+.jx-content .rd-badge.rd-blue { background: var(--jx-info-soft); color: var(--jx-info); }
+/* Botón de peligro de las fichas: rojo suave, misma medida. */
+.jx-content .radio-detalle .rd-btn-danger { height: 40px; min-height: 40px; padding: 0 16px; border-radius: 11px; font-weight: 700; font-size: 13.5px; background: var(--jx-bad-soft); border: 1px solid transparent; color: var(--jx-bad); box-shadow: none; }
+.jx-content .radio-detalle .rd-btn-danger:hover { background: var(--jx-bad); color: #fff; }
+.jx-content .informe-por-pagina select { height: 40px; min-height: 40px; padding-top: 0; padding-bottom: 0; border-radius: 10px; }
+.jx-content .mant-enlace-accion { display: inline-flex; align-items: center; min-height: 32px; }
+/* Modo oscuro: los botones principales anteriores usan el mismo índigo claro del sistema nuevo. */
+html[data-tema="dark"] body .jx-content .btn-primary, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary), html[data-tema="dark"] body .jx-content .radio-detalle .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger), html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) { background: var(--jx-primary); border-color: var(--jx-primary); color: #0d1020; }
+html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary):hover, html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover { background: var(--jx-primary-600); border-color: var(--jx-primary-600); color: #0d1020; }

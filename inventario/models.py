@@ -1469,6 +1469,9 @@ class EventoTicket(models.Model):
         verbose_name_plural = "Eventos de tickets"
         ordering = ["fecha", "id"]
 
+    def __str__(self):
+        return f"{self.ticket.numero} · {self.get_tipo_display()}"
+
 
 class FotoTicket(models.Model):
     ticket = models.ForeignKey(
