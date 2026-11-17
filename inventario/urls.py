@@ -99,6 +99,11 @@ urlpatterns = [
         name="equipo_dar_baja",
     ),
     path(
+        "equipos/<str:placa>/tipo/",
+        views_equipos.equipo_cambiar_tipo,
+        name="equipo_cambiar_tipo",
+    ),
+    path(
         "equipos/<str:placa>/reactivar/",
         views_equipos.equipo_reactivar,
         name="equipo_reactivar",

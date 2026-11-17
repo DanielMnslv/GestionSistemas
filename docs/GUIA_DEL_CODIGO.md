@@ -123,6 +123,7 @@ Todas las pantallas siguen este mismo patrón: **URL → vista → (permiso) →
 | `/inventario/equipos/<placa>/pestanas/` | `equipo_pestanas` → `render_equipo_pestanas` | `equipo_pestanas.html` / `radio_pestanas.html` | sesión | Ficha con pestañas (en marco) |
 | `/inventario/equipos/<placa>/editar/` | `equipo_editar` | `equipo_form.html` o la ficha | equipos | Editar |
 | `/inventario/equipos/<placa>/baja/` · `/reactivar/` | `equipo_dar_baja` · `equipo_reactivar` | — (POST) | equipos | Baja y reactivación |
+| `/inventario/equipos/<placa>/tipo/` | `equipo_cambiar_tipo` | — (POST) | equipos | Cambiar el tipo (escáner → impresora…); borra el detalle anterior si el tipo nuevo usa otro |
 | `/inventario/equipos/<placa>/entregar/` | `equipo_entregar` | pestaña «Entregar» de la ficha | entregas | Entrega desde la ficha |
 | `/inventario/equipos/<placa>/entregar/firma/` | `equipo_entregar_firma` | `equipo_entrega_firma.html` | entregas | Entrega firmada en página completa (`?regularizar=1` desde Calidad de datos) |
 | `/inventario/entregas-equipos/<id>/devolver/` | `equipo_devolver` | — (POST) | entregas | Devolución |

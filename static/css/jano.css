@@ -1033,3 +1033,8 @@ html[data-tema="dark"] .jx-content .rd-btn:not(.rd-btn-secondary) { color: #0d10
 /* Modo oscuro: los botones principales anteriores usan el mismo índigo claro del sistema nuevo. */
 html[data-tema="dark"] body .jx-content .btn-primary, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary), html[data-tema="dark"] body .jx-content .radio-detalle .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger), html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) { background: var(--jx-primary); border-color: var(--jx-primary); color: #0d1020; }
 html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary):hover, html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover { background: var(--jx-primary-600); border-color: var(--jx-primary-600); color: #0d1020; }
+/* «Cambiar tipo» en la pestaña Editar de la ficha (equipo_pestanas.html). */
+.ficha-cambio-tipo { display: grid; gap: 8px; margin: 0 0 20px; padding: 14px 16px; border: 1px dashed var(--jx-line-strong); border-radius: var(--jx-radius-sm); background: var(--jx-bg); color: var(--jx-text); }
+.ficha-cambio-tipo label { font-size: 14px; }
+.ficha-cambio-tipo-fila { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ficha-cambio-tipo-fila select { flex: 1 1 200px; max-width: 280px; }

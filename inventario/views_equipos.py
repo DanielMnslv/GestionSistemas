@@ -62,6 +62,60 @@ def detalle_de(equipo):
     return getattr(equipo, nombre, None)
 
 
+# Tipos a los que se puede cambiar un equipo. Los radios no entran: tienen
+# su propio registro (Radio) con accesorios, entregas a puestos y actas.
+TIPOS_CAMBIABLES = [
+    (valor, etiqueta) for valor, etiqueta in Equipo.Tipo.choices
+    if valor != Equipo.Tipo.RADIO
+]
+
+
+def modelo_detalle(tipo):
+    """Modelo de detalle que usa un tipo (DetalleImpresora…), o None si no tiene."""
+    clase = FORMULARIOS_DETALLE.get(tipo)
+    return clase._meta.model if clase is not None else None
+
+
+def cambiar_tipo_equipo(equipo, nuevo_tipo):
+    """Cambia el tipo de un equipo (por ejemplo, de Escáner a Impresora).
+
+    Si el tipo nuevo usa el mismo detalle que el anterior (impresora y
+    escáner, o computador y tableta), las características se conservan.
+    Si usa otro, el detalle anterior se borra: de lo contrario seguiría
+    apareciendo en informes y avisos que no miran el tipo (por ejemplo, el
+    vencimiento del antivirus). El borrado queda en la auditoría.
+
+    Devuelve el nombre del detalle borrado ("Detalle de computador") o None.
+    """
+    anterior = detalle_de(equipo)
+    borrado = None
+    with transaction.atomic():
+        if anterior is not None and type(anterior) is not modelo_detalle(nuevo_tipo):
+            borrado = str(anterior._meta.verbose_name)
+            anterior.delete()
+        equipo.tipo = nuevo_tipo
+        equipo.save(update_fields=["tipo", "actualizado_en"])
+    return borrado
+
+
+def opciones_cambio_tipo(equipo):
+    """Opciones del selector «Cambiar tipo» de la ficha.
+
+    Cada opción indica con ``pierde`` si al elegirla se borrarían las
+    características ya registradas, para advertirlo antes de confirmar.
+    """
+    actual = detalle_de(equipo)
+    return [
+        {
+            "valor": valor,
+            "etiqueta": etiqueta,
+            "pierde": actual is not None and type(actual) is not modelo_detalle(valor),
+        }
+        for valor, etiqueta in TIPOS_CAMBIABLES
+        if valor != equipo.tipo
+    ]
+
+
 def formulario_detalle(equipo, data=None, usuario=None):
     """Devuelve el formulario de detalle según el tipo del equipo, o None si el tipo no tiene.
 
@@ -1115,6 +1169,7 @@ def render_equipo_pestanas(
         "asignaciones": equipo.asignaciones.select_related("entregado_por"),
         "asignacion_activa": asignacion_activa,
         "formulario_baja": RadioBajaForm(),
+        "tipos_cambio": opciones_cambio_tipo(equipo),
     })
 
 
@@ -1256,6 +1311,34 @@ def equipo_dar_baja(request, placa):
         ])
         messages.success(request, "El equipo quedó dado de baja.")
     return _volver_a_pestanas(placa, "baja")
+
+
+@login_required
+@requiere_permiso("equipos")
+def equipo_cambiar_tipo(request, placa):
+    """Cambia el tipo de un equipo desde la pestaña «Editar» de su ficha. Solo por POST.
+
+    Sirve para corregir equipos registrados con el tipo equivocado (una
+    impresora guardada como escáner). Los radios no se pueden cambiar.
+    Ver cambiar_tipo_equipo para lo que pasa con las características.
+    """
+    equipo = get_object_or_404(Equipo, placa=placa)
+    if request.method != "POST" or equipo.tipo == Equipo.Tipo.RADIO:
+        return _volver_a_pestanas(placa)
+
+    nuevo = request.POST.get("tipo", "")
+    validos = dict(TIPOS_CAMBIABLES)
+    if nuevo not in validos or nuevo == equipo.tipo:
+        messages.error(request, "Elige un tipo de equipo distinto al actual.")
+        return _volver_a_pestanas(placa, "editar")
+
+    anterior = equipo.get_tipo_display()
+    borrado = cambiar_tipo_equipo(equipo, nuevo)
+    mensaje = f"El equipo {equipo.placa} pasó de {anterior} a {validos[nuevo]}."
+    if borrado:
+        mensaje += " Se borraron las características anteriores; complétalas en «Editar»."
+    messages.success(request, mensaje)
+    return _volver_a_pestanas(placa, "editar")
 
 
 @login_required

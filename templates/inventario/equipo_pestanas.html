@@ -354,6 +354,21 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
             <p>Actualiza los datos generales y las características específicas.</p>
         </div>
         <div class="rd-panel-body">
+            {# Cambiar tipo: corrige un equipo registrado con el tipo equivocado (vista equipo_cambiar_tipo). #}
+            {% if tipos_cambio %}
+            <form method="post" action="{% url 'inventario:equipo_cambiar_tipo' equipo.placa %}" class="ficha-cambio-tipo"
+                  onsubmit="var o=this.tipo.selectedOptions[0];if(!o||!o.value)return false;return confirm(o.dataset.pierde?'Cambiar a '+o.text+' borra las características registradas ({{ equipo.get_tipo_display|lower }}). ¿Continuar?':'¿Cambiar el tipo a '+o.text+'? Las características se conservan.');">
+                {% csrf_token %}
+                <label for="cambio-tipo">Tipo de equipo: <strong>{{ equipo.get_tipo_display }}</strong>. ¿Está mal registrado?</label>
+                <div class="ficha-cambio-tipo-fila">
+                    <select id="cambio-tipo" name="tipo" class="form-control" required>
+                        <option value="">Cambiar a…</option>
+                        {% for t in tipos_cambio %}<option value="{{ t.valor }}"{% if t.pierde %} data-pierde="1"{% endif %}>{{ t.etiqueta }}</option>{% endfor %}
+                    </select>
+                    <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar tipo</button>
+                </div>
+            </form>
+            {% endif %}
             <form method="post" action="{% url 'inventario:equipo_editar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-editar-equipo" novalidate data-con-errores="{% if formulario_edicion.errors or detalle_edicion.errors %}1{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="embed" value="1">

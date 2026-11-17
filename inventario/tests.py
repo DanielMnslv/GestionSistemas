@@ -4475,3 +4475,66 @@ class CalidadDatosTests(TestCase):
         self.assertNotEqual(
             self.client.get(reverse("inventario:calidad_datos")).status_code, 200
         )
+
+
+class CambiarTipoEquipoTests(TestCase):
+    """Acción «Cambiar tipo» de la ficha: corrige equipos con el tipo equivocado."""
+
+    def setUp(self):
+        from inventario.models import DetalleImpresora
+
+        self.encargado = get_user_model().objects.create_user(username="enc", password="x")
+        self.encargado.groups.add(Group.objects.create(name="Encargado de inventario"))
+        self.client.force_login(self.encargado)
+        self.equipo = Equipo.objects.create(placa="IMP-07", tipo=Equipo.Tipo.ESCANER)
+        DetalleImpresora.objects.create(equipo=self.equipo, clase="Multifuncional")
+
+    def cambiar(self, tipo, placa="IMP-07"):
+        return self.client.post(
+            reverse("inventario:equipo_cambiar_tipo", args=[placa]), {"tipo": tipo}
+        )
+
+    def test_escaner_a_impresora_conserva_las_caracteristicas(self):
+        """Impresora y escáner comparten detalle: no se pierde nada."""
+        ficha = self.client.get(reverse("inventario:equipo_pestanas", args=["IMP-07"]))
+        self.assertContains(ficha, reverse("inventario:equipo_cambiar_tipo", args=["IMP-07"]))
+        opciones = {t["valor"]: t["pierde"] for t in ficha.context["tipos_cambio"]}
+        self.assertFalse(opciones["IMPRESORA"])
+        self.assertTrue(opciones["COMPUTADOR"])
+        self.assertNotIn("ESCANER", opciones)
+        self.assertNotIn("RADIO", opciones)
+
+        self.cambiar("IMPRESORA")
+        self.equipo.refresh_from_db()
+        self.assertEqual(self.equipo.tipo, "IMPRESORA")
+        self.assertEqual(self.equipo.impresora.clase, "Multifuncional")
+
+    def test_cambio_a_otro_detalle_borra_el_anterior(self):
+        """De escáner a computador se borra el detalle de impresora."""
+        from inventario.models import DetalleImpresora
+
+        self.cambiar("COMPUTADOR")
+        self.equipo.refresh_from_db()
+        self.assertEqual(self.equipo.tipo, "COMPUTADOR")
+        self.assertFalse(DetalleImpresora.objects.filter(equipo=self.equipo).exists())
+
+    def test_tipos_no_validos_y_radios(self):
+        """No acepta el mismo tipo, RADIO ni valores inventados; los radios no cambian."""
+        for tipo in ("ESCANER", "RADIO", "NAVE"):
+            self.cambiar(tipo)
+            self.equipo.refresh_from_db()
+            self.assertEqual(self.equipo.tipo, "ESCANER")
+
+        radio = Radio.objects.create(placa="RJ-90")
+        self.cambiar("IMPRESORA", placa=radio.equipo.placa)
+        radio.equipo.refresh_from_db()
+        self.assertEqual(radio.equipo.tipo, "RADIO")
+
+    def test_consulta_no_puede_cambiar_el_tipo(self):
+        """Sin el permiso «equipos» el cambio no se aplica."""
+        consulta = get_user_model().objects.create_user(username="ver", password="x")
+        consulta.groups.add(Group.objects.create(name="Consulta"))
+        self.client.force_login(consulta)
+        self.cambiar("IMPRESORA")
+        self.equipo.refresh_from_db()
+        self.assertEqual(self.equipo.tipo, "ESCANER")
