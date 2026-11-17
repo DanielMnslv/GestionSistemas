@@ -139,6 +139,12 @@ Los roles son **grupos de Django**. Están definidos en `inventario/permisos.py`
 2. Se crea una `AsignacionRadio` en estado `ASIGNADO`. El radio copia el cliente, el puesto y el supervisor, y se genera el **acta** imprimible.
 3. Al devolverlo, la entrega pasa a `DEVUELTO` con la fecha, quién lo recibió y sus observaciones, y el radio vuelve a bodega.
 
+### 6.1.1 Entrega firmada de un equipo nuevo a un funcionario
+1. **Registrar › tipo de equipo.** Al terminar los datos se elige **Guardar (queda en bodega)** o **Guardar y entregar con firma**.
+2. Con la segunda opción se abre la página de firma (`equipo_entregar_firma`): funcionario que recibe, área, **estado en que se entrega** (por defecto *Nuevo* si el equipo nunca se ha entregado; *Usado en buen estado*; *Usado con detalles*, que exige describirlos en observaciones), accesorios, aceptación de la cláusula y firma con el dedo o el mouse.
+3. Se crea la `AsignacionEquipo` con el estado (`estado_entrega`), el funcionario queda como responsable del equipo y se abre el **acta** lista para imprimir o guardar en PDF.
+4. Las entregas posteriores (equipo que vuelve de bodega) se hacen desde la ficha › **Entregas y actas › Registrar entrega**, con los mismos datos.
+
 ### 6.2 Mantenimiento
 1. Se registra la intervención con su tipo, actividades, partes intervenidas, resultado y estado final. Las actividades se ofrecen según el tipo de equipo, desde `actividades_mantenimiento.py`.
 2. Si había una visita programada, esta queda **completada**. Si la intervención venía de un ticket, el ticket avanza.

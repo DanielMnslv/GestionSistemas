@@ -240,6 +240,8 @@ def validar_item(item, resultado, usuario, observaciones="", reasignado_a=None):
                 cedula_recibe=reasignado_a.cedula,
                 area=entrega_eq.area if entrega_eq else "",
                 entregado_por=usuario, observaciones_entrega=nota,
+                # Se reasigna sin pasar por bodega: conserva el estado anterior.
+                estado_entrega=entrega_eq.estado_entrega if entrega_eq else "",
             )
             equipo.responsable_nombre = reasignado_a.nombre_completo
             equipo.responsable_cedula = reasignado_a.cedula

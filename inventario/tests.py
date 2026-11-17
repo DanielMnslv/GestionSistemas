@@ -2761,6 +2761,7 @@ class EntregasEquiposTests(TestCase):
     def entregar(self, **extra):
         datos = {
             "funcionario": self.funcionario.pk, "area": "Contabilidad",
+            "estado_entrega": "NUEVO",
             "accesorios": "Cargador y mouse", "clausula_aceptada": "on",
             "firma": FIRMA_PRUEBA,
         }
@@ -2815,6 +2816,80 @@ class EntregasEquiposTests(TestCase):
         self.entregar()
         self.entregar()
         self.assertEqual(AsignacionEquipo.objects.count(), 1)
+
+    def test_exige_estado_y_detalles_si_se_entrega_con_detalles(self):
+        """El estado es obligatorio y «con detalles» exige describirlos."""
+        from inventario.models import AsignacionEquipo
+
+        respuesta = self.entregar(estado_entrega="")
+        self.assertIn("estado_entrega", respuesta.context["formulario_entrega"].errors)
+        respuesta = self.entregar(estado_entrega="DETALLES")
+        self.assertIn(
+            "observaciones_entrega", respuesta.context["formulario_entrega"].errors
+        )
+        self.assertFalse(AsignacionEquipo.objects.exists())
+
+        self.entregar(estado_entrega="DETALLES", observaciones_entrega="Rayón en la tapa")
+        asignacion = AsignacionEquipo.objects.get()
+        acta = self.client.get(reverse("inventario:equipo_acta", args=[asignacion.pk]))
+        self.assertContains(acta, "Usado con detalles")
+        self.assertContains(acta, "Rayón en la tapa")
+
+    def test_registrar_equipo_y_entregar_con_firma(self):
+        """«Guardar y entregar con firma» lleva a la firma y luego al acta."""
+        from inventario.models import AsignacionEquipo
+
+        respuesta = self.client.post(
+            reverse("inventario:equipo_crear") + "?tipo=IMPRESORA",
+            {"placa": "IMP--99", "serial": "SN99", "marca": "Epson",
+             "propiedad": "PROPIO", "siguiente": "entregar"},
+        )
+        firma_url = reverse("inventario:equipo_entregar_firma", args=["IMP--99"])
+        if respuesta.status_code != 302:
+            self.fail(respuesta.context["formulario"].errors)
+        self.assertRedirects(respuesta, firma_url, fetch_redirect_response=False)
+
+        pagina = self.client.get(firma_url)
+        self.assertContains(pagina, 'id="firma-lienzo"')
+        # Equipo que nunca se ha entregado: se sugiere «Nuevo».
+        self.assertContains(pagina, '<option value="NUEVO" selected>')
+
+        respuesta = self.client.post(firma_url, {
+            "funcionario": self.funcionario.pk, "area": "Contabilidad",
+            "estado_entrega": "NUEVO", "clausula_aceptada": "on",
+            "firma": FIRMA_PRUEBA,
+        })
+        asignacion = AsignacionEquipo.objects.get(equipo__placa="IMP--99")
+        self.assertRedirects(
+            respuesta, reverse("inventario:equipo_acta", args=[asignacion.pk]),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(asignacion.estado_entrega, "NUEVO")
+        self.assertEqual(asignacion.entregado_por, self.encargado)
+        acta = self.client.get(reverse("inventario:equipo_acta", args=[asignacion.pk]))
+        self.assertContains(acta, "Estado en que se entrega")
+        self.assertContains(acta, f'src="{FIRMA_PRUEBA}"')
+        # Ya entregado: la página de firma no permite una segunda entrega.
+        self.assertRedirects(
+            self.client.get(firma_url),
+            reverse("inventario:equipo_detalle", args=["IMP--99"]),
+            fetch_redirect_response=False,
+        )
+
+    def test_guardar_sin_entregar_queda_en_bodega(self):
+        """El botón normal guarda el equipo sin pedir firma."""
+        respuesta = self.client.post(
+            reverse("inventario:equipo_crear") + "?tipo=IMPRESORA",
+            {"placa": "IMP--98", "serial": "SN98", "propiedad": "PROPIO"},
+        )
+        self.assertRedirects(
+            respuesta, reverse("inventario:equipo_detalle", args=["IMP--98"]),
+            fetch_redirect_response=False,
+        )
+        formulario = self.client.get(
+            reverse("inventario:equipo_crear") + "?tipo=IMPRESORA"
+        )
+        self.assertContains(formulario, 'value="entregar"')
 
     def test_devolucion_libera_el_equipo(self):
         from inventario.models import AsignacionEquipo

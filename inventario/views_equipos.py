@@ -1092,7 +1092,9 @@ def render_equipo_pestanas(
         and asignacion_activa is None
         and puede(request.user, "entregas")
     ):
-        formulario_entrega = AsignacionEquipoForm()
+        formulario_entrega = AsignacionEquipoForm(
+            primera_entrega=not equipo.asignaciones.exists()
+        )
 
     return render(request, "inventario/equipo_pestanas.html", {
         "equipo": equipo,
@@ -1207,6 +1209,9 @@ def guardar_equipo(request, equipo, titulo):
     formulario = EquipoForm(datos, instance=equipo)
     detalle = formulario_detalle(equipo, datos, request.user)
 
+    # Al registrar un equipo nuevo se ofrece entregarlo de una vez con firma.
+    ofrecer_entrega = equipo.pk is None and puede(request.user, "entregas")
+
     if datos is not None and formulario.is_valid() and (
         detalle is None or detalle.is_valid()
     ):
@@ -1216,6 +1221,8 @@ def guardar_equipo(request, equipo, titulo):
                 detalle.instance.equipo = equipo
                 detalle.save()
         messages.success(request, f"El equipo {equipo.placa} quedó guardado.")
+        if ofrecer_entrega and datos.get("siguiente") == "entregar":
+            return redirect("inventario:equipo_entregar_firma", equipo.placa)
         return redirect("inventario:equipo_detalle", equipo.placa)
 
     return render(request, "inventario/equipo_form.html", {
@@ -1223,6 +1230,7 @@ def guardar_equipo(request, equipo, titulo):
         "detalle": detalle,
         "equipo": equipo,
         "titulo": titulo,
+        "ofrecer_entrega": ofrecer_entrega,
     })
 
 
@@ -1502,37 +1510,91 @@ def equipo_entregar(request, placa):
         return _volver_a_pestanas(placa, "entregas")
 
     formulario = AsignacionEquipoForm(request.POST)
-    if formulario.is_valid():
-        try:
-            with transaction.atomic():
-                asignacion = formulario.save(commit=False)
-                funcionario = formulario.cleaned_data["funcionario"]
-                asignacion.equipo = equipo
-                asignacion.entregado_por = request.user
-                asignacion.nombre_recibe = funcionario.nombre_completo
-                asignacion.cedula_recibe = funcionario.cedula
-                asignacion.save()
-                equipo.responsable_nombre = funcionario.nombre_completo
-                equipo.responsable_cedula = funcionario.cedula
-                equipo.ubicacion = asignacion.area
-                equipo.save(update_fields=[
-                    "responsable_nombre", "responsable_cedula", "ubicacion",
-                    "actualizado_en",
-                ])
-        except IntegrityError:
-            formulario.add_error(
-                None,
-                "El equipo ya tiene una entrega activa. "
-                "Actualiza la página y verifica su estado.",
-            )
-        else:
-            messages.success(request, "La entrega del equipo quedó registrada.")
-            return _volver_a_pestanas(placa, "entregas")
+    if _registrar_entrega(request, equipo, formulario):
+        messages.success(request, "La entrega del equipo quedó registrada.")
+        return _volver_a_pestanas(placa, "entregas")
 
     return render_equipo_pestanas(
         request, equipo, formulario_entrega=formulario,
         pestana_inicial="entregar",
     )
+
+
+def _registrar_entrega(request, equipo, formulario):
+    """Guarda la entrega firmada y deja al funcionario como responsable del equipo.
+
+    Devuelve la entrega creada, o None si el formulario tiene errores o el
+    equipo ya tenía una entrega activa (el error queda en el formulario).
+    """
+    if not formulario.is_valid():
+        return None
+    try:
+        with transaction.atomic():
+            asignacion = formulario.save(commit=False)
+            funcionario = formulario.cleaned_data["funcionario"]
+            asignacion.equipo = equipo
+            asignacion.entregado_por = request.user
+            asignacion.nombre_recibe = funcionario.nombre_completo
+            asignacion.cedula_recibe = funcionario.cedula
+            asignacion.save()
+            equipo.responsable_nombre = funcionario.nombre_completo
+            equipo.responsable_cedula = funcionario.cedula
+            equipo.ubicacion = asignacion.area
+            equipo.save(update_fields=[
+                "responsable_nombre", "responsable_cedula", "ubicacion",
+                "actualizado_en",
+            ])
+    except IntegrityError:
+        formulario.add_error(
+            None,
+            "El equipo ya tiene una entrega activa. "
+            "Actualiza la página y verifica su estado.",
+        )
+        return None
+    return asignacion
+
+
+@login_required
+@requiere_permiso("entregas")
+def equipo_entregar_firma(request, placa):
+    """Entrega con firma en página completa, justo después de registrar el equipo.
+
+    El funcionario que recibe elige su nombre, se indica el estado del
+    equipo (por defecto «Nuevo» si nunca se ha entregado), acepta la
+    cláusula y firma con el dedo o el mouse. Al guardar se abre el acta
+    para imprimirla o guardarla en PDF.
+    """
+    equipo = get_object_or_404(Equipo, placa=placa)
+    if equipo.tipo == Equipo.Tipo.RADIO:
+        return redirect("inventario:equipo_entregar", placa)
+    if not equipo.activo or equipo.asignaciones.filter(
+        estado=AsignacionEquipo.Estado.ASIGNADO
+    ).exists():
+        messages.error(
+            request,
+            "El equipo está dado de baja o ya está entregado.",
+        )
+        return redirect("inventario:equipo_detalle", placa)
+
+    primera_entrega = not equipo.asignaciones.exists()
+    if request.method == "POST":
+        formulario = AsignacionEquipoForm(request.POST)
+        asignacion = _registrar_entrega(request, equipo, formulario)
+        if asignacion is not None:
+            messages.success(
+                request,
+                f"La entrega de {equipo.placa} quedó firmada. "
+                "Imprime o guarda el acta.",
+            )
+            return redirect("inventario:equipo_acta", asignacion.pk)
+    else:
+        formulario = AsignacionEquipoForm(primera_entrega=primera_entrega)
+
+    return render(request, "inventario/equipo_entrega_firma.html", {
+        "equipo": equipo,
+        "formulario_entrega": formulario,
+        "clausula": CLAUSULA_EQUIPOS,
+    })
 
 
 @login_required

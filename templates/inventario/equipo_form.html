@@ -73,7 +73,13 @@
                    href="{% if equipo.pk %}{% url 'inventario:equipo_detalle' equipo.placa %}{% else %}{% url 'inventario:equipos_lista' %}{% endif %}">
                     Cancelar
                 </a>
+                {% if ofrecer_entrega %}
+                {# Guardar y pasar de una vez a la entrega firmada (equipo nuevo para un funcionario). #}
+                <button class="ficha-form-button ficha-form-button-secondary" type="submit">Guardar (queda en bodega)</button>
+                <button class="ficha-form-button" type="submit" name="siguiente" value="entregar">Guardar y entregar con firma →</button>
+                {% else %}
                 <button class="ficha-form-button" type="submit">Guardar equipo</button>
+                {% endif %}
             </div>
         </form>
     </section>

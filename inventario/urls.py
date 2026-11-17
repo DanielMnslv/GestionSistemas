@@ -93,6 +93,12 @@ urlpatterns = [
         views_equipos.equipo_entregar,
         name="equipo_entregar",
     ),
+    # Entrega con firma en página completa, al terminar de registrar el equipo.
+    path(
+        "equipos/<str:placa>/entregar/firma/",
+        views_equipos.equipo_entregar_firma,
+        name="equipo_entregar_firma",
+    ),
     path(
         "equipos/<str:placa>/cambio-gps/",
         views_equipos.equipo_cambio_gps,

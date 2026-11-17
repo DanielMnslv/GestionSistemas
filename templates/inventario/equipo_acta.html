@@ -46,6 +46,9 @@
     <table class="acta-tabla">
         <tr><th>Recibe</th><td>{{ asignacion.nombre_recibe|default:"Sin dato" }} · C.C. {{ asignacion.cedula_recibe|default:"sin dato" }}{% if asignacion.funcionario.cargo %} · {{ asignacion.funcionario.cargo }}{% endif %}</td></tr>
         <tr><th>Área o sede</th><td>{{ asignacion.area|default:"Sin dato" }}</td></tr>
+        {% if asignacion.estado_entrega %}
+        <tr><th>Estado en que se entrega</th><td><strong>{{ asignacion.get_estado_entrega_display }}</strong></td></tr>
+        {% endif %}
         <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}</td></tr>
         {% if asignacion.observaciones_entrega %}
         <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega|linebreaksbr }}</td></tr>

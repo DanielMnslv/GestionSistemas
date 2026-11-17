@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% comment %}
+Entrega firmada en página completa. Se abre al pulsar «Guardar y entregar con
+firma» en el registro de un equipo nuevo (vista equipo_entregar_firma).
+Muestra en una sola página: funcionario que recibe, estado del equipo,
+accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
+{% endcomment %}
+
+{% block title %}Entregar {{ equipo.placa }} | JANO Inventario{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:equipos_lista' %}">Equipos</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
+        <span aria-hidden="true">/</span>
+        <span>Entrega con firma</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">{{ equipo.get_tipo_display|upper }} · {{ equipo.placa }}</span>
+        <h1>Entrega del equipo con firma</h1>
+        <p>{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.serial %} · Serial {{ equipo.serial }}{% endif %}.
+           Quien recibe firma aquí y queda constancia en el acta del estado en que lo recibió.</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            {% if formulario_entrega.errors %}
+            <div class="ficha-form-errors" role="alert">
+                <strong>Revisa los campos marcados.</strong>
+                {{ formulario_entrega.non_field_errors }}
+            </div>
+            {% endif %}
+
+            {% include "inventario/_entrega_equipo_campos.html" %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary"
+                   href="{% url 'inventario:equipo_detalle' equipo.placa %}">Entregar después</a>
+                <button class="ficha-form-button" type="submit">Registrar entrega firmada →</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

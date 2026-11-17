@@ -16,6 +16,7 @@
             </legend>
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario_entrega.area %}
+                {% include "inventario/_campo.html" with field=formulario_entrega.estado_entrega %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.accesorios ancho_completo=True %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.observaciones_entrega ancho_completo=True %}
             </div>

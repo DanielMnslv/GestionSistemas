@@ -1092,6 +1092,17 @@ class AsignacionEquipo(models.Model):
         ASIGNADO = "ASIGNADO", "Asignado"
         DEVUELTO = "DEVUELTO", "Devuelto"
 
+    class EstadoEntrega(models.TextChoices):
+        """Condición física del equipo al momento de entregarlo.
+
+        Queda en el acta firmada como constancia de cómo lo recibió el
+        funcionario. Las entregas anteriores a este campo quedan vacías.
+        """
+
+        NUEVO = "NUEVO", "Nuevo"
+        BUENO = "BUENO", "Usado en buen estado"
+        DETALLES = "DETALLES", "Usado con detalles (ver observaciones)"
+
     equipo = models.ForeignKey(
         Equipo, on_delete=models.PROTECT, related_name="asignaciones"
     )
@@ -1114,6 +1125,10 @@ class AsignacionEquipo(models.Model):
     entregado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name="equipos_entregados",
+    )
+    # Estado del equipo al entregarlo (nuevo, usado…); va en el acta firmada.
+    estado_entrega = models.CharField(
+        max_length=10, choices=EstadoEntrega.choices, blank=True,
     )
     accesorios = models.TextField(blank=True)
     observaciones_entrega = models.TextField(blank=True)

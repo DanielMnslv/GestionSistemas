@@ -961,7 +961,8 @@ FORMULARIOS_DETALLE = {
 # Texto que acepta el funcionario al recibir un equipo. Reemplázalo por el
 # texto oficial de la empresa cuando esté disponible.
 CLAUSULA_EQUIPOS = (
-    "Declaro que recibo el equipo y los accesorios descritos en buen estado. "
+    "Declaro que recibo el equipo y los accesorios descritos, en el estado "
+    "indicado en esta acta. "
     "Me comprometo a usarlo solo para las funciones de mi cargo, a cuidarlo, "
     "a no instalar software sin autorización del área de TI, a guardar "
     "reserva sobre la información de la empresa que maneje en él y a "
@@ -978,12 +979,13 @@ class AsignacionEquipoForm(forms.ModelForm):
     class Meta:
         model = AsignacionEquipo
         fields = [
-            "funcionario", "area", "accesorios", "observaciones_entrega",
-            "clausula_aceptada", "firma",
+            "funcionario", "area", "estado_entrega", "accesorios",
+            "observaciones_entrega", "clausula_aceptada", "firma",
         ]
         labels = {
             "funcionario": "Funcionario que recibe",
             "area": "Área o sede",
+            "estado_entrega": "Estado en que se entrega",
             "accesorios": "Accesorios entregados",
             "observaciones_entrega": "Observaciones de entrega",
             "clausula_aceptada": "El funcionario acepta la cláusula",
@@ -993,10 +995,29 @@ class AsignacionEquipoForm(forms.ModelForm):
             "observaciones_entrega": forms.Textarea(attrs={"rows": 2}),
         }
 
-    def __init__(self, *args, **kwargs):
-        """Lista solo funcionarios activos (nombre · cédula) y hace obligatoria la cláusula."""
+    def __init__(self, *args, primera_entrega=False, **kwargs):
+        """Lista solo funcionarios activos (nombre · cédula) y hace obligatoria la cláusula.
+
+        Args:
+            primera_entrega: si el equipo nunca se ha entregado, el estado
+                sugerido es «Nuevo» (el caso de un equipo recién comprado).
+        """
         super().__init__(*args, **kwargs)
         self.fields["funcionario"].required = True
+        estado = self.fields["estado_entrega"]
+        estado.required = True
+        estado.choices = [("", "Selecciona el estado")] + list(
+            AsignacionEquipo.EstadoEntrega.choices
+        )
+        estado.error_messages["required"] = "Indica en qué estado se entrega el equipo."
+        if primera_entrega and not self.is_bound:
+            self.initial.setdefault(
+                "estado_entrega", AsignacionEquipo.EstadoEntrega.NUEVO
+            )
+        self.fields["observaciones_entrega"].help_text = (
+            "Si el equipo tiene detalles (rayones, golpes, piezas faltantes), "
+            "descríbelos aquí: quedan en el acta firmada."
+        )
         self.fields["funcionario"].queryset = Funcionario.objects.filter(
             activo=True
         ).order_by("nombre_completo")
@@ -1018,6 +1039,19 @@ class AsignacionEquipoForm(forms.ModelForm):
     def clean_firma(self):
         """Valida que la firma sea una imagen PNG dibujada."""
         return validar_firma(self.cleaned_data["firma"])
+
+    def clean(self):
+        """Si el equipo se entrega con detalles, exige describirlos."""
+        datos = super().clean()
+        if (
+            datos.get("estado_entrega") == AsignacionEquipo.EstadoEntrega.DETALLES
+            and not (datos.get("observaciones_entrega") or "").strip()
+        ):
+            self.add_error(
+                "observaciones_entrega",
+                "Describe los detalles con que se entrega el equipo.",
+            )
+        return datos
 
 
 class CambioGPSForm(forms.ModelForm):
