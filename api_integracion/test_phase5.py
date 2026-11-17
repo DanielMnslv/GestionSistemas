@@ -1,3 +1,5 @@
+"""Pruebas del procesador de eventos que llegan de Gestión TIC (fase 5 de la integración)."""
+
 import uuid
 from io import StringIO
 from django.core.management import call_command
@@ -8,6 +10,8 @@ from api_integracion.models import IntegrationInbox, RegistroRemotoIntegrado
 
 
 class ProcesadorEventosGestionTICTests(TestCase):
+    """Los eventos de Gestión TIC se proyectan como copias de solo lectura."""
+
     def test_proyecta_evento_sin_crear_equipo_local(self):
         public_id = uuid.uuid4()
         IntegrationInbox.objects.create(

@@ -1,5 +1,9 @@
 
 {% extends "base.html" %}
+{% comment %}
+Formulario de entrega de un radio a un puesto: radio, cliente y puesto del catálogo, supervisor, estado de cada pieza, cláusula y firma.
+Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
+{% endcomment %}
 
 {% block title %}{{ titulo }} | JANO Inventario{% endblock %}
 {% block body_class %}{% if request.GET.embed %}ficha-embed{% endif %}{% endblock %}

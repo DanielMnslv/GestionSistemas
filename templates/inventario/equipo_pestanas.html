@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% comment %}
+Ficha del equipo con pestañas (resumen, características, entregas y actas, mantenimientos, seguridad, editar, baja).
+Se carga dentro de un marco (iframe) en la lista de equipos. Vista render_equipo_pestanas (views_equipos.py).
+El script del final maneja las pestañas, los formularios por pasos (iniciarPasos) y las ventanas emergentes.
+{% endcomment %}
 
 {% block title %}{{ equipo.placa }} | JANO Inventario{% endblock %}
 

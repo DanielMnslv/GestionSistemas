@@ -150,6 +150,7 @@ def puestos_ordenados(cliente, texto_puesto):
     buscado = normalizar(texto_puesto)
 
     def parecido(puesto):
+        """Qué tanto se parece el puesto (nombre y sede) al texto: de 0 a 1."""
         return difflib.SequenceMatcher(
             None, buscado, normalizar(f"{puesto.nombre} {puesto.sede}")
         ).ratio()

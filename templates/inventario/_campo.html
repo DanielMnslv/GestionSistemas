@@ -1,3 +1,7 @@
+{% comment %}
+Un campo de formulario con su etiqueta, marca de obligatorio, ayuda y errores.
+Espera "field"; con ancho_completo=True ocupa toda la fila. Lo usan casi todos los formularios.
+{% endcomment %}
 <div class="ficha-field{% if ancho_completo %} full-width{% endif %}">
     <label for="{{ field.id_for_label }}">
         {{ field.label }}

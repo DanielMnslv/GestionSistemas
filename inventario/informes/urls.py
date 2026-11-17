@@ -1,3 +1,5 @@
+"""Rutas del módulo de informes: listado, vista previa y descarga en Excel o PDF."""
+
 from django.urls import path
 
 from . import views

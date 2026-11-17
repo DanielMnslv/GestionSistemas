@@ -16,6 +16,8 @@ from inventario.models import Equipo, Funcionario, MantenimientoEquipo, Ticket
     DEFAULT_FROM_EMAIL="jano@example.com",
 )
 class SolicitudPublicaTests(TestCase):
+    """Formulario público de soporte: cédula, equipo y creación de la solicitud."""
+
     def setUp(self):
         cache.clear()
         self.persona = Funcionario.objects.create(
@@ -88,6 +90,8 @@ class SolicitudPublicaTests(TestCase):
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class ColaTicTests(TestCase):
+    """Bandeja de TIC: ver, asignar y atender solicitudes."""
+
     def setUp(self):
         cache.clear()
         User = get_user_model()
@@ -148,6 +152,8 @@ class ColaTicTests(TestCase):
 
 
 class AgendaTests(TestCase):
+    """Agenda de visitas: festivos de Colombia y cupos por franja."""
+
     def test_festivos_de_colombia_2026(self):
         from datetime import date
 
@@ -181,6 +187,8 @@ class AgendaTests(TestCase):
 
 
 class SolicitudConVisitaTests(TestCase):
+    """La visita elegida por el solicitante queda en la solicitud y en la agenda."""
+
     def setUp(self):
         cache.clear()
         Funcionario.objects.create(cedula="1075000222", nombre_completo="Luis Prueba")
@@ -206,6 +214,8 @@ class SolicitudConVisitaTests(TestCase):
 
 @override_settings(HOSTS_PUBLICOS=[".trycloudflare.com"], ALLOWED_HOSTS=["testserver", ".trycloudflare.com"])
 class PublicacionPorInternetTests(TestCase):
+    """Publicada por Internet, la plataforma solo deja ver el soporte público."""
+
     HOST = "prueba-uno.trycloudflare.com"
 
     def test_desde_internet_solo_responde_soporte(self):
@@ -232,6 +242,8 @@ class PublicacionPorInternetTests(TestCase):
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
                    DEFAULT_FROM_EMAIL="jano@example.com", SITIO_URL_PUBLICO="https://jano.example.com")
 class PortalSolicitanteTests(TestCase):
+    """Portal «Mi soporte»: cuentas de solicitantes, agenda y solicitudes propias."""
+
     def setUp(self):
         cache.clear()
         self.persona = Funcionario.objects.create(
@@ -320,6 +332,8 @@ class PortalSolicitanteTests(TestCase):
 
 
 class VolverDesdeSoporteTests(TestCase):
+    """El botón de volver del soporte depende de quién entra."""
+
     def test_boton_para_volver_segun_quien_entra(self):
         self.assertContains(self.client.get("/soporte/"), "Ingresar")
         tic = get_user_model().objects.create_superuser("tic", password="x-prueba-1")

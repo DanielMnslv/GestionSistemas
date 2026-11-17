@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% comment %}
+Ficha del radio con pestañas (entregas y actas, mantenimientos, editar, baja), cargada en un marco desde la lista de equipos.
+Vista equipo_pestanas con pestanas_radio=1 (views_equipos.py) y _render_radio_editar_con_errores (views.py).
+{% endcomment %}
 {% load static %}
 
 {% block title %}{{ radio.etiqueta }} | JANO Inventario{% endblock %}

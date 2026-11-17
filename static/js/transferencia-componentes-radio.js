@@ -1,3 +1,9 @@
+/*
+ * Ventana «Transferir componentes» de un radio: abre el <dialog> del botón
+ * [data-abrir-transferencia], muestra la vista previa del radio destino y
+ * habilita «Confirmar». OJO: hoy ninguna plantilla carga este script, así que
+ * el botón de equipos_lista.html no abre la ventana (ver docs/GUIA_DEL_CODIGO.md).
+ */
 (function () {
     var activadorPorModal = new WeakMap();
 

@@ -2,6 +2,7 @@
 
 Este documento explica cómo está hecha la plataforma. Es la base del **manual técnico**.
 
+- Para entender el código pieza por pieza (recorrido de una pantalla y mapa de rutas): [GUIA_DEL_CODIGO.md](GUIA_DEL_CODIGO.md).
 - La instalación está en [INSTALAR_EN_SERVIDOR.md](INSTALAR_EN_SERVIDOR.md).
 - La operación diaria (respaldos, tareas programadas) está en [OPERACION.md](OPERACION.md).
 

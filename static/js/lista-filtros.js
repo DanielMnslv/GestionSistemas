@@ -1,3 +1,7 @@
+/*
+ * SIN USO: ninguna plantilla carga este script. Agrupaba los filtros de los
+ * formularios con data-lista-filtros en un panel desplegable con contador.
+ */
 (function () {
     var formularios = document.querySelectorAll("form[data-lista-filtros]");
 

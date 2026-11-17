@@ -112,6 +112,7 @@ class Command(BaseCommand):
                     continue
 
                 def obtener(columna):
+                    """Texto de la columna en la fila actual (vacío si no hay valor)."""
                     valor = valores[indices[columna]]
                     if valor is None:
                         return ""
