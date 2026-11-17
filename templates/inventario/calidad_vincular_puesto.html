@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% comment %}
+Vincular un grupo de radios (mismo cliente y puesto escritos a mano) con un
+puesto del catálogo (vista vincular_puesto). El cliente sugerido viene
+elegido; al cambiarlo se recarga la página con sus puestos, ordenados del
+más parecido al menos parecido al texto escrito.
+{% endcomment %}
+
+{% block title %}Vincular puesto | JANO Inventario{% endblock %}
+{% block page_heading %}Calidad de datos{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:calidad_datos' %}?seccion=puestos">Calidad de datos</a>
+        <span aria-hidden="true">/</span>
+        <span>Vincular puesto</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">{{ entregas|length }} RADIO{{ entregas|length|pluralize:",S" }}</span>
+        <h1>{{ texto_puesto|default:"(sin puesto)" }}</h1>
+        <p>Escrito como cliente «{{ texto_cliente|default:"(vacío)" }}». Elige el cliente y el puesto del catálogo que corresponden.</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="get" class="ficha-form-content">
+            <input type="hidden" name="clave" value="{{ clave }}">
+            <div class="ficha-form-grid">
+                <div class="ficha-field">
+                    <label for="cliente">Cliente del catálogo</label>
+                    <select id="cliente" name="cliente" class="form-control" onchange="this.form.submit()">
+                        <option value="">Selecciona el cliente</option>
+                        {% for c in clientes %}<option value="{{ c.pk }}" {% if cliente and c.pk == cliente.pk %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+                    </select>
+                    {% if cliente %}<small class="ficha-field-help">Sugerido por el parecido del nombre. Cámbialo si no es el correcto.</small>{% endif %}
+                </div>
+            </div>
+            <noscript><button class="ficha-form-button ficha-form-button-secondary" type="submit">Ver puestos</button></noscript>
+        </form>
+
+        {% if cliente %}
+        <form method="post" class="ficha-form-content">
+            {% csrf_token %}
+            <input type="hidden" name="clave" value="{{ clave }}">
+            <div class="ficha-form-grid">
+                <div class="ficha-field ficha-field-full">
+                    <label for="puesto">Puesto de {{ cliente.nombre }} <span class="ficha-required">*</span></label>
+                    <select id="puesto" name="puesto" class="form-control" required>
+                        {% for p in puestos %}<option value="{{ p.pk }}" {% if forloop.first %}selected{% endif %}>{{ p }}</option>{% empty %}<option value="">Este cliente no tiene puestos activos</option>{% endfor %}
+                    </select>
+                    <small class="ficha-field-help">El primero es el más parecido a «{{ texto_puesto }}».</small>
+                </div>
+            </div>
+
+            <h3 class="ficha-section-heading">Radios que se vinculan</h3>
+            <p>{% for e in entregas %}<span class="jx-chip">{{ e.radio.placa|default:e.radio.serial }}{% if e.coordinador_zona %} · {{ e.coordinador_zona }}{% endif %}</span> {% endfor %}</p>
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:calidad_datos' %}?seccion=puestos">Cancelar</a>
+                {% if puestos %}<button class="ficha-form-button" type="submit">Vincular {{ entregas|length }} radio{{ entregas|length|pluralize }} →</button>{% endif %}
+            </div>
+        </form>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

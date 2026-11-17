@@ -60,6 +60,10 @@
         <a class="jx-nav-link{% if 'informe' in n %} is-active{% endif %}" href="{% url 'inventario:informes_inicio' %}" title="Informes">
             <svg class="jx-i"><use href="#i-file"/></svg><span class="jx-nav-text">Informes y reportes</span></a>
         {% endif %}
+        {% if permisos.equipos %}
+        <a class="jx-nav-link{% if 'calidad' in n or n == 'entrega_firmar' %} is-active{% endif %}" href="{% url 'inventario:calidad_datos' %}" title="Calidad de datos">
+            <svg class="jx-i"><use href="#i-flag"/></svg><span class="jx-nav-text">Calidad de datos</span></a>
+        {% endif %}
         {% if permisos.auditoria %}
         <a class="jx-nav-link{% if n == 'auditoria' %} is-active{% endif %}" href="{% url 'inventario:auditoria' %}" title="Auditoría">
             <svg class="jx-i"><use href="#i-shield"/></svg><span class="jx-nav-text">Auditoría</span></a>

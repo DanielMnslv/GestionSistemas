@@ -50,6 +50,7 @@ inventario/             Núcleo de la plataforma
     views_portal.py       portal "Mi soporte" de los funcionarios
     views_publicas.py     formulario público de soporte
     views_auditoria.py    consulta de la auditoría
+    views_calidad.py      calidad de datos: pendientes y su corrección
   panel.py              Datos del tablero de inicio
   estado_mantenimiento.py  Cálculo del semáforo del preventivo (6 meses)
   actividades_mantenimiento.py  Actividades a revisar por tipo de equipo
@@ -58,6 +59,7 @@ inventario/             Núcleo de la plataforma
   personas.py           Reglas del retiro y del paz y salvo
   permisos.py           Roles y qué puede hacer cada uno
   auditoria.py          Registro automático de cambios (señales + middleware)
+  calidad.py            Reglas de «Calidad de datos» (qué no cuadra y cómo se corrige)
   publico.py            Restricciones de acceso desde internet y del portal
   notificaciones.py     Correos (alertas, tickets)
   google_sheet.py       Lectura del Google Sheet para las importaciones
@@ -144,6 +146,19 @@ Los roles son **grupos de Django**. Están definidos en `inventario/permisos.py`
 2. Con la segunda opción se abre la página de firma (`equipo_entregar_firma`): funcionario que recibe, área, **estado en que se entrega** (por defecto *Nuevo* si el equipo nunca se ha entregado; *Usado en buen estado*; *Usado con detalles*, que exige describirlos en observaciones), accesorios, aceptación de la cláusula y firma con el dedo o el mouse.
 3. Se crea la `AsignacionEquipo` con el estado (`estado_entrega`), el funcionario queda como responsable del equipo y se abre el **acta** lista para imprimir o guardar en PDF.
 4. Las entregas posteriores (equipo que vuelve de bodega) se hacen desde la ficha › **Entregas y actas › Registrar entrega**, con los mismos datos.
+
+### 6.1.2 Calidad de datos
+Menú **Control › Calidad de datos** (encargado de inventario). Cada pestaña lista un tipo de pendiente con su acción:
+
+| Pestaña | Qué detecta | Acción |
+|---|---|---|
+| Equipos sin entrega | Equipo con responsable escrito y sin entrega vigente. Si el responsable dice «baja» o «robado», se marca **¿Dar de baja?** | Entrega firmada (`?regularizar=1`: propone el funcionario por cédula y no sugiere *Nuevo*) o revisar la ficha |
+| Entregas sin firma | Entrega vigente sin firma dibujada (solo enlace de Google o nada) | **Firmar en JANO** (`entrega_firmar`): estado, cláusula y firma; el enlace se conserva |
+| Radios sin puesto | Entrega de radio sin `puesto` del catálogo, agrupada por cliente y puesto escritos | **Vincular puesto**: cliente sugerido por parecido y puestos ordenados; copia los nombres oficiales a la entrega y al radio |
+| Funcionarios sin correo | Funcionario activo con `correo` vacío | Escribirlos en la lista o cargar un Excel/CSV con «Cédula» y «Correo» (solo llena los vacíos) |
+| Equipos sin estado | Equipo sin estado operativo (radios: sin estado del radio) | **Completar** con el último mantenimiento que diga «Operativo» o «No operativo» |
+
+Desde este cambio, cada mantenimiento guardado actualiza el estado operativo del equipo si es su intervención más reciente (`Equipo.actualizar_estado_operativo`).
 
 ### 6.2 Mantenimiento
 1. Se registra la intervención con su tipo, actividades, partes intervenidas, resultado y estado final. Las actividades se ofrecen según el tipo de equipo, desde `actividades_mantenimiento.py`.

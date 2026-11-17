@@ -1576,7 +1576,10 @@ def equipo_entregar_firma(request, placa):
         )
         return redirect("inventario:equipo_detalle", placa)
 
-    primera_entrega = not equipo.asignaciones.exists()
+    # Desde «Calidad de datos» (regularizar): el equipo ya está con alguien,
+    # así que no se sugiere «Nuevo» y se proponen su responsable y su área.
+    regularizar = request.GET.get("regularizar") == "1"
+    primera_entrega = not regularizar and not equipo.asignaciones.exists()
     if request.method == "POST":
         formulario = AsignacionEquipoForm(request.POST)
         asignacion = _registrar_entrega(request, equipo, formulario)
@@ -1588,9 +1591,17 @@ def equipo_entregar_firma(request, placa):
             )
             return redirect("inventario:equipo_acta", asignacion.pk)
     else:
-        formulario = AsignacionEquipoForm(primera_entrega=primera_entrega)
+        inicial = {}
+        if regularizar:
+            from .calidad import funcionario_de
+
+            inicial = {"funcionario": funcionario_de(equipo), "area": equipo.ubicacion}
+        formulario = AsignacionEquipoForm(
+            initial=inicial, primera_entrega=primera_entrega
+        )
 
     return render(request, "inventario/equipo_entrega_firma.html", {
+        "regularizar": regularizar,
         "equipo": equipo,
         "formulario_entrega": formulario,
         "clausula": CLAUSULA_EQUIPOS,

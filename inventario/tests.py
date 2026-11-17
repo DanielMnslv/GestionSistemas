@@ -4295,3 +4295,181 @@ class AuditoriaMapaYBajasTests(TestCase):
         self.assertNotContains(resp, "PC-ACT")
         self.assertContains(resp, "auditor")
         self.assertContains(self.client.get(reverse("inventario:equipos_inicio")), "Baúl de bajas")
+
+
+class CalidadDatosTests(TestCase):
+    """Pantalla «Calidad de datos»: detectar y corregir pendientes del inventario."""
+
+    def setUp(self):
+        from inventario.models import Funcionario
+
+        self.encargado = get_user_model().objects.create_user(username="enc", password="x")
+        self.encargado.groups.add(Group.objects.create(name="Encargado de inventario"))
+        self.client.force_login(self.encargado)
+        self.funcionario = Funcionario.objects.create(cedula="111", nombre_completo="ANA PEREZ")
+        self.pc = Equipo.objects.create(
+            placa="PC--50", tipo=Equipo.Tipo.COMPUTADOR,
+            responsable_nombre="ANA PEREZ", responsable_cedula="111", ubicacion="Nómina",
+        )
+
+    def test_equipo_con_responsable_sin_entrega_se_regulariza(self):
+        """Aparece en la lista y la entrega propone su responsable sin sugerir «Nuevo»."""
+        from inventario.models import AsignacionEquipo
+
+        lista = self.client.get(reverse("inventario:calidad_datos"))
+        self.assertContains(lista, "PC--50")
+        url = reverse("inventario:equipo_entregar_firma", args=["PC--50"]) + "?regularizar=1"
+        pagina = self.client.get(url)
+        formulario = pagina.context["formulario_entrega"]
+        self.assertEqual(formulario.initial["funcionario"], self.funcionario)
+        self.assertEqual(formulario.initial["area"], "Nómina")
+        self.assertNotIn("estado_entrega", formulario.initial)
+
+        self.client.post(url, {
+            "funcionario": self.funcionario.pk, "area": "Nómina",
+            "estado_entrega": "BUENO", "clausula_aceptada": "on", "firma": FIRMA_PRUEBA,
+        })
+        self.assertTrue(
+            AsignacionEquipo.objects.filter(equipo=self.pc, estado_entrega="BUENO").exists()
+        )
+        self.assertEqual(self.client.get(reverse("inventario:calidad_datos")).context["filas"], [])
+
+    def test_responsable_que_dice_baja_se_marca(self):
+        """«BAJA 2025», «… baja» o «ROBADO» se marcan para revisar en vez de entregar."""
+        from inventario.calidad import parece_baja
+
+        for texto in ("BAJA 2025", "ESTEPA ORTEGA FREDY baja", "BAJA ROBADO"):
+            self.assertTrue(parece_baja(texto), texto)
+        for texto in ("ANA PEREZ", "RAMOS PULIDO B", "BAJAÑA LOPEZ", "HURTADO"):
+            self.assertFalse(parece_baja(texto), texto)
+
+    def test_firmar_entrega_con_enlace_de_google(self):
+        """La firma se agrega a la entrega existente y conserva el enlace anterior."""
+        from inventario.models import AsignacionEquipo
+
+        entrega = AsignacionEquipo.objects.create(
+            equipo=self.pc, funcionario=self.funcionario, nombre_recibe="ANA PEREZ",
+            entregado_por=self.encargado, enlace_firma="https://drive.google.com/x",
+        )
+        self.assertContains(
+            self.client.get(reverse("inventario:calidad_datos") + "?seccion=firmas"),
+            reverse("inventario:entrega_firmar", args=[entrega.pk]),
+        )
+        url = reverse("inventario:entrega_firmar", args=[entrega.pk])
+        respuesta = self.client.post(url, {"estado_entrega": "BUENO"})
+        self.assertIn("firma", respuesta.context["formulario"].errors)
+
+        respuesta = self.client.post(url, {
+            "estado_entrega": "BUENO", "clausula_aceptada": "on", "firma": FIRMA_PRUEBA,
+        })
+        self.assertRedirects(
+            respuesta, reverse("inventario:equipo_acta", args=[entrega.pk]),
+            fetch_redirect_response=False,
+        )
+        entrega.refresh_from_db()
+        self.assertEqual(entrega.firma, FIRMA_PRUEBA)
+        self.assertEqual(entrega.enlace_firma, "https://drive.google.com/x")
+        self.assertTrue(entrega.clausula_aceptada)
+
+    def test_vincular_radios_al_puesto_del_catalogo(self):
+        """Todas las entregas del grupo quedan con el puesto y el nombre oficial."""
+        from inventario.calidad import grupos_radios_sin_puesto
+        from inventario.models import Cliente, Puesto
+
+        cliente = Cliente.objects.create(nombre="BACAO SAS")
+        Puesto.objects.create(cliente=cliente, nombre="PORTERIA NORTE")
+        puesto = Puesto.objects.create(cliente=cliente, nombre="PLANTA EXTRACTORA")
+        entregas = []
+        for placa in ("RAD-1", "RAD-2"):
+            radio = Radio.objects.create(
+                placa=placa, cliente_asignado="Bacao", puesto_asignado="planta extractora",
+            )
+            entregas.append(AsignacionRadio.objects.create(
+                radio=radio, coordinador_zona="Supervisor", cliente_asignado="Bacao",
+                puesto_asignado="planta extractora", entregado_por=self.encargado,
+            ))
+
+        grupo = grupos_radios_sin_puesto()[0]
+        self.assertEqual(grupo["radios"], 2)
+        self.assertEqual(grupo["sugerido"], cliente)
+        url = reverse("inventario:calidad_vincular_puesto")
+        pagina = self.client.get(url, {"clave": grupo["clave"]})
+        self.assertEqual(pagina.context["puestos"][0], puesto)
+
+        self.client.post(url, {"clave": grupo["clave"], "puesto": puesto.pk})
+        for entrega in entregas:
+            entrega.refresh_from_db()
+            entrega.radio.refresh_from_db()
+            self.assertEqual(entrega.puesto, puesto)
+            self.assertEqual(entrega.cliente_asignado, "BACAO SAS")
+            self.assertEqual(entrega.radio.puesto_asignado, "PLANTA EXTRACTORA")
+        self.assertEqual(grupos_radios_sin_puesto(), [])
+
+    def test_cargar_correos_desde_csv_y_desde_la_lista(self):
+        """Solo llena correos vacíos y descarta los inválidos y los no encontrados."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from inventario.models import Funcionario
+
+        otro = Funcionario.objects.create(
+            cedula="222", nombre_completo="LUIS DIAZ", correo="ya@jano.com"
+        )
+        archivo = SimpleUploadedFile(
+            "correos.csv",
+            "Cédula;Correo\n111;Ana.Perez@Jano.com\n222;nuevo@jano.com\n999;x@jano.com\n".encode(),
+        )
+        self.client.post(reverse("inventario:calidad_correos"), {"archivo": archivo})
+        self.funcionario.refresh_from_db()
+        otro.refresh_from_db()
+        self.assertEqual(self.funcionario.correo, "ana.perez@jano.com")
+        self.assertEqual(otro.correo, "ya@jano.com")
+
+        tercero = Funcionario.objects.create(cedula="333", nombre_completo="EVA RUIZ")
+        url = reverse("inventario:calidad_correos")
+        self.client.post(url, {f"correo_{tercero.pk}": "no-es-correo"})
+        tercero.refresh_from_db()
+        self.assertEqual(tercero.correo, "")
+        self.client.post(url, {f"correo_{tercero.pk}": "eva@jano.com"})
+        tercero.refresh_from_db()
+        self.assertEqual(tercero.correo, "eva@jano.com")
+
+    def test_mantenimiento_actualiza_estado_operativo(self):
+        """El último mantenimiento con estado final define el estado del equipo."""
+        def intervenir(dia, estado):
+            MantenimientoEquipo.objects.create(
+                registrado_por=self.encargado, equipo=self.pc,
+                fecha_intervencion=datetime(2026, 10, dia, 12, 0, tzinfo=dt_timezone.utc),
+                tipo=MantenimientoEquipo.Tipo.CORRECTIVO, tecnico_responsable="Técnico",
+                motivo="Prueba", estado_final=estado,
+            )
+
+        intervenir(10, "NO_OPERATIVO")
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "NO_OPERATIVO")
+        intervenir(5, "OPERATIVO")  # Más antigua: no cambia el estado.
+        intervenir(12, "PENDIENTE_PRUEBAS")  # No indica estado: no cambia.
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "NO_OPERATIVO")
+        intervenir(15, "OPERATIVO")
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "OPERATIVO")
+
+    def test_completar_estados_y_permisos(self):
+        """El botón completa los estados; un usuario de consulta no entra."""
+        MantenimientoEquipo.objects.bulk_create([MantenimientoEquipo(
+            registrado_por=self.encargado, equipo=self.pc,
+            fecha_intervencion=datetime(2026, 10, 1, tzinfo=dt_timezone.utc),
+            tipo=MantenimientoEquipo.Tipo.PREVENTIVO, tecnico_responsable="T",
+            motivo="Importado", estado_final="OPERATIVO",
+        )])  # bulk_create no llama save(): simula datos importados.
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "")
+        self.client.post(reverse("inventario:calidad_estados"))
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "OPERATIVO")
+
+        consulta = get_user_model().objects.create_user(username="ver", password="x")
+        consulta.groups.add(Group.objects.create(name="Consulta"))
+        self.client.force_login(consulta)
+        self.assertNotEqual(
+            self.client.get(reverse("inventario:calidad_datos")).status_code, 200
+        )

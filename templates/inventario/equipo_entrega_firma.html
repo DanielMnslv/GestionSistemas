@@ -20,7 +20,7 @@ accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
 
     <header class="ficha-form-heading">
         <span class="eyebrow">{{ equipo.get_tipo_display|upper }} · {{ equipo.placa }}</span>
-        <h1>Entrega del equipo con firma</h1>
+        <h1>{% if regularizar %}Regularizar la entrega con firma{% else %}Entrega del equipo con firma{% endif %}</h1>
         <p>{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.serial %} · Serial {{ equipo.serial }}{% endif %}.
            Quien recibe firma aquí y queda constancia en el acta del estado en que lo recibió.</p>
     </header>
@@ -39,7 +39,7 @@ accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
 
             <div class="ficha-form-actions">
                 <a class="ficha-form-button ficha-form-button-secondary"
-                   href="{% url 'inventario:equipo_detalle' equipo.placa %}">Entregar después</a>
+                   href="{% if regularizar %}{% url 'inventario:calidad_datos' %}{% else %}{% url 'inventario:equipo_detalle' equipo.placa %}{% endif %}">{% if regularizar %}Cancelar{% else %}Entregar después{% endif %}</a>
                 <button class="ficha-form-button" type="submit">Registrar entrega firmada →</button>
             </div>
         </form>

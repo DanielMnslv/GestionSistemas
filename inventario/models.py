@@ -126,6 +126,27 @@ class Equipo(models.Model):
         """Placa y tipo, por ejemplo "PC-101 (Computador)"."""
         return f"{self.placa} ({self.get_tipo_display()})"
 
+    def actualizar_estado_operativo(self):
+        """Toma el estado operativo del último mantenimiento que lo indique.
+
+        Solo cuentan las intervenciones que dejaron el equipo «Operativo» o
+        «No operativo» («Pendiente de pruebas» no cambia nada). Devuelve True
+        si el estado cambió.
+        """
+        ultimo = (
+            self.mantenimientos.filter(estado_final__in=[
+                self.EstadoOperativo.OPERATIVO, self.EstadoOperativo.NO_OPERATIVO,
+            ])
+            .order_by("-fecha_intervencion", "-id")
+            .values_list("estado_final", flat=True)
+            .first()
+        )
+        if not ultimo or ultimo == self.estado_operativo:
+            return False
+        self.estado_operativo = ultimo
+        self.save(update_fields=["estado_operativo", "actualizado_en"])
+        return True
+
 
 class Radio(models.Model):
     """Radio de comunicación (detalle del Equipo de tipo RADIO).
@@ -521,6 +542,15 @@ class MantenimientoEquipo(models.Model):
             ),
         ]
 
+
+    def save(self, *args, **kwargs):
+        """Guarda la intervención y actualiza el estado operativo del equipo.
+
+        Si esta es la intervención más reciente, el equipo queda «Operativo»
+        o «No operativo» según su estado final.
+        """
+        super().save(*args, **kwargs)
+        self.equipo.actualizar_estado_operativo()
 
     def __str__(self):
         """Placa, tipo de intervención y fecha."""

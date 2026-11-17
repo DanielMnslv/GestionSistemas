@@ -1054,6 +1054,55 @@ class AsignacionEquipoForm(forms.ModelForm):
         return datos
 
 
+class FirmaEntregaForm(forms.ModelForm):
+    """Firma en JANO de una entrega que ya existe (regularización).
+
+    Para entregas importadas que solo tienen el enlace a la firma en Google
+    o ninguna firma: el funcionario confirma el estado del equipo, acepta la
+    cláusula y firma. El enlace anterior se conserva.
+    """
+
+    class Meta:
+        model = AsignacionEquipo
+        fields = ["estado_entrega", "clausula_aceptada", "firma"]
+        labels = {
+            "estado_entrega": "Estado en que tiene el equipo",
+            "clausula_aceptada": "El funcionario acepta la cláusula",
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Hace obligatorios el estado, la cláusula y la firma."""
+        super().__init__(*args, **kwargs)
+        estado = self.fields["estado_entrega"]
+        estado.required = True
+        estado.choices = [("", "Selecciona el estado")] + list(
+            AsignacionEquipo.EstadoEntrega.choices
+        )
+        estado.widget.attrs["class"] = "form-control"
+        self.fields["clausula_aceptada"] = forms.BooleanField(
+            label=self.Meta.labels["clausula_aceptada"],
+            error_messages={"required": "El funcionario debe aceptar la cláusula."},
+        )
+        self.fields["firma"] = forms.CharField(
+            widget=forms.HiddenInput,
+            error_messages={"required": "Falta la firma del funcionario."},
+        )
+
+    def clean_firma(self):
+        """Valida que la firma sea una imagen PNG dibujada."""
+        return validar_firma(self.cleaned_data["firma"])
+
+
+class CorreoFuncionarioForm(forms.Form):
+    """Archivo con cédulas y correos de funcionarios (Excel o CSV)."""
+
+    archivo = forms.FileField(
+        label="Archivo con cédula y correo",
+        help_text="Excel (.xlsx) o CSV con columnas «Cédula» y «Correo». "
+        "Solo se llenan los funcionarios que aún no tienen correo.",
+    )
+
+
 class CambioGPSForm(forms.ModelForm):
     """Registro de un cambio de línea, operador o vehículo de un GPS."""
     class Meta:

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% comment %}
+Firma en JANO de una entrega que ya existe (vista entrega_firmar). Se usa
+para regularizar entregas importadas que solo tienen el enlace de Google o
+ninguna firma. Espera "asignacion", "equipo", "formulario" y "clausula".
+{% endcomment %}
+
+{% block title %}Firmar entrega {{ equipo.placa }} | JANO Inventario{% endblock %}
+{% block page_heading %}Calidad de datos{% endblock %}
+
+{% block content %}
+<section class="ficha-form-page">
+    <nav class="ficha-breadcrumb" aria-label="Ruta de navegación">
+        <a href="{% url 'inventario:calidad_datos' %}?seccion=firmas">Calidad de datos</a>
+        <span aria-hidden="true">/</span>
+        <span>Firmar entrega de {{ equipo.placa }}</span>
+    </nav>
+
+    <header class="ficha-form-heading">
+        <span class="eyebrow">{{ equipo.get_tipo_display|upper }} · {{ equipo.placa }}</span>
+        <h1>Firmar la entrega en JANO</h1>
+        <p>Entregado el {{ asignacion.fecha_entrega|date:"d/m/Y" }} a <strong>{{ asignacion.nombre_recibe|default:"Sin dato" }}</strong>{% if asignacion.cedula_recibe %} (C.C. {{ asignacion.cedula_recibe }}){% endif %}{% if asignacion.area %} · {{ asignacion.area }}{% endif %}.
+        {% if asignacion.enlace_firma %}La firma anterior (<a href="{{ asignacion.enlace_firma }}" target="_blank" rel="noopener">formulario de Google</a>) se conserva.{% endif %}</p>
+    </header>
+
+    <section class="ficha-form-card">
+        <form method="post" class="ficha-form-content" novalidate>
+            {% csrf_token %}
+            {% if formulario.errors %}
+            <div class="ficha-form-errors" role="alert">
+                <strong>Revisa los campos marcados.</strong>
+                {{ formulario.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.estado_entrega %}
+            </div>
+
+            <p class="ficha-clausula">{{ clausula }}</p>
+            <div class="ficha-field">
+                <label class="ficha-check">
+                    {{ formulario.clausula_aceptada }}
+                    {{ formulario.clausula_aceptada.label }}
+                    <span class="ficha-required">*</span>
+                </label>
+                {% for error in formulario.clausula_aceptada.errors %}
+                    <p class="ficha-field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del funcionario" %}
+
+            <div class="ficha-form-actions">
+                <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:calidad_datos' %}?seccion=firmas">Cancelar</a>
+                <button class="ficha-form-button" type="submit">Guardar firma →</button>
+            </div>
+        </form>
+    </section>
+</section>
+{% endblock %}

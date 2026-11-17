@@ -1,7 +1,8 @@
 
 from django.urls import include, path
 from . import (
-    views, views_auditoria, views_catalogos, views_equipos, views_personas,
+    views, views_auditoria, views_calidad, views_catalogos, views_equipos,
+    views_personas,
     views_tickets,
 )
 
@@ -13,6 +14,20 @@ urlpatterns = [
     path("equipos/bajas/", views_equipos.equipos_bajas, name="equipos_bajas"),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
     path("buscar/", views_equipos.buscar_json, name="buscar"),
+    # Calidad de datos: pendientes que hacen que el inventario no cuadre.
+    path("calidad-datos/", views_calidad.calidad_datos, name="calidad_datos"),
+    path(
+        "calidad-datos/vincular-puesto/",
+        views_calidad.vincular_puesto,
+        name="calidad_vincular_puesto",
+    ),
+    path("calidad-datos/correos/", views_calidad.guardar_correos, name="calidad_correos"),
+    path("calidad-datos/estados/", views_calidad.completar_estados, name="calidad_estados"),
+    path(
+        "entregas-equipos/<int:asignacion_id>/firmar/",
+        views_calidad.entrega_firmar,
+        name="entrega_firmar",
+    ),
     # Módulo de Usuarios: personas, equipos a cargo y paz y salvo.
     path("personas/", views_personas.personas_lista, name="personas_lista"),
     path("personas/nueva/", views_personas.persona_crear, name="persona_crear"),
