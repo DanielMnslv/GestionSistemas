@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% comment %}
 Lista principal de equipos y radios: pestañas por tipo, filtros, búsqueda, paginación y la ficha que se abre en un marco al elegir una fila.
 Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentados en esa vista.
@@ -380,6 +381,8 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
         <iframe id="acta-modal-marco" title="Acta de entrega"></iframe>
     </div>
 </div>
+{# Ventana «Transferir componentes» de los radios (botón [data-abrir-transferencia]). #}
+<script src="{% static 'js/transferencia-componentes-radio.js' %}?v=20261117a" defer></script>
 <script>
 (function () {
     var modal = document.getElementById("acta-modal");

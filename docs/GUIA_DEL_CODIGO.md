@@ -141,7 +141,7 @@ Todas las pantallas siguen este mismo patrón: **URL → vista → (permiso) →
 |---|---|---|---|---|
 | `/inventario/radios/nuevo/` | `radio_crear` | `radio_form.html` | radios | Registrar radio |
 | `/inventario/radios/<id>/editar/` | `radio_editar` | la ficha del radio | radios | Guardar edición |
-| `/inventario/radios/<id>/transferir-componentes/` | `radio_transferir_componentes` | — (POST) | radios | Pasar piezas a otro radio (ver §7) |
+| `/inventario/radios/<id>/transferir-componentes/` | `radio_transferir_componentes` | — (POST) | radios | Pasar piezas a otro radio |
 | `/inventario/radios/<id>/baja/` · `/reactivar/` | `radio_dar_baja` · `radio_reactivar` | — (POST) | radios | Baja y reactivación |
 | `/inventario/radios/<id>/` | `radio_detalle` | — (redirige) | sesión | Enlace antiguo |
 | `/inventario/asignaciones/nueva/` | `asignacion_crear` | `asignacion_form.html` | entregas | Entregar radio a un puesto |
@@ -233,6 +233,6 @@ Se revisaron uno por uno: ninguna vista, plantilla ni hoja los carga. Están mar
 - **JS:** `static/js/lista-filtros.js`.
 - **Python:** `inventario/views_antes_mantenimiento.py`, `revisar_modelos.py`, la carpeta `backups/`.
 
-## 7. Problema conocido
+## 7. Problemas corregidos
 
-**«Transferir componentes» de un radio no abre su ventana.** En la lista de equipos, el botón `[data-abrir-transferencia]` necesita el script `static/js/transferencia-componentes-radio.js`, pero ninguna plantilla lo carga (desde antes de que el proyecto estuviera en git). La ruta y la vista (`radio_transferir_componentes`) sí existen. Arreglo: cargar el script en `equipos_lista.html` y probarlo.
+**«Transferir componentes» de un radio no abría su ventana** (corregido en noviembre de 2026). El botón `[data-abrir-transferencia]` de la lista de equipos necesita `static/js/transferencia-componentes-radio.js`, que ninguna plantilla cargaba. Ahora lo carga `equipos_lista.html`, y la prueba `test_lista_de_equipos_muestra_modal_sin_pestana_transferencias` verifica que el script esté en la página.

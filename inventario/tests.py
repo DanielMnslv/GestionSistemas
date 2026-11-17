@@ -3728,6 +3728,8 @@ class TransferenciaComponentesRadioTests(TestCase):
             f'id="modal-transferencia-radio-{self.origen.pk}"',
         )
         self.assertNotContains(respuesta, 'data-pf-tab="transferencias"')
+        # Sin este script el botón no abre la ventana (falla que hubo hasta nov. 2026).
+        self.assertContains(respuesta, "js/transferencia-componentes-radio.js")
 
     def test_transferencia_desde_equipos_regresa_a_la_ficha_del_radio(self):
         self.client.force_login(self.encargado)
