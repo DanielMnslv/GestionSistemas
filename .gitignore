@@ -66,3 +66,12 @@ backups/
 .venv_demo/
 *.respaldo_*
 *.danado_respaldo
+
+# Seguridad adicional: respaldos y archivos locales
+*.sql
+*.dump
+*.log
+.env
+.env.*
+!.env.example
+respaldo_archivos_accidentales/
