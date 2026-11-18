@@ -240,12 +240,48 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         self.fields["trabajo_realizado"].required = False
         self.fields["causa_dano"].required = False
         self._preparar_tipos()
+        # Los registros importados del Sheet no traen actividades, partes ni
+        # causa del daño: al corregirlos no se exige completarlos.
+        self.exigir_detalle = not (self.instance.pk and self.instance.origen_archivo)
         if self.instance and self.instance.pk:
             self.initial["actividades_preventivas"] = self.instance.actividades_preventivas or []
             self.initial["componentes_intervenidos"] = self.instance.componentes_intervenidos or []
             self.initial["estados_entrega"] = self.instance.estados_entrega or []
+            self._preparar_edicion()
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+    def _preparar_edicion(self):
+        """Ajustes al corregir una intervención ya registrada.
+
+        - El equipo no se cambia (aunque esté de baja o su tipo ya no tenga
+          mantenimiento): una intervención mal asignada se borra y se
+          registra de nuevo en el equipo correcto.
+        - Se aceptan el especialista y el funcionario guardados aunque ya no
+          estén en las listas (registros importados del Sheet o funcionarios
+          retirados), para no obligar a cambiarlos al corregir otro dato.
+        """
+        equipo = self.instance.equipo
+        campo = self.fields["equipo"]
+        campo.queryset = Equipo.objects.filter(pk=equipo.pk)
+        campo.widget.datos_opcion = {str(equipo.pk): {"data-te": equipo.tipo}}
+        campo.widget.choices = campo.choices
+        campo.disabled = True
+        tipos = self.fields["tipo_equipo"]
+        if equipo.tipo not in dict(tipos.choices):
+            tipos.choices = list(tipos.choices) + [(equipo.tipo, equipo.get_tipo_display())]
+        self.initial["tipo_equipo"] = equipo.tipo
+
+        tecnico = self.instance.tecnico_responsable
+        opciones = self.fields["tecnico_responsable"].choices
+        if tecnico and tecnico not in dict(opciones):
+            self.fields["tecnico_responsable"].choices = list(opciones) + [(tecnico, tecnico)]
+
+        if self.instance.funcionario_responsable_id:
+            campo = self.fields["funcionario_responsable"]
+            campo.queryset = Funcionario.objects.filter(
+                Q(activo=True) | Q(pk=self.instance.funcionario_responsable_id)
+            )
 
     def clean(self):
         """Valida el conjunto según el tipo de mantenimiento.
@@ -261,7 +297,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             cleaned["actividad_preventiva_otros"] = ""
         if tipo != MantenimientoEquipo.Tipo.CORRECTIVO:
             cleaned["componentes_intervenidos"] = []
-        if tipo == MantenimientoEquipo.Tipo.CORRECTIVO:
+        if not self.exigir_detalle:
+            # Registro importado: lo marcado se valida, pero nada es obligatorio.
+            self._casillas_ajenas(cleaned, "componentes_intervenidos", act.CORRECTIVAS, tipo_equipo)
+            self._casillas_ajenas(cleaned, "actividades_preventivas", act.PREVENTIVAS, tipo_equipo)
+        elif tipo == MantenimientoEquipo.Tipo.CORRECTIVO:
             if not cleaned.get("componentes_intervenidos"):
                 self.add_error("componentes_intervenidos", "Seleccione al menos una parte intervenida.")
             self._casillas_ajenas(cleaned, "componentes_intervenidos", act.CORRECTIVAS, tipo_equipo)

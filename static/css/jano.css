@@ -1038,3 +1038,12 @@ html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark
 .ficha-cambio-tipo label { font-size: 14px; }
 .ficha-cambio-tipo-fila { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .ficha-cambio-tipo-fila select { flex: 1 1 200px; max-width: 280px; }
+/* Editar / Borrar de una intervención (_mant_acciones.html). */
+.mant-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; }
+.mant-acciones form { margin: 0; }
+.mant-accion { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; border: 1px solid var(--jx-line-strong); border-radius: 8px; background: var(--jx-surface); color: var(--jx-primary); font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.mant-accion:hover { border-color: var(--jx-primary); }
+.mant-accion-borrar { color: var(--jx-bad); }
+.mant-accion-borrar:hover { border-color: var(--jx-bad); background: var(--jx-bad-soft); }
+td .mant-acciones { justify-content: flex-start; margin-top: 6px; }
+td .mant-accion { min-height: 26px; padding: 0 10px; font-size: 12px; }

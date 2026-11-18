@@ -1,0 +1,19 @@
+{% comment %}
+Botones «Editar» y «Borrar» de una intervención de mantenimiento.
+Se incluye en el historial (mantenimientos_lista.html) y en las fichas
+(equipo_pestanas.html, radio_pestanas.html). Espera "mantenimiento" y, si
+se quiere volver a una pestaña, "volver_a" (por ejemplo "#mantenimientos").
+«Editar» abre la ventana emergente (_mant_ventana.html, enlaces data-mant-modal);
+«Borrar» pide confirmación y envía a la vista mantenimiento_borrar.
+{% endcomment %}
+{% if permisos.mantenimientos %}
+<div class="mant-acciones">
+    <a class="mant-accion" data-mant-modal href="{% url 'inventario:mantenimiento_editar' mantenimiento.pk %}">Editar</a>
+    <form method="post" action="{% url 'inventario:mantenimiento_borrar' mantenimiento.pk %}"
+          onsubmit="return confirm('¿Borrar la intervención de {{ mantenimiento.equipo.placa|escapejs }} del {{ mantenimiento.fecha_intervencion|date:"d/m/Y H:i" }}? Esta acción no se puede deshacer.');">
+        {% csrf_token %}
+        <input type="hidden" name="siguiente" value="{{ request.get_full_path }}{{ volver_a|default:'' }}">
+        <button type="submit" class="mant-accion mant-accion-borrar">Borrar</button>
+    </form>
+</div>
+{% endif %}

@@ -113,6 +113,7 @@ Vista equipo_pestanas con pestanas_radio=1 (views_equipos.py) y _render_radio_ed
                     <p><strong>Trabajo realizado:</strong> {{ mantenimiento.trabajo_realizado|default:"Sin información"|linebreaksbr }}</p>
                     <p><strong>Repuestos:</strong> {{ mantenimiento.repuestos_utilizados|default:"-"|linebreaksbr }}</p>
                     {% if mantenimiento.observaciones %}<p><strong>Observaciones:</strong> {{ mantenimiento.observaciones|linebreaksbr }}</p>{% endif %}
+                    {% include "inventario/_mant_acciones.html" with volver_a="#mantenimientos" %}
                 </div>
             </details>
             {% endfor %}

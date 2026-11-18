@@ -176,6 +176,16 @@ urlpatterns = [
         name="mantenimiento_crear",
     ),
     path(
+        "mantenimientos/<int:mantenimiento_id>/editar/",
+        views.mantenimiento_editar,
+        name="mantenimiento_editar",
+    ),
+    path(
+        "mantenimientos/<int:mantenimiento_id>/borrar/",
+        views.mantenimiento_borrar,
+        name="mantenimiento_borrar",
+    ),
+    path(
         "mantenimientos/programados/",
         views.mantenimientos_programados_lista,
         name="mantenimientos_programados_lista",

@@ -4538,3 +4538,116 @@ class CambiarTipoEquipoTests(TestCase):
         self.cambiar("IMPRESORA")
         self.equipo.refresh_from_db()
         self.assertEqual(self.equipo.tipo, "ESCANER")
+
+
+class EditarBorrarMantenimientoTests(TestCase):
+    """Corregir y borrar intervenciones registradas por error."""
+
+    def setUp(self):
+        self.encargado = get_user_model().objects.create_user(username="enc", password="x")
+        self.encargado.groups.add(Group.objects.create(name="Técnico de mantenimiento"))
+        self.client.force_login(self.encargado)
+        self.pc = Equipo.objects.create(placa="PC--108", tipo=Equipo.Tipo.COMPUTADOR)
+        self.ajax = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+    def intervencion(self, dia, estado="OPERATIVO", tecnico="Técnico del Sheet"):
+        return MantenimientoEquipo.objects.create(
+            registrado_por=self.encargado, equipo=self.pc,
+            fecha_intervencion=datetime(2026, 10, dia, 14, 0, tzinfo=dt_timezone.utc),
+            tipo=MantenimientoEquipo.Tipo.DIAGNOSTICO, tecnico_responsable=tecnico,
+            motivo="Lento", trabajo_realizado="Revisión", estado_final=estado,
+        )
+
+    def test_editar_corrige_y_conserva_el_tecnico_antiguo(self):
+        """La ventana carga los datos; al guardar cambia lo corregido y el equipo sigue igual."""
+        m = self.intervencion(22)
+        url = reverse("inventario:mantenimiento_editar", args=[m.pk])
+        self.assertRedirects(self.client.get(url), reverse("inventario:mantenimientos_lista"),
+                             fetch_redirect_response=False)
+        ventana = self.client.get(url, **self.ajax)
+        self.assertContains(ventana, "Guardar cambios")
+        self.assertContains(ventana, "Lento")
+
+        otro = Equipo.objects.create(placa="PC--200", tipo=Equipo.Tipo.COMPUTADOR)
+        respuesta = self.client.post(url, {
+            "equipo": otro.pk, "equipo_fijo": "1", "tipo_equipo": "COMPUTADOR",
+            "fecha_intervencion": "2026-10-22T09:30", "tipo": "DIAGNOSTICO",
+            "tecnico_responsable": "Técnico del Sheet", "motivo": "No enciende",
+            "trabajo_realizado": "Cambio de fuente", "resultado": "SOLUCIONADO",
+            "estado_final": "NO_OPERATIVO",
+        }, **self.ajax)
+        self.assertEqual(respuesta.json(), {"ok": True})
+        m.refresh_from_db()
+        self.pc.refresh_from_db()
+        self.assertEqual(m.motivo, "No enciende")
+        self.assertEqual(m.equipo, self.pc)  # El equipo no se cambia al editar.
+        self.assertEqual(self.pc.estado_operativo, "NO_OPERATIVO")
+
+    def test_borrar_recalcula_estado_y_reabre_la_visita(self):
+        """Al borrar, el estado vuelve al del mantenimiento anterior y la visita queda pendiente."""
+        self.intervencion(10, "OPERATIVO")
+        errada = self.intervencion(22, "NO_OPERATIVO")
+        visita = MantenimientoProgramado.objects.create(
+            equipo=self.pc, fecha_programada=datetime(2026, 10, 22).date(), descripcion="Visita",
+            creado_por=self.encargado, estado=MantenimientoProgramado.Estado.COMPLETADO,
+            intervencion_realizada=errada,
+        )
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "NO_OPERATIVO")
+
+        ficha = reverse("inventario:equipo_pestanas", args=["PC--108"]) + "?embed=1#mantenimientos"
+        self.assertContains(self.client.get(ficha), reverse("inventario:mantenimiento_borrar", args=[errada.pk]))
+        respuesta = self.client.post(
+            reverse("inventario:mantenimiento_borrar", args=[errada.pk]), {"siguiente": ficha}
+        )
+        self.assertRedirects(respuesta, ficha, fetch_redirect_response=False)
+        self.assertFalse(MantenimientoEquipo.objects.filter(pk=errada.pk).exists())
+        self.pc.refresh_from_db()
+        self.assertEqual(self.pc.estado_operativo, "OPERATIVO")
+        visita.refresh_from_db()
+        self.assertEqual(visita.estado, "PROGRAMADO")
+        self.assertIsNone(visita.intervencion_realizada)
+
+    def test_borrar_no_redirige_fuera_y_exige_post_y_permiso(self):
+        """Solo POST, solo con permiso, y nunca redirige a otro sitio."""
+        m = self.intervencion(23)
+        url = reverse("inventario:mantenimiento_borrar", args=[m.pk])
+        self.client.get(url)
+        self.assertTrue(MantenimientoEquipo.objects.filter(pk=m.pk).exists())
+
+        consulta = get_user_model().objects.create_user(username="ver", password="x")
+        consulta.groups.add(Group.objects.create(name="Consulta"))
+        self.client.force_login(consulta)
+        self.client.post(url)
+        self.assertTrue(MantenimientoEquipo.objects.filter(pk=m.pk).exists())
+        self.assertNotContains(
+            self.client.get(reverse("inventario:mantenimientos_lista")), url
+        )
+
+        self.client.force_login(self.encargado)
+        respuesta = self.client.post(url, {"siguiente": "https://otro-sitio.com/"})
+        self.assertRedirects(respuesta, reverse("inventario:mantenimientos_lista"),
+                             fetch_redirect_response=False)
+        self.assertFalse(MantenimientoEquipo.objects.filter(pk=m.pk).exists())
+
+    def test_editar_registro_importado_sin_actividades(self):
+        """Un preventivo del Sheet se corrige sin obligar a marcar actividades."""
+        m = MantenimientoEquipo.objects.create(
+            registrado_por=self.encargado, equipo=self.pc,
+            fecha_intervencion=datetime(2026, 10, 23, 5, 0, tzinfo=dt_timezone.utc),
+            tipo=MantenimientoEquipo.Tipo.PREVENTIVO, tecnico_responsable="DANIEL",
+            motivo="Rutina", trabajo_realizado="Limpieza", estado_final="OPERATIVO",
+            origen_archivo="T.MANT.xlsx", origen_hoja="2026", fila_origen=5,
+        )
+        respuesta = self.client.post(
+            reverse("inventario:mantenimiento_editar", args=[m.pk]), {
+                "equipo_fijo": "1", "tipo_equipo": "COMPUTADOR",
+                "fecha_intervencion": "2026-10-23T00:00", "tipo": "PREVENTIVO",
+                "tecnico_responsable": "DANIEL", "motivo": "Rutina",
+                "trabajo_realizado": "Limpieza", "resultado": "SOLUCIONADO",
+                "estado_final": "OPERATIVO", "observaciones": "Corregido",
+            }, **self.ajax,
+        )
+        self.assertEqual(respuesta.json(), {"ok": True})
+        m.refresh_from_db()
+        self.assertEqual(m.observaciones, "Corregido")

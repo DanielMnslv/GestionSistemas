@@ -15,6 +15,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from urllib.parse import urlencode
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.core.paginator import Paginator
@@ -576,6 +577,83 @@ def mantenimiento_crear(request):
     )
 
     return render(request, "inventario/_mantenimiento_modal.html", contexto)
+
+
+@login_required
+@requiere_permiso("mantenimientos")
+def mantenimiento_editar(request, mantenimiento_id):
+    """Corrige una intervención ya registrada (en la misma ventana emergente).
+
+    El equipo queda fijo (ver MantenimientoEquipoForm._preparar_edicion).
+    Al guardar, el estado operativo del equipo se recalcula con su último
+    mantenimiento (MantenimientoEquipo.save). El cambio queda en la auditoría.
+    Sin la ventana (enlace directo) lleva al historial de intervenciones.
+    """
+    mantenimiento = get_object_or_404(
+        MantenimientoEquipo.objects.select_related("equipo"), pk=mantenimiento_id
+    )
+    if not pide_modal(request):
+        return redirect("inventario:mantenimientos_lista")
+
+    formulario = MantenimientoEquipoForm(
+        request.POST if request.method == "POST" else None, instance=mantenimiento
+    )
+    if request.method == "POST" and formulario.is_valid():
+        formulario.save()
+        messages.success(
+            request, f"La intervención de {mantenimiento.equipo.placa} quedó corregida."
+        )
+        return JsonResponse({"ok": True})
+
+    contexto = contexto_modal(
+        formulario, mantenimiento.equipo,
+        f"Editar intervención del {timezone.localtime(mantenimiento.fecha_intervencion):%d/%m/%Y}",
+        reverse("inventario:mantenimiento_editar", args=[mantenimiento.pk]), "editar",
+    )
+    return render(request, "inventario/_mantenimiento_modal.html", contexto)
+
+
+@login_required
+@requiere_permiso("mantenimientos")
+def mantenimiento_borrar(request, mantenimiento_id):
+    """Borra una intervención registrada por error. Solo por POST.
+
+    - Si la intervención había cumplido una visita programada, esa visita
+      vuelve a quedar «Programado» (la visita en realidad no se hizo).
+    - Si venía de una solicitud de soporte, la solicitud se conserva y solo
+      pierde el enlace a la intervención.
+    - El estado operativo del equipo se recalcula con el mantenimiento que
+      quede de último.
+    - El borrado queda en la auditoría con todos los datos de la intervención.
+
+    Vuelve a la página indicada en ``siguiente`` (la ficha o el historial).
+    """
+    mantenimiento = get_object_or_404(
+        MantenimientoEquipo.objects.select_related("equipo"), pk=mantenimiento_id
+    )
+    siguiente = request.POST.get("siguiente", "")
+    if not url_has_allowed_host_and_scheme(
+        siguiente, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        siguiente = reverse("inventario:mantenimientos_lista")
+    if request.method != "POST":
+        return redirect(siguiente)
+
+    equipo = mantenimiento.equipo
+    fecha = timezone.localtime(mantenimiento.fecha_intervencion)
+    with transaction.atomic():
+        reabiertas = mantenimiento.programaciones_cumplidas.update(
+            estado=MantenimientoProgramado.Estado.PROGRAMADO,
+            intervencion_realizada=None,
+        )
+        mantenimiento.delete()
+        equipo.actualizar_estado_operativo()
+
+    mensaje = f"Se borró la intervención de {equipo.placa} del {fecha:%d/%m/%Y %H:%M}."
+    if reabiertas:
+        mensaje += " La visita programada que había cumplido volvió a quedar pendiente."
+    messages.success(request, mensaje)
+    return redirect(siguiente)
 
 
 @login_required

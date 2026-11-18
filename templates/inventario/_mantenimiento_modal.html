@@ -1,4 +1,4 @@
-{% comment %}Contenido de las ventanas emergentes "Registrar intervención", "Programar mantenimiento" y "Completar mantenimiento programado" (se piden por fetch desde el panel). Espera "accion" (URL del formulario) y "variante" (registrar, programar o completar).{% endcomment %}
+{% comment %}Contenido de las ventanas emergentes "Registrar intervención", "Programar mantenimiento" y "Completar mantenimiento programado" (se piden por fetch desde el panel). Espera "accion" (URL del formulario) y "variante" (registrar, programar, completar o editar).{% endcomment %}
 <div class="maintenance-form-page mant-modal-contenido mant-modal-{{ variante }}">
     <header class="mant-modal-cabeza">
         <div>
@@ -18,7 +18,7 @@
         <div class="maintenance-form-actions mant-modal-pie">
             <span class="mant-modal-ayuda">Los campos con <span class="maintenance-form-required">*</span> son obligatorios · Ctrl + Enter para guardar</span>
             <div class="mant-modal-botones">
-                <button type="submit" class="maintenance-form-button">{% if variante == "programar" %}Programar mantenimiento{% elif variante == "completar" %}Completar mantenimiento{% else %}Guardar registro{% endif %}</button>
+                <button type="submit" class="maintenance-form-button">{% if variante == "programar" %}Programar mantenimiento{% elif variante == "completar" %}Completar mantenimiento{% elif variante == "editar" %}Guardar cambios{% else %}Guardar registro{% endif %}</button>
                 <button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-cerrar>Cancelar</button>
             </div>
         </div>

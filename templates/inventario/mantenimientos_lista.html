@@ -93,7 +93,7 @@ Historial de intervenciones con búsqueda y filtros por tipo, técnico, resultad
                 <tbody>
                     {% for item in mantenimientos %}
                     <tr data-fila>
-                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" with equipo=item.equipo %}<span class="subtext">{{ item.equipo.get_tipo_display }} · {{ item.equipo.serial|default:"Sin serial" }}</span></td>
+                        <td class="tarjeta-titulo">{% include "inventario/_equipo_enlace.html" with equipo=item.equipo %}<span class="subtext">{{ item.equipo.get_tipo_display }} · {{ item.equipo.serial|default:"Sin serial" }}</span>{% include "inventario/_mant_acciones.html" with mantenimiento=item %}</td>
                         <td data-label="Fecha">{% if item.origen_archivo %}{{ item.fecha_intervencion|date:"d/m/Y" }}{% else %}{{ item.fecha_intervencion|date:"d/m/Y H:i" }}{% endif %}</td>
                         <td data-label="Tipo">{{ item.get_tipo_display }}</td>
                         <td data-label="Técnico">{{ item.tecnico_responsable }}</td>

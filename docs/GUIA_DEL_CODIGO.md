@@ -150,6 +150,8 @@ Todas las pantallas siguen este mismo patrón: **URL → vista → (permiso) →
 | `/inventario/asignaciones/<id>/devolver/` | `asignacion_devolver` | — (POST) | entregas | Devolución del radio |
 | `/inventario/mantenimientos/` | `mantenimientos_lista` | `mantenimientos_lista.html` | sesión | Historial de intervenciones |
 | `/inventario/mantenimientos/nuevo/` | `mantenimiento_crear` | `_mantenimiento_modal.html` | mantenimientos | Registrar intervención (ventana) |
+| `/inventario/mantenimientos/<id>/editar/` | `mantenimiento_editar` | `_mantenimiento_modal.html` | mantenimientos | Corregir una intervención (misma ventana; el equipo queda fijo) |
+| `/inventario/mantenimientos/<id>/borrar/` | `mantenimiento_borrar` | — (POST) | mantenimientos | Borrar una intervención; reabre la visita programada que cumplía. Botones en `_mant_acciones.html` |
 | `/inventario/mantenimientos/programados/` | `mantenimientos_programados_lista` | `mantenimientos_programados_lista.html` | sesión | Visitas programadas |
 | `/inventario/mantenimientos/programar/` | `mantenimiento_programado_crear` | `_mantenimiento_modal.html` | programar | Programar visita |
 | `/inventario/mantenimientos/programados/<id>/completar/` · `/cancelar/` | `mantenimiento_programado_completar` · `_cancelar` | `_mantenimiento_modal.html` | mantenimientos · programar | Cerrar o cancelar visita |
