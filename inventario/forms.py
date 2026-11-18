@@ -740,6 +740,33 @@ class RadioForm(forms.ModelForm):
         return serial
 
 
+class CambioPlacaForm(forms.Form):
+    """Nueva placa para un equipo registrado con la placa equivocada.
+
+    Se normaliza igual que al registrar (sin espacios, en mayúsculas) y no
+    puede ser la misma ni estar en otro equipo. Espera ``equipo``.
+    """
+
+    placa = forms.CharField(label="Placa correcta", max_length=50)
+
+    def __init__(self, *args, equipo, **kwargs):
+        """Guarda el equipo que se corrige para validar contra los demás."""
+        super().__init__(*args, **kwargs)
+        self.equipo = equipo
+
+    def clean_placa(self):
+        """Normaliza la placa y verifica que cambie y que nadie más la tenga."""
+        placa = re.sub(r"\s+", "", self.cleaned_data["placa"]).upper()
+        if not placa:
+            raise forms.ValidationError("Escribe la placa correcta.")
+        if placa == self.equipo.placa:
+            raise forms.ValidationError("Es la misma placa que ya tiene.")
+        otro = Equipo.objects.filter(placa__iexact=placa).exclude(pk=self.equipo.pk).first()
+        if otro is not None:
+            raise forms.ValidationError(f"La placa {otro.placa} ya es de otro equipo.")
+        return placa
+
+
 class RadioBajaForm(forms.Form):
     """Motivo por el que se da de baja un radio."""
     motivo_baja = forms.CharField(

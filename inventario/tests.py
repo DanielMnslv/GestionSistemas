@@ -4651,3 +4651,59 @@ class EditarBorrarMantenimientoTests(TestCase):
         self.assertEqual(respuesta.json(), {"ok": True})
         m.refresh_from_db()
         self.assertEqual(m.observaciones, "Corregido")
+
+
+class CambiarPlacaEquipoTests(TestCase):
+    """Acción «Cambiar placa» de la ficha: corrige placas mal registradas."""
+
+    def setUp(self):
+        self.encargado = get_user_model().objects.create_user(username="enc", password="x")
+        self.encargado.groups.add(Group.objects.create(name="Encargado de inventario"))
+        self.client.force_login(self.encargado)
+        self.equipo = Equipo.objects.create(placa="IMP-10", tipo=Equipo.Tipo.ESCANER)
+
+    def cambiar(self, placa, actual="IMP-10"):
+        return self.client.post(
+            reverse("inventario:equipo_cambiar_placa", args=[actual]), {"placa": placa}
+        )
+
+    def test_cambia_la_placa_y_conserva_el_historial(self):
+        """La placa nueva se normaliza; mantenimientos y ficha siguen al equipo."""
+        MantenimientoEquipo.objects.create(
+            registrado_por=self.encargado, equipo=self.equipo,
+            fecha_intervencion=datetime(2026, 10, 1, tzinfo=dt_timezone.utc),
+            tipo=MantenimientoEquipo.Tipo.DIAGNOSTICO, tecnico_responsable="T",
+            motivo="M", trabajo_realizado="T",
+        )
+        ficha = self.client.get(reverse("inventario:equipo_pestanas", args=["IMP-10"]))
+        self.assertContains(ficha, reverse("inventario:equipo_cambiar_placa", args=["IMP-10"]))
+
+        respuesta = self.cambiar(" esc-10 ")
+        destino = reverse("inventario:equipo_pestanas", args=["ESC-10"])
+        self.assertRedirects(respuesta, destino + "?embed=1#editar", fetch_redirect_response=False)
+        self.equipo.refresh_from_db()
+        self.assertEqual(self.equipo.placa, "ESC-10")
+        self.assertEqual(self.equipo.mantenimientos.count(), 1)
+        self.assertEqual(self.client.get(destino).status_code, 200)
+
+    def test_rechaza_placa_repetida_igual_o_vacia(self):
+        """No acepta la placa de otro equipo, la misma ni una vacía."""
+        Equipo.objects.create(placa="ESC-04", tipo=Equipo.Tipo.ESCANER)
+        for placa in ("esc-04", "IMP-10", "   "):
+            self.cambiar(placa)
+            self.equipo.refresh_from_db()
+            self.assertEqual(self.equipo.placa, "IMP-10")
+
+    def test_radios_y_usuarios_sin_permiso(self):
+        """Los radios no se cambian aquí y Consulta no puede cambiar placas."""
+        radio = Radio.objects.create(placa="RJ-91")
+        self.cambiar("RJ-92", actual=radio.equipo.placa)
+        radio.equipo.refresh_from_db()
+        self.assertEqual(radio.equipo.placa, "RJ-91")
+
+        consulta = get_user_model().objects.create_user(username="ver", password="x")
+        consulta.groups.add(Group.objects.create(name="Consulta"))
+        self.client.force_login(consulta)
+        self.cambiar("ESC-10")
+        self.equipo.refresh_from_db()
+        self.assertEqual(self.equipo.placa, "IMP-10")

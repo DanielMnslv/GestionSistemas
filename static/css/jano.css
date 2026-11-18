@@ -1047,3 +1047,4 @@ html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark
 .mant-accion-borrar:hover { border-color: var(--jx-bad); background: var(--jx-bad-soft); }
 td .mant-acciones { justify-content: flex-start; margin-top: 6px; }
 td .mant-accion { min-height: 26px; padding: 0 10px; font-size: 12px; }
+.ficha-cambio-tipo-fila input { flex: 1 1 200px; max-width: 280px; }

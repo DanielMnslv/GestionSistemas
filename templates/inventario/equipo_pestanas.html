@@ -370,6 +370,16 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                 </div>
             </form>
             {% endif %}
+            {# Cambiar placa: corrige una placa mal registrada (vista equipo_cambiar_placa). #}
+            <form method="post" action="{% url 'inventario:equipo_cambiar_placa' equipo.placa %}" class="ficha-cambio-tipo"
+                  onsubmit="var p=this.placa.value.replace(/\s+/g,'').toUpperCase();if(!p)return false;return confirm('¿Cambiar la placa {{ equipo.placa|escapejs }} por '+p+'? El historial del equipo se conserva.');">
+                {% csrf_token %}
+                <label for="cambio-placa">Placa: <strong>{{ equipo.placa }}</strong>. ¿Está mal registrada?</label>
+                <div class="ficha-cambio-tipo-fila">
+                    <input id="cambio-placa" name="placa" class="form-control" maxlength="50" required placeholder="Placa correcta, p. ej. ESC-10" autocomplete="off">
+                    <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar placa</button>
+                </div>
+            </form>
             <form method="post" action="{% url 'inventario:equipo_editar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-editar-equipo" novalidate data-con-errores="{% if formulario_edicion.errors or detalle_edicion.errors %}1{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="embed" value="1">

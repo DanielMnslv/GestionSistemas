@@ -104,6 +104,11 @@ urlpatterns = [
         name="equipo_cambiar_tipo",
     ),
     path(
+        "equipos/<str:placa>/placa/",
+        views_equipos.equipo_cambiar_placa,
+        name="equipo_cambiar_placa",
+    ),
+    path(
         "equipos/<str:placa>/reactivar/",
         views_equipos.equipo_reactivar,
         name="equipo_reactivar",

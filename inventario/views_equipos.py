@@ -29,6 +29,7 @@ from .forms import (
     AsignacionEquipoForm,
     CambioGPSForm,
     EquipoForm,
+    CambioPlacaForm,
     RadioBajaForm,
     RadioForm,
     RenovacionAntivirusForm,
@@ -1339,6 +1340,32 @@ def equipo_cambiar_tipo(request, placa):
         mensaje += " Se borraron las características anteriores; complétalas en «Editar»."
     messages.success(request, mensaje)
     return _volver_a_pestanas(placa, "editar")
+
+
+@login_required
+@requiere_permiso("equipos")
+def equipo_cambiar_placa(request, placa):
+    """Corrige la placa de un equipo (por ejemplo, IMP-10 que en realidad es ESC-10). Solo por POST.
+
+    Las entregas, mantenimientos, actas y demás registros se enlazan al
+    equipo por su identificador interno, no por el texto de la placa, así
+    que todo su historial lo sigue. El cambio queda en la auditoría.
+    Los radios no se corrigen aquí: su placa se edita en su propia ficha.
+    """
+    equipo = get_object_or_404(Equipo, placa=placa)
+    if request.method != "POST" or equipo.tipo == Equipo.Tipo.RADIO:
+        return _volver_a_pestanas(placa)
+
+    formulario = CambioPlacaForm(request.POST, equipo=equipo)
+    if not formulario.is_valid():
+        messages.error(request, " ".join(formulario.errors["placa"]))
+        return _volver_a_pestanas(placa, "editar")
+
+    anterior = equipo.placa
+    equipo.placa = formulario.cleaned_data["placa"]
+    equipo.save(update_fields=["placa", "actualizado_en"])
+    messages.success(request, f"La placa {anterior} se cambió a {equipo.placa}.")
+    return _volver_a_pestanas(equipo.placa, "editar")
 
 
 @login_required
