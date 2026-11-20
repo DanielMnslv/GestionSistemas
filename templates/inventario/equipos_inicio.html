@@ -82,25 +82,6 @@ Sección Equipos: una tarjeta por tipo que lleva a la lista ya filtrada (vista e
     </div>
     {% endfor %}
 
-    <!-- Traslado masivo a bodega -->
-    {% if permisos.regularizacion_inventario or request.user.is_superuser %}
-    <a class="jx-tile" href="{% url 'inventario:traslado_bodega' %}">
-        <span class="jx-tile-ico">
-            <svg class="jx-i"><use href="#i-box"/></svg>
-        </span>
-
-        <strong>Traslado masivo a bodega</strong>
-
-        <p>
-            Consolidar los activos de un responsable en Bodega central JANO
-        </p>
-
-        <span class="jx-tile-meta">
-            Operación especial de inventario
-        </span>
-    </a>
-    {% endif %}
-
     <!-- Baúl de bajas -->
     <a class="jx-tile jx-tile-baul" href="{% url 'inventario:equipos_bajas' %}">
         <span class="jx-tile-ico">
