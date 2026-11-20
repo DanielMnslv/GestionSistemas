@@ -36,6 +36,7 @@ ACCIONES = {
     "tickets_crear": {ENCARGADO, TECNICO},
     "tickets_asignar": {ENCARGADO},
     "tickets_atender": {TECNICO},
+    "regularizacion_inventario": {ENCARGADO},
 }
 
 

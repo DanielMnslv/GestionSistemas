@@ -18,38 +18,27 @@ Se incluye en radio_form.html (registrar) y en la pestaña «Editar» de radio_p
             </div>
             </fieldset>
 
-            <fieldset class="ficha-paso" data-paso="2" data-titulo="Estado del equipo">
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Estado y accesorios">
             <legend class="ficha-section-heading">
                 <span class="ficha-section-number">02</span>
-                Estado del equipo
+                Estado y accesorios
             </legend>
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario.estado_radio %}
-                {% include "inventario/_campo.html" with field=formulario.estado_base %}
-                {% include "inventario/_campo.html" with field=formulario.estado_cargador %}
-                {% include "inventario/_campo.html" with field=formulario.estado_antena %}
-                {% include "inventario/_campo.html" with field=formulario.estado_baterias %}
-                {% include "inventario/_campo.html" with field=formulario.estado_perilla_encendido %}
-                {% include "inventario/_campo.html" with field=formulario.estado_perilla_frecuencia %}
-                {% include "inventario/_campo.html" with field=formulario.estado_clip %}
-            </div>
-            </fieldset>
-
-            <fieldset class="ficha-paso" data-paso="3" data-titulo="Accesorios">
-            <legend class="ficha-section-heading">
-                <span class="ficha-section-number">03</span>
-                Accesorios
-            </legend>
-            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.base_unificado %}
+                {% include "inventario/_campo.html" with field=formulario.cargador_unificado %}
+                {% include "inventario/_campo.html" with field=formulario.antena_unificada %}
+                {% include "inventario/_campo.html" with field=formulario.clip_unificado %}
+                {% include "inventario/_campo.html" with field=formulario.perilla_encendido_unificada %}
+                {% include "inventario/_campo.html" with field=formulario.perilla_frecuencia_unificada %}
                 {% include "inventario/_campo.html" with field=formulario.bateria_1 %}
                 {% include "inventario/_campo.html" with field=formulario.bateria_2 %}
-                {% include "inventario/_campo.html" with field=formulario.perilla_encendido %}
-                {% include "inventario/_campo.html" with field=formulario.perilla_frecuencia %}
-                {% include "inventario/_campo.html" with field=formulario.antena %}
-                {% include "inventario/_campo.html" with field=formulario.clip %}
-                {% include "inventario/_campo.html" with field=formulario.base %}
-                {% include "inventario/_campo.html" with field=formulario.cargador %}
+                {% include "inventario/_campo.html" with field=formulario.estado_baterias %}
             </div>
+            <p class="form-text text-muted">
+                En las baterías se registra por separado si existe la batería 1 y la batería 2.
+                Su condición se conserva en un único estado general, tal como está definido actualmente en el inventario.
+            </p>
             </fieldset>
 
             <fieldset class="ficha-paso" data-paso="4" data-titulo="Software y compra">

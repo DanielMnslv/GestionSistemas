@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from inventario.google_sheet import leer_hoja, libro_del_sheet, texto_celda
-from inventario.models import Cliente, Puesto
+from inventario.models import Cliente, Puesto, Sede
 
 HOJA = "CLIENTES_PUESTOS"
 COLUMNAS = ["idCliente", "NIT", "Nombre_Cliente", "Estado", "Sede", "ID Puestos", "NombrePuesto"]
@@ -70,6 +70,12 @@ class Command(BaseCommand):
             if k in puestos and (
                 puestos[k].sede != d["sede"] or puestos[k].nombre != d["nombre"]
                 or puestos[k].cliente.id_externo != d["cliente"]
+                or (bool(d["sede"]) and (
+                    not puestos[k].sede_catalogo_id
+                    or puestos[k].sede_catalogo.nombre != d["sede"]
+                    or puestos[k].sede_catalogo.cliente_id != puestos[k].cliente_id
+                ))
+                or (not d["sede"] and puestos[k].sede_catalogo_id)
             )
         ]
         self.stdout.write(f"Clientes a crear: {len(crear_c)} · a actualizar: {len(cambiar_c)}")
@@ -90,6 +96,12 @@ class Command(BaseCommand):
             for k in crear_p + cambiar_p:
                 d = dict(datos_puestos[k])
                 d["cliente"] = clientes[d["cliente"]]
+                d["sede_catalogo"] = None
+                if d["sede"]:
+                    d["sede_catalogo"], _ = Sede.objects.get_or_create(
+                        cliente=d["cliente"],
+                        nombre=d["sede"],
+                    )
                 if k in puestos:
                     for campo, valor in d.items():
                         setattr(puestos[k], campo, valor)

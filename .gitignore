@@ -75,3 +75,17 @@ backups/
 .env.*
 !.env.example
 respaldo_archivos_accidentales/
+
+# Archivos locales y respaldos
+inventario/views_equipos_backup.py
+*.bak
+__pycache__/
+*.pyc
+
+# Diagnósticos y datos operativos locales
+docs/diagnostico_*.txt
+docs/inspeccion_*.txt
+docs/inventario_clientes_puestos_asignaciones.txt
+docs/resultado_*.txt
+
+estructura_jano.txt

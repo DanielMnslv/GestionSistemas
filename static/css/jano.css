@@ -1033,11 +1033,36 @@ html[data-tema="dark"] .jx-content .rd-btn:not(.rd-btn-secondary) { color: #0d10
 /* Modo oscuro: los botones principales anteriores usan el mismo índigo claro del sistema nuevo. */
 html[data-tema="dark"] body .jx-content .btn-primary, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary), html[data-tema="dark"] body .jx-content .radio-detalle .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger), html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) { background: var(--jx-primary); border-color: var(--jx-primary); color: #0d1020; }
 html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark"] body .jx-content .ficha-form-button:not(.ficha-form-button-secondary):hover, html[data-tema="dark"] body .jx-content .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover { background: var(--jx-primary-600); border-color: var(--jx-primary-600); color: #0d1020; }
-/* «Cambiar tipo» en la pestaña Editar de la ficha (equipo_pestanas.html). */
-.ficha-cambio-tipo { display: grid; gap: 8px; margin: 0 0 20px; padding: 14px 16px; border: 1px dashed var(--jx-line-strong); border-radius: var(--jx-radius-sm); background: var(--jx-bg); color: var(--jx-text); }
-.ficha-cambio-tipo label { font-size: 14px; }
+/* Correcciones excepcionales de identificación, al final de Editar equipo. */
+.jx-content .ficha-opciones-avanzadas { margin-top: 24px; border: 1px solid var(--jx-line); border-radius: var(--jx-radius); background: var(--jx-surface); color: var(--jx-text); }
+.jx-content .ficha-opciones-avanzadas > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; cursor: pointer; list-style: none; }
+.jx-content .ficha-opciones-avanzadas > summary::-webkit-details-marker { display: none; }
+.jx-content .ficha-opciones-avanzadas > summary::after { content: "＋"; color: var(--jx-muted); font-size: 20px; line-height: 1; }
+.jx-content .ficha-opciones-avanzadas[open] > summary::after { content: "−"; }
+.ficha-opciones-avanzadas summary strong { display: block; font-size: 14px; }
+.ficha-opciones-avanzadas summary small { display: block; margin-top: 3px; color: var(--jx-muted); font-size: 12px; }
+.ficha-opciones-avanzadas-indicador { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: var(--jx-neutral-soft); color: var(--jx-neutral); font-size: 11px; font-weight: 700; }
+.ficha-opciones-avanzadas-contenido { display: grid; gap: 12px; padding: 0 16px 16px; }
+.ficha-cambio-tipo { display: grid; gap: 10px; margin: 0; padding: 14px 16px; border: 1px solid var(--jx-line); border-radius: var(--jx-radius-sm); background: var(--jx-surface-2); color: var(--jx-text); }
+.ficha-cambio-tipo-titulo { display: grid; gap: 3px; }
+.ficha-cambio-tipo label { font-size: 13px; font-weight: 700; }
+.ficha-cambio-tipo-titulo small { color: var(--jx-muted); font-size: 12px; }
 .ficha-cambio-tipo-fila { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.ficha-cambio-tipo-fila select { flex: 1 1 200px; max-width: 280px; }
+.jx-content .ficha-cambio-tipo-fila select,
+.jx-content .ficha-cambio-tipo-fila input { flex: 1 1 240px; width: 100%; max-width: 360px; min-width: 0; height: 44px; min-height: 44px; box-sizing: border-box; border: 1px solid var(--jx-line-strong); border-radius: 10px; padding: 0 38px 0 12px; background-color: var(--jx-surface); color: var(--jx-text); font: inherit; font-size: 13px; }
+.jx-content .ficha-cambio-tipo-fila select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7189' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
+.jx-content .ficha-cambio-tipo-fila select:focus,
+.jx-content .ficha-cambio-tipo-fila input:focus { outline: none; border-color: var(--jx-primary); box-shadow: 0 0 0 3px var(--jx-primary-soft); }
+.jx-content .ficha-opciones-avanzadas .ficha-form-button { flex: 0 0 auto; }
+@media (max-width: 600px) {
+    .jx-content .ficha-opciones-avanzadas > summary { align-items: flex-start; padding: 14px; }
+    .ficha-opciones-avanzadas-indicador { display: none; }
+    .ficha-opciones-avanzadas-contenido { padding: 0 10px 10px; }
+    .ficha-cambio-tipo { padding: 12px; }
+    .jx-content .ficha-cambio-tipo-fila select,
+    .jx-content .ficha-cambio-tipo-fila input,
+    .jx-content .ficha-opciones-avanzadas .ficha-form-button { flex: 1 1 100%; max-width: none; width: 100%; }
+}
 /* Editar / Borrar de una intervención (_mant_acciones.html). */
 .mant-acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 10px; }
 .mant-acciones form { margin: 0; }

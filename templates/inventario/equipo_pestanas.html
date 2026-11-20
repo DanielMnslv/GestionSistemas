@@ -355,31 +355,6 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
             <p>Actualiza los datos generales y las características específicas.</p>
         </div>
         <div class="rd-panel-body">
-            {# Cambiar tipo: corrige un equipo registrado con el tipo equivocado (vista equipo_cambiar_tipo). #}
-            {% if tipos_cambio %}
-            <form method="post" action="{% url 'inventario:equipo_cambiar_tipo' equipo.placa %}" class="ficha-cambio-tipo"
-                  onsubmit="var o=this.tipo.selectedOptions[0];if(!o||!o.value)return false;return confirm(o.dataset.pierde?'Cambiar a '+o.text+' borra las características registradas ({{ equipo.get_tipo_display|lower }}). ¿Continuar?':'¿Cambiar el tipo a '+o.text+'? Las características se conservan.');">
-                {% csrf_token %}
-                <label for="cambio-tipo">Tipo de equipo: <strong>{{ equipo.get_tipo_display }}</strong>. ¿Está mal registrado?</label>
-                <div class="ficha-cambio-tipo-fila">
-                    <select id="cambio-tipo" name="tipo" class="form-control" required>
-                        <option value="">Cambiar a…</option>
-                        {% for t in tipos_cambio %}<option value="{{ t.valor }}"{% if t.pierde %} data-pierde="1"{% endif %}>{{ t.etiqueta }}</option>{% endfor %}
-                    </select>
-                    <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar tipo</button>
-                </div>
-            </form>
-            {% endif %}
-            {# Cambiar placa: corrige una placa mal registrada (vista equipo_cambiar_placa). #}
-            <form method="post" action="{% url 'inventario:equipo_cambiar_placa' equipo.placa %}" class="ficha-cambio-tipo"
-                  onsubmit="var p=this.placa.value.replace(/\s+/g,'').toUpperCase();if(!p)return false;return confirm('¿Cambiar la placa {{ equipo.placa|escapejs }} por '+p+'? El historial del equipo se conserva.');">
-                {% csrf_token %}
-                <label for="cambio-placa">Placa: <strong>{{ equipo.placa }}</strong>. ¿Está mal registrada?</label>
-                <div class="ficha-cambio-tipo-fila">
-                    <input id="cambio-placa" name="placa" class="form-control" maxlength="50" required placeholder="Placa correcta, p. ej. ESC-10" autocomplete="off">
-                    <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar placa</button>
-                </div>
-            </form>
             <form method="post" action="{% url 'inventario:equipo_editar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-editar-equipo" novalidate data-con-errores="{% if formulario_edicion.errors or detalle_edicion.errors %}1{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="embed" value="1">
@@ -434,6 +409,45 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     </div>
                 </div>
             </form>
+
+            {% if tipos_cambio %}
+            <details class="ficha-opciones-avanzadas">
+                <summary>
+                    <span><strong>Opciones avanzadas</strong><small>Corregir tipo de equipo o placa si fueron registrados incorrectamente.</small></span>
+                    <span class="ficha-opciones-avanzadas-indicador" aria-hidden="true">Opcional</span>
+                </summary>
+                <div class="ficha-opciones-avanzadas-contenido">
+                    <form method="post" action="{% url 'inventario:equipo_cambiar_tipo' equipo.placa %}" class="ficha-cambio-tipo ficha-cambio-tipo-card"
+                          onsubmit="var o=this.tipo.selectedOptions[0];if(!o||!o.value)return false;return confirm(o.dataset.pierde?'Cambiar a '+o.text+' borra las características registradas ({{ equipo.get_tipo_display|lower }}). ¿Continuar?':'¿Cambiar el tipo a '+o.text+'? Las características se conservan.');">
+                        {% csrf_token %}
+                        <div class="ficha-cambio-tipo-titulo">
+                            <label for="cambio-tipo">Corregir tipo de equipo</label>
+                            <small>Tipo actual: <strong>{{ equipo.get_tipo_display }}</strong></small>
+                        </div>
+                        <div class="ficha-cambio-tipo-fila">
+                            <select id="cambio-tipo" name="tipo" class="form-control" required>
+                                <option value="">Selecciona el tipo correcto</option>
+                                {% for t in tipos_cambio %}<option value="{{ t.valor }}"{% if t.pierde %} data-pierde="1"{% endif %}>{{ t.etiqueta }}</option>{% endfor %}
+                            </select>
+                            <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar tipo</button>
+                        </div>
+                    </form>
+
+                    <form method="post" action="{% url 'inventario:equipo_cambiar_placa' equipo.placa %}" class="ficha-cambio-tipo ficha-cambio-tipo-card"
+                          onsubmit="var p=this.placa.value.replace(/\s+/g,'').toUpperCase();if(!p)return false;return confirm('¿Cambiar la placa {{ equipo.placa|escapejs }} por '+p+'? El historial del equipo se conserva.');">
+                        {% csrf_token %}
+                        <div class="ficha-cambio-tipo-titulo">
+                            <label for="cambio-placa">Corregir placa</label>
+                            <small>Placa actual: <strong>{{ equipo.placa }}</strong></small>
+                        </div>
+                        <div class="ficha-cambio-tipo-fila">
+                            <input id="cambio-placa" name="placa" class="form-control" maxlength="50" required placeholder="Escribe la placa correcta" autocomplete="off">
+                            <button class="ficha-form-button ficha-form-button-secondary" type="submit">Cambiar placa</button>
+                        </div>
+                    </form>
+                </div>
+            </details>
+            {% endif %}
         </div>
     </section>
 

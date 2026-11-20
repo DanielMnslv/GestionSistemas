@@ -131,6 +131,10 @@ def sincronizar_items(retiro):
 @transaction.atomic
 def iniciar_retiro(funcionario, motivo, fecha_retiro, observaciones, usuario):
     """Crea el retiro y su lista de equipos por validar."""
+    if funcionario.tipo_persona != Funcionario.TipoPersona.INTERNO:
+        raise ValueError(
+            "El personal externo conserva su ficha; finaliza su vinculación con el cliente."
+        )
     retiro = RetiroFuncionario.objects.create(
         funcionario=funcionario, motivo=motivo, fecha_retiro=fecha_retiro,
         observaciones=observaciones, creado_por=usuario,
@@ -323,7 +327,10 @@ def emitir_paz_y_salvo(retiro, usuario):
     retiro.cerrado_por = usuario
     retiro.cerrado_en = timezone.now()
     retiro.save()
-    Funcionario.objects.filter(pk=retiro.funcionario_id).update(activo=False)
+    Funcionario.objects.filter(pk=retiro.funcionario_id).update(
+        activo=False,
+        estado_persona=Funcionario.EstadoPersona.INACTIVA,
+    )
     return retiro
 
 

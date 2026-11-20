@@ -1,0 +1,158 @@
+
+{% extends "base.html" %}
+
+{% block title %}Nueva regularización | JANO Inventario{% endblock %}
+
+{% block page_heading %}Nueva regularización{% endblock %}
+
+{% block extra_css %}
+<style>
+.jr-create{max-width:1050px;margin:auto;display:grid;gap:20px}
+.jr-create-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.jr-create-head h1{font-size:24px;font-weight:750;margin:0 0 6px}
+.jr-create-head p{font-size:13px;color:#718096;margin:0}
+.jr-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 15px;border:1px solid #e2e8f0;border-radius:9px;background:white;color:#334155;font-size:13px;font-weight:650;text-decoration:none;cursor:pointer}
+.jr-btn-primary{background:#3730a3;border-color:#3730a3;color:white}
+.jr-btn-primary:hover{background:#312e81;color:white}
+.jr-create-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(250px,.85fr);gap:20px;align-items:start}
+.jr-card{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;overflow:hidden}
+.jr-card-head{padding:20px 22px;border-bottom:1px solid #edf0f4}
+.jr-card-head h2{font-size:16px;margin:0 0 5px;font-weight:750}
+.jr-card-head p{font-size:12px;color:#718096;margin:0}
+.jr-card-body{padding:22px}
+.jr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.jr-field{display:grid;gap:8px}
+.jr-field-full{grid-column:1/-1}
+.jr-field label{font-size:12px;font-weight:700;color:#475569}
+.jr-field input,.jr-field textarea{width:100%;box-sizing:border-box;border:1px solid #dfe4eb;border-radius:9px;padding:11px 12px;font:inherit;font-size:13px;background:#fff;color:#1e293b}
+.jr-field input{min-height:43px}
+.jr-field textarea{min-height:115px;resize:vertical}
+.jr-field input:focus,.jr-field textarea:focus{outline:2px solid #c7d2fe;border-color:#6366f1}
+.jr-help{font-size:11px;color:#94a3b8;line-height:1.5}
+.jr-form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid #edf0f4}
+.jr-info{padding:20px}
+.jr-info-icon{width:42px;height:42px;border-radius:12px;background:#eef2ff;color:#4338ca;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.jr-info h3{font-size:15px;margin:0 0 14px;font-weight:750}
+.jr-info-list{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+.jr-info-list li{display:flex;gap:10px;font-size:12px;line-height:1.55;color:#64748b}
+.jr-info-list svg{width:16px;height:16px;flex:none;color:#059669;margin-top:1px}
+.jr-notice{padding:13px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;margin-top:18px;font-size:11px;line-height:1.6;color:#64748b}
+.jr-notice strong{color:#334155}
+@media(max-width:760px){.jr-create-grid{grid-template-columns:1fr}.jr-form-grid{grid-template-columns:1fr}.jr-field-full{grid-column:auto}.jr-form-actions{flex-direction:column-reverse}.jr-form-actions .jr-btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jr-create">
+
+    <header class="jr-create-head">
+        <div>
+            <h1>Iniciar proceso de regularización</h1>
+            <p>Identifica los activos relacionados con un responsable para iniciar su recuperación.</p>
+        </div>
+        <a href="{% url 'inventario:regularizaciones_lista' %}" class="jr-btn">
+            <svg class="jx-i"><use href="#i-arrow"/></svg>
+            Volver al listado
+        </a>
+    </header>
+
+    <div class="jr-create-grid">
+
+        <section class="jr-card">
+            <div class="jr-card-head">
+                <h2>Información del responsable</h2>
+                <p>Los datos permitirán localizar las asignaciones y los activos relacionados.</p>
+            </div>
+
+            <form method="post" class="jr-card-body">
+                {% csrf_token %}
+
+                <div class="jr-form-grid">
+                    <div class="jr-field">
+                        <label for="cedula_origen">Cédula de origen *</label>
+                        <input
+                            type="text"
+                            id="cedula_origen"
+                            name="cedula_origen"
+                            value="{{ cedula_origen|default:'' }}"
+                            maxlength="50"
+                            placeholder="Número de identificación"
+                            required
+                        >
+                        <span class="jr-help">Identificador principal para consultar las asignaciones.</span>
+                    </div>
+
+                    <div class="jr-field">
+                        <label for="nombre_origen">Nombre del responsable</label>
+                        <input
+                            type="text"
+                            id="nombre_origen"
+                            name="nombre_origen"
+                            value="{{ nombre_origen|default:'' }}"
+                            maxlength="200"
+                            placeholder="Nombre completo"
+                        >
+                        <span class="jr-help">Dato de referencia para identificar el proceso.</span>
+                    </div>
+
+                    <div class="jr-field jr-field-full">
+                        <label for="observaciones">Observaciones iniciales</label>
+                        <textarea
+                            id="observaciones"
+                            name="observaciones"
+                            rows="4"
+                            placeholder="Describe el motivo o contexto de esta regularización..."
+                        >{{ observaciones|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="jr-form-actions">
+                    <a href="{% url 'inventario:regularizaciones_lista' %}" class="jr-btn">Cancelar</a>
+                    <button type="submit" class="jr-btn jr-btn-primary">
+                        <svg class="jx-i"><use href="#i-plus"/></svg>
+                        Crear regularización
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="jr-card">
+            <div class="jr-info">
+                <div class="jr-info-icon">
+                    <svg class="jx-i"><use href="#i-shield"/></svg>
+                </div>
+
+                <h3>Consideraciones del proceso</h3>
+
+                <ul class="jr-info-list">
+                    <li>
+                        <svg class="jx-i"><use href="#i-check-circle"/></svg>
+                        Se consultarán las asignaciones relacionadas con la cédula indicada.
+                    </li>
+                    <li>
+                        <svg class="jx-i"><use href="#i-check-circle"/></svg>
+                        Se conservarán las referencias históricas de los activos.
+                    </li>
+                    <li>
+                        <svg class="jx-i"><use href="#i-check-circle"/></svg>
+                        La creación no cerrará asignaciones originales.
+                    </li>
+                    <li>
+                        <svg class="jx-i"><use href="#i-check-circle"/></svg>
+                        No se dará de baja ningún equipo ni funcionario.
+                    </li>
+                    <li>
+                        <svg class="jx-i"><use href="#i-check-circle"/></svg>
+                        Cada recepción se registrará individualmente después de verificar físicamente el activo.
+                    </li>
+                </ul>
+
+                <div class="jr-notice">
+                    <strong>Importante:</strong> crear este proceso no significa que los equipos hayan sido recibidos. La recepción y actualización del inventario se realizará únicamente después de la verificación física.
+                </div>
+            </div>
+        </aside>
+
+    </div>
+</div>
+{% endblock %}

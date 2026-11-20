@@ -56,8 +56,15 @@ Lista de funcionarios con búsqueda, indicadores y cuántos equipos tiene cada u
         <select name="estado" onchange="this.form.submit()">
             <option value="activos" {% if estado == "activos" %}selected{% endif %}>Activas</option>
             <option value="retiro" {% if estado == "retiro" %}selected{% endif %}>En retiro</option>
-            <option value="inactivos" {% if estado == "inactivos" %}selected{% endif %}>Retiradas</option>
+            <option value="inactivos" {% if estado == "inactivos" %}selected{% endif %}>Inactivas</option>
+            <option value="pendientes" {% if estado == "pendientes" %}selected{% endif %}>Por clasificar</option>
             <option value="todos" {% if estado == "todos" %}selected{% endif %}>Todas</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Vinculación</span>
+        <select name="tipo_persona" onchange="this.form.submit()">
+            <option value="">Internos y externos</option>
+            {% for valor, etiqueta in tipos_persona %}<option value="{{ valor }}" {% if tipo_persona == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
         </select>
     </label>
     <label class="jx-select"><span>Equipos</span>
@@ -89,10 +96,10 @@ Lista de funcionarios con búsqueda, indicadores y cuántos equipos tiene cada u
                     <td>
                         <a class="jx-person" href="{% url 'inventario:persona_detalle' f.p.pk %}">
                             <span class="jx-avatar">{{ f.p.nombre_completo|slice:":1" }}</span>
-                            <span><strong>{{ f.p.nombre_completo }}</strong><small>C.C. {{ f.p.cedula }}</small></span>
+                            <span><strong>{{ f.p.nombre_completo }}</strong><small>C.C. {{ f.p.cedula }} · {{ f.p.get_tipo_persona_display }}</small></span>
                         </a>
                     </td>
-                    <td class="muted">{{ f.p.cargo|default:"—" }}</td>
+                    <td class="muted">{{ f.p.cargo|default:"—" }}{% if f.p.area %}<small class="d-block">{{ f.p.area }}</small>{% endif %}</td>
                     <td>
                         <div class="jx-tchips">
                         {% for c in f.chips %}<span class="jx-tchip" title="{{ c.n }} {{ c.etiqueta }}"><svg class="jx-i"><use href="#i-{{ c.icono }}"/></svg>{{ c.n }} {{ c.etiqueta }}</span>{% empty %}<span class="muted">Sin equipos</span>{% endfor %}
@@ -101,7 +108,8 @@ Lista de funcionarios con búsqueda, indicadores y cuántos equipos tiene cada u
                     <td class="num"><strong>{{ f.total }}</strong></td>
                     <td>
                         {% if f.retiro %}<span class="jx-badge jx-badge-warn">En retiro</span>
-                        {% elif not f.p.activo %}<span class="jx-badge">Retirada</span>
+                        {% elif not f.p.activo or f.p.estado_persona == "INACTIVA" %}<span class="jx-badge">Inactiva</span>
+                        {% elif f.p.estado_persona == "PENDIENTE" %}<span class="jx-badge">Por clasificar</span>
                         {% else %}<span class="jx-badge jx-badge-ok">Activa</span>{% endif %}
                     </td>
                 </tr>

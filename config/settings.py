@@ -25,10 +25,43 @@ if os.getenv("DJANGO_ENV_FILE"):
     load_dotenv(BASE_DIR / os.environ["DJANGO_ENV_FILE"])
 load_dotenv(BASE_DIR / ".env")
 
+# Registro dedicado de intentos fallidos para la protección perimetral
+# (Fail2ban). La carpeta debe pertenecer al usuario que ejecuta Django.
+_CARPETA_LOGS = BASE_DIR / "logs"
+_CARPETA_LOGS.mkdir(parents=True, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "seguridad": {"format": "%(asctime)s %(message)s"},
+    },
+    "handlers": {
+        "archivo_seguridad": {
+            "class": "logging.FileHandler",
+            "filename": str(_CARPETA_LOGS / "login_fallidos.log"),
+            "formatter": "seguridad",
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        "nucleo.seguridad": {
+            "handlers": ["archivo_seguridad"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
 
 def lista_env(nombre):
     """Lee una variable de entorno separada por comas y la devuelve como lista."""
     return [v.strip() for v in os.getenv(nombre, "").split(",") if v.strip()]
+
+
+# Solo se acepta X-Forwarded-For cuando REMOTE_ADDR pertenece a un proxy
+# de confianza. Evita que un cliente falsifique la IP que recibirá Fail2ban.
+DJANGO_TRUSTED_PROXY_IPS = lista_env("DJANGO_TRUSTED_PROXY_IPS")
 
 
 # Configuración por variables de entorno (ver .env.example). Sin .env la

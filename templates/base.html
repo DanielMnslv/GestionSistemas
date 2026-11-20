@@ -54,6 +54,15 @@ Variables que usa: permisos (permisos.py) y c (contadores del menú).
             <svg class="jx-i"><use href="#i-shield"/></svg><span class="jx-nav-text">Política de seguridad</span></a>
         {% endif %}
 
+        {% if permisos.regularizacion_inventario %}
+        <a class="jx-nav-link{% if 'regularizacion' in n %} is-active{% endif %}"
+           href="{% url 'inventario:regularizaciones_lista' %}"
+           title="Regularización de inventario">
+            <svg class="jx-i"><use href="#i-clipboard-check"/></svg>
+            <span class="jx-nav-text">Regularización</span>
+        </a>
+        {% endif %}
+
         <div class="jx-nav-label">3 · Usuarios</div>
         <a class="jx-nav-link{% if 'persona' in n %} is-active{% endif %}" href="{% url 'inventario:personas_lista' %}" title="Personas y equipos a cargo">
             <svg class="jx-i"><use href="#i-users"/></svg><span class="jx-nav-text">Personas</span></a>

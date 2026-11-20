@@ -13,10 +13,12 @@ Ficha del funcionario: equipos a su cargo con su estado de mantenimiento, entreg
     <span class="jx-avatar jx-avatar-lg">{{ persona.nombre_completo|slice:":1" }}</span>
     <div class="jx-profile-txt">
         <h1>{{ persona.nombre_completo }}</h1>
-        <p>C.C. {{ persona.cedula }}{% if persona.cargo %} · {{ persona.cargo }}{% endif %}{% if persona.correo %} · {{ persona.correo }}{% endif %}</p>
+        <p>C.C. {{ persona.cedula }} · {{ persona.get_tipo_persona_display }}{% if persona.cargo %} · {{ persona.cargo }}{% endif %}{% if persona.area %} · {{ persona.area }}{% endif %}</p>
+        <p class="muted">{% if persona.correo %}{{ persona.correo }}{% endif %}{% if persona.telefono %}{% if persona.correo %} · {% endif %}{{ persona.telefono }}{% endif %}{% if persona.extension_interna %} · Ext. {{ persona.extension_interna }}{% endif %}{% if persona.usuario_jano %} · Cuenta JANO: {{ persona.usuario_jano.username }}{% endif %}</p>
         <div class="jx-tchips">
             {% if retiro %}<span class="jx-badge jx-badge-warn">Retiro en proceso</span>
-            {% elif not persona.activo %}<span class="jx-badge">Retirada</span>
+            {% elif not persona.activo or persona.estado_persona == "INACTIVA" %}<span class="jx-badge">Inactiva</span>
+            {% elif persona.estado_persona == "PENDIENTE" %}<span class="jx-badge">Por clasificar</span>
             {% else %}<span class="jx-badge jx-badge-ok">Activa</span>{% endif %}
             {% for c in chips %}<span class="jx-tchip"><svg class="jx-i"><use href="#i-{{ c.icono }}"/></svg>{{ c.n }} {{ c.etiqueta }}</span>{% endfor %}
         </div>
@@ -25,7 +27,7 @@ Ficha del funcionario: equipos a su cargo con su estado de mantenimiento, entreg
         {% if permisos.personas %}<a class="jx-btn" href="{% url 'inventario:persona_editar' persona.pk %}"><svg class="jx-i"><use href="#i-settings"/></svg>Editar</a>{% endif %}
         {% if retiro %}
         <a class="jx-btn jx-btn-primary" href="{% url 'inventario:retiro_detalle' retiro.pk %}"><svg class="jx-i"><use href="#i-handoff"/></svg>Ver retiro</a>
-        {% elif persona.activo and permisos.retiros %}
+        {% elif persona.tipo_persona == "INTERNO" and persona.activo and persona.estado_persona == "ACTIVA" and permisos.retiros %}
         <button class="jx-btn jx-btn-primary" type="button" data-jx-abrir="dlg-retiro"><svg class="jx-i"><use href="#i-logout"/></svg>Iniciar retiro</button>
         {% endif %}
     </div>
@@ -37,6 +39,49 @@ Ficha del funcionario: equipos a su cargo con su estado de mantenimiento, entreg
     <a href="{% url 'inventario:retiro_detalle' retiro.pk %}">Ir a la validación</a>
 </div>
 {% endif %}
+
+<div class="jx-grid jx-grid-2" style="margin-top:18px">
+    <section class="jx-card" aria-labelledby="t-vinculaciones">
+        <div class="jx-card-head">
+            <div><h2 id="t-vinculaciones">Clientes, sedes y puestos <span class="jx-count">{{ vinculaciones|length }}</span></h2><p class="muted">Las vinculaciones tienen vigencia independiente y conservan su historial.</p></div>
+            {% if request.user.is_superuser %}<a class="jx-btn jx-btn-sm" href="{% url 'admin:inventario_vinculacionpersona_changelist' %}?funcionario__id__exact={{ persona.pk }}">Gestionar</a>{% endif %}
+        </div>
+        <div class="jx-table-wrap"><table class="jx-table">
+            <thead><tr><th>Cliente / ubicación</th><th>Cargo</th><th>Vigencia</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for v in vinculaciones %}<tr>
+                <td><strong>{{ v.cliente.nombre }}</strong><small class="muted d-block">{{ v.sede.nombre|default:"Sin sede" }}{% if v.puesto %} · {{ v.puesto.nombre }}{% endif %}</small></td>
+                <td>{{ v.cargo|default:"—" }}</td>
+                <td>{{ v.fecha_inicio|date:"d/m/Y" }}{% if v.fecha_fin %} – {{ v.fecha_fin|date:"d/m/Y" }}{% endif %}</td>
+                <td>{% if v.estado == "ACTIVA" %}<span class="jx-badge jx-badge-ok">Activa</span>{% else %}<span class="jx-badge">{{ v.get_estado_display }}</span>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="4"><div class="jx-empty"><p>Aún no tiene vinculaciones registradas.</p></div></td></tr>{% endfor %}
+            </tbody>
+        </table></div>
+    </section>
+
+    <section class="jx-card" aria-labelledby="t-accesos-externos">
+        <div class="jx-card-head">
+            <div><h2 id="t-accesos-externos">Accesos a otras plataformas <span class="jx-count">{{ accesos_plataforma|length }}</span></h2><p class="muted">No se muestran ni almacenan contraseñas.</p></div>
+            {% if request.user.is_superuser %}<a class="jx-btn jx-btn-sm" href="{% url 'admin:inventario_accesoplataforma_changelist' %}?funcionario__id__exact={{ persona.pk }}">Gestionar</a>{% endif %}
+        </div>
+        <ul class="jx-list">
+        {% for acceso in accesos_plataforma %}
+            <li class="jx-list-row"><span class="jx-list-txt"><strong>{{ acceso.plataforma.nombre }}</strong><small>Cuenta: {{ acceso.usuario|default:"Pendiente de identificar" }} · Perfil: {{ acceso.perfil.nombre|default:acceso.perfil_texto|default:"Sin perfil registrado" }}</small></span><span class="jx-badge {% if acceso.estado == 'ACTIVO' %}jx-badge-ok{% elif acceso.estado == 'PENDIENTE' %}jx-badge-warn{% else %}jx-badge{% endif %}">{{ acceso.get_estado_display }}</span></li>
+        {% empty %}<li><div class="jx-empty"><p>Aún no tiene accesos externos registrados.</p></div></li>{% endfor %}
+        </ul>
+    </section>
+</div>
+
+<section class="jx-card" style="margin-top:18px" aria-labelledby="t-ssi-persona">
+    <div class="jx-card-head">
+        <div><h2 id="t-ssi-persona">Seguridad y criticidad <span class="jx-count">{{ controles_ssi|length }}</span></h2><p class="muted">Controles registrados para el usuario; las evaluaciones anteriores se conservan.</p></div>
+        {% if request.user.is_superuser %}<a class="jx-btn jx-btn-sm" href="{% url 'admin:inventario_controlssiusuario_changelist' %}?funcionario__id__exact={{ persona.pk }}">Gestionar</a>{% endif %}
+    </div>
+    {% if controles_ssi %}<div class="jx-table-wrap"><table class="jx-table">
+        <thead><tr><th>Proceso</th><th>Criticidad</th><th>Redes sociales</th><th>VPN</th><th>USB</th><th>Revisión</th></tr></thead>
+        <tbody>{% for control in controles_ssi %}<tr><td>{{ control.proceso|default:"—" }}</td><td>{{ control.nivel_criticidad|default:"—" }}</td><td>{{ control.get_redes_sociales_display|default:"—" }}</td><td>{{ control.get_vpn_display|default:"—" }}</td><td>{{ control.get_usb_display|default:"—" }}</td><td>{{ control.fecha_revision|date:"d/m/Y"|default:"—" }}</td></tr>{% endfor %}</tbody>
+    </table></div>{% else %}<div class="jx-empty"><p>No hay controles SSI vinculados a esta persona.</p></div>{% endif %}
+</section>
 
 <section class="jx-card" style="margin-top:18px" aria-labelledby="t-cargo">
     <div class="jx-card-head">
@@ -102,7 +147,7 @@ Ficha del funcionario: equipos a su cargo con su estado de mantenimiento, entreg
     </section>
 </div>
 
-{% if persona.activo and not retiro and permisos.retiros %}
+{% if persona.tipo_persona == "INTERNO" and persona.activo and persona.estado_persona == "ACTIVA" and not retiro and permisos.retiros %}
 <dialog class="jx-dialog" id="dlg-retiro" aria-labelledby="t-dlg">
     <form method="post" action="{% url 'inventario:retiro_iniciar' persona.pk %}">
         {% csrf_token %}
