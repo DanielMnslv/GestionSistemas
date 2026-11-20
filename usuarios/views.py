@@ -46,7 +46,8 @@ def login_view(request):
         # línea del usuario para impedir inyección de entradas en el log.
         remote_addr = request.META.get("REMOTE_ADDR", "desconocida")
         forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
-        if remote_addr in settings.DJANGO_TRUSTED_PROXY_IPS and forwarded_for:
+        trusted_proxy_ips = getattr(settings, "DJANGO_TRUSTED_PROXY_IPS", ()) or ()
+        if remote_addr in trusted_proxy_ips and forwarded_for:
             ip = forwarded_for.split(",", 1)[0].strip()
         else:
             ip = remote_addr
