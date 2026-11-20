@@ -43,6 +43,15 @@ Vista equipo_pestanas con pestanas_radio=1 (views_equipos.py) y _render_radio_ed
                     </header>
                     <form method="post" action="{% url 'inventario:asignacion_devolver' asignacion_activa.pk %}" class="rd-baja-form">
                         {% csrf_token %}
+                        <label for="fecha-devolucion-radio-{{ radio.pk }}">
+    Fecha y hora de devolución
+</label>
+<input
+    type="datetime-local"
+    id="fecha-devolucion-radio-{{ radio.pk }}"
+    name="fecha_devolucion"
+    required
+>
                         <input type="hidden" name="pestanas_radio" value="1">
                         <label for="observaciones-devolucion-radio-{{ radio.pk }}">Observaciones de la devolución</label>
                         <textarea id="observaciones-devolucion-radio-{{ radio.pk }}" name="observaciones_devolucion" rows="2" placeholder="Estado del radio y accesorios recibidos"></textarea>

@@ -1,6 +1,7 @@
 """Módulo de Usuarios: personas, equipos a cargo y paz y salvo."""
 from django import forms
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -43,11 +44,37 @@ class FuncionarioForm(forms.ModelForm):
     """Registro y edición de un funcionario: nombre, cédula, cargo y correo."""
     class Meta:
         model = Funcionario
-        fields = ["nombre_completo", "cedula", "cargo", "correo"]
+        fields = [
+            "nombre_completo", "cedula", "tipo_persona", "estado_persona",
+            "cargo", "area", "correo", "telefono", "extension_interna",
+            "usuario_jano",
+        ]
         labels = {
             "nombre_completo": "Nombre completo", "cedula": "Cédula",
-            "cargo": "Cargo", "correo": "Correo",
+            "tipo_persona": "Tipo de persona",
+            "estado_persona": "Estado en el directorio",
+            "cargo": "Cargo", "area": "Área / proceso", "correo": "Correo",
+            "telefono": "Teléfono", "extension_interna": "Extensión interna",
+            "usuario_jano": "Cuenta de acceso a JANO",
         }
+
+    def __init__(self, *args, **kwargs):
+        administrar_cuenta = kwargs.pop("administrar_cuenta", False)
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk and not self.is_bound:
+            self.initial.setdefault(
+                "estado_persona", Funcionario.EstadoPersona.ACTIVA
+            )
+        if not administrar_cuenta:
+            self.fields.pop("usuario_jano", None)
+        else:
+            cuentas = get_user_model().objects.filter(is_active=True).filter(
+                Q(persona_directorio__isnull=True)
+                | Q(pk=self.instance.usuario_jano_id)
+            )
+            self.fields["usuario_jano"].queryset = cuentas.order_by(
+                "first_name", "last_name", "username"
+            )
 
     def clean_cedula(self):
         """Quita los espacios de los extremos de la cédula."""
@@ -105,24 +132,42 @@ def personas_lista(request):
     estado = request.GET.get("estado", "activos")
     con = request.GET.get("equipos", "")
     tipo = request.GET.get("tipo", "")
+    tipo_persona = request.GET.get("tipo_persona", "")
 
     personas = Funcionario.objects.all()
     if q:
         personas = personas.filter(
-            Q(nombre_completo__icontains=q) | Q(cedula__icontains=q) | Q(cargo__icontains=q)
+            Q(nombre_completo__icontains=q)
+            | Q(cedula__icontains=q)
+            | Q(cargo__icontains=q)
+            | Q(area__icontains=q)
+            | Q(correo__icontains=q)
         )
+    if tipo_persona in Funcionario.TipoPersona.values:
+        personas = personas.filter(tipo_persona=tipo_persona)
 
-    total_activos = Funcionario.objects.filter(activo=True).count()
+    total_activos = Funcionario.objects.filter(
+        activo=True, estado_persona=Funcionario.EstadoPersona.ACTIVA
+    ).count()
     filas = []
     for p in personas:
         conteo = conteos.get(p.cedula.strip(), {})
         total = sum(conteo.values())
         retiro = p.pk in en_retiro
-        if estado == "activos" and not p.activo:
+        persona_inactiva = (
+            not p.activo
+            or p.estado_persona == Funcionario.EstadoPersona.INACTIVA
+        )
+        if estado == "activos" and (
+            persona_inactiva
+            or p.estado_persona == Funcionario.EstadoPersona.PENDIENTE
+        ):
             continue
         if estado == "retiro" and not retiro:
             continue
-        if estado == "inactivos" and p.activo:
+        if estado == "inactivos" and not persona_inactiva:
+            continue
+        if estado == "pendientes" and p.estado_persona != Funcionario.EstadoPersona.PENDIENTE:
             continue
         if con == "con" and not total:
             continue
@@ -132,10 +177,16 @@ def personas_lista(request):
             continue
         filas.append({"p": p, "total": total, "chips": _tipos_de(conteo), "retiro": retiro})
 
-    con_equipos = sum(1 for p in Funcionario.objects.filter(activo=True) if conteos.get(p.cedula.strip()))
+    con_equipos = sum(
+        1 for p in Funcionario.objects.filter(
+            activo=True, estado_persona=Funcionario.EstadoPersona.ACTIVA
+        ) if conteos.get(p.cedula.strip())
+    )
     return render(request, "personas/lista.html", {
         "filas": filas,
         "q": q, "estado": estado, "con": con, "tipo": tipo,
+        "tipo_persona": tipo_persona,
+        "tipos_persona": Funcionario.TipoPersona.choices,
         "tipos": TIPOS_CORTOS,
         "kpi": {
             "activos": total_activos,
@@ -145,7 +196,7 @@ def personas_lista(request):
                 estado=RetiroFuncionario.Estado.PAZ_Y_SALVO
             ).count(),
         },
-        "n_filtros": bool(q) + (estado != "activos") + bool(con) + bool(tipo),
+        "n_filtros": bool(q) + (estado != "activos") + bool(con) + bool(tipo) + bool(tipo_persona),
     })
 
 
@@ -194,6 +245,14 @@ def persona_detalle(request, pk):
     for d in a_cargo:
         conteo[d["equipo"].tipo] = conteo.get(d["equipo"].tipo, 0) + 1
 
+    vinculaciones = persona.vinculaciones.select_related(
+        "cliente", "sede", "puesto"
+    ).order_by("-fecha_inicio")
+    accesos_plataforma = persona.accesos_plataforma.select_related(
+        "plataforma", "perfil"
+    ).order_by("plataforma__nombre", "-creado_en")
+    controles_ssi = persona.controles_ssi.order_by("-fecha_revision", "-creado_en")
+
     return render(request, "personas/detalle.html", {
         "persona": persona,
         "a_cargo": a_cargo,
@@ -202,6 +261,9 @@ def persona_detalle(request, pk):
         "n_historial": len(historial),
         "retiro": retiro_en_proceso(persona),
         "retiros": persona.retiros.all(),
+        "vinculaciones": vinculaciones,
+        "accesos_plataforma": accesos_plataforma,
+        "controles_ssi": controles_ssi,
         "form_retiro": RetiroForm(initial={"fecha_retiro": hoy_colombia()}),
     })
 
@@ -210,7 +272,10 @@ def persona_detalle(request, pk):
 @requiere_permiso("personas")
 def persona_crear(request):
     """Registro de un funcionario nuevo."""
-    formulario = FuncionarioForm(request.POST or None)
+    formulario = FuncionarioForm(
+        request.POST or None,
+        administrar_cuenta=request.user.is_superuser,
+    )
     if request.method == "POST" and formulario.is_valid():
         persona = formulario.save()
         messages.success(request, "La persona quedó registrada.")
@@ -223,7 +288,11 @@ def persona_crear(request):
 def persona_editar(request, pk):
     """Edición de los datos de un funcionario."""
     persona = get_object_or_404(Funcionario, pk=pk)
-    formulario = FuncionarioForm(request.POST or None, instance=persona)
+    formulario = FuncionarioForm(
+        request.POST or None,
+        instance=persona,
+        administrar_cuenta=request.user.is_superuser,
+    )
     if request.method == "POST" and formulario.is_valid():
         formulario.save()
         messages.success(request, "Los datos quedaron actualizados.")
@@ -239,6 +308,12 @@ def retiro_iniciar(request, pk):
     Si ya hay uno en proceso, lleva a ese.
     """
     persona = get_object_or_404(Funcionario, pk=pk)
+    if persona.tipo_persona != Funcionario.TipoPersona.INTERNO:
+        messages.error(
+            request,
+            "El personal externo conserva su ficha; finaliza la vinculación correspondiente.",
+        )
+        return redirect("inventario:persona_detalle", pk=pk)
     if request.method != "POST":
         return redirect("inventario:persona_detalle", pk=pk)
     actual = retiro_en_proceso(persona)

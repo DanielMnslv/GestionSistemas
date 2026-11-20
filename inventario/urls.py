@@ -1,16 +1,26 @@
-
 from django.urls import include, path
 from . import (
-    views, views_auditoria, views_calidad, views_catalogos, views_equipos,
+    views,
+    views_auditoria,
+    views_calidad,
+    views_catalogos,
+    views_equipos,
     views_personas,
     views_tickets,
+    views_regularizacion,
 )
 
 app_name = "inventario"
 
 urlpatterns = [
     path("informes/", include("inventario.informes.urls")),
-    path("equipos/tipos/", views_equipos.equipos_inicio, name="equipos_inicio"),
+
+    path(
+        "equipos/tipos/",
+        views_equipos.equipos_inicio,
+        name="equipos_inicio",
+    ),
+
     path("equipos/bajas/", views_equipos.equipos_bajas, name="equipos_bajas"),
     path("equipos/", views_equipos.equipos_lista, name="equipos_lista"),
     path("buscar/", views_equipos.buscar_json, name="buscar"),
@@ -225,4 +235,30 @@ urlpatterns = [
         views.asignacion_devolver,
         name="asignacion_devolver",
     ),
+    # Regularización independiente de inventario.
+path(
+    "regularizaciones/",
+    views_regularizacion.regularizaciones_lista,
+    name="regularizaciones_lista",
+),
+path(
+    "regularizaciones/nueva/",
+    views_regularizacion.regularizacion_crear,
+    name="regularizacion_crear",
+),
+path(
+    "regularizaciones/<int:pk>/",
+    views_regularizacion.regularizacion_detalle,
+    name="regularizacion_detalle",
+),
+path(
+    "regularizaciones/item/<int:item_id>/recibir/",
+    views_regularizacion.regularizacion_item_recibir,
+    name="regularizacion_item_recibir",
+),
+path(
+    "regularizaciones/<int:pk>/recepcion-masiva/",
+    views_regularizacion.regularizacion_recepcion_masiva,
+    name="regularizacion_recepcion_masiva",
+),
 ]

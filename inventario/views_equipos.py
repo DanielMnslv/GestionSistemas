@@ -196,7 +196,23 @@ GRUPOS_DETALLE = {
         ("Vehículo", ["placa_vehiculo", "nombre_vehiculo", "fecha_asignacion"]),
     ],
 }
-GRUPOS_DETALLE["TABLETA"] = GRUPOS_DETALLE["COMPUTADOR"]
+GRUPOS_DETALLE["TABLETA"] = [
+    ("Hardware", ["clase", "procesador", "velocidad_procesador", "tipo_disco",
+                   "capacidad_disco", "tipo_ram", "capacidad_ram"]),
+    ("Accesorios de tableta", ["regulador", "parlantes", "webcam"]),
+    ("Sistema y licencias", ["sistema_operativo", "licencia_so", "antivirus",
+                              "licencia_antivirus", "vencimiento_antivirus",
+                              "office", "licencia_office"]),
+    ("Software", ["software_licenciado", "software_libre"]),
+    ("Red y comunicaciones", ["mac_ethernet", "mac_wifi", "ip_ethernet",
+                               "ip_wifi", "imei", "linea_celular"]),
+]
+
+DETALLE_NO_APLICA_TABLETA = {
+    "mouse", "teclado", "monitor_serial", "monitor_modelo",
+    "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
+    "telefono_ip_serial", "telefono_ip_modelo",
+}
 
 # Pares modelo + serial que se muestran en una sola fila: (clave, etiqueta, campo modelo, campo serial).
 PARES_DETALLE = [
@@ -217,6 +233,11 @@ def agrupar_detalle(equipo, usuario):
     usados = set()
     if equipo.tipo in ("COMPUTADOR", "TABLETA"):
         for clave, etiqueta, modelo, serial in PARES_DETALLE:
+            if equipo.tipo == "TABLETA" and clave in {
+                "@monitor", "@monitor2", "@ups", "@telefono_ip",
+            }:
+                usados.update((modelo, serial))
+                continue
             if modelo not in por_campo and serial not in por_campo:
                 continue
             m = por_campo.get(modelo, ("", ""))[1]
@@ -226,6 +247,8 @@ def agrupar_detalle(equipo, usuario):
                 partes.append(f"Serial {n}")
             por_campo[clave] = (etiqueta, " · ".join(partes))
             usados.update((modelo, serial))
+    if equipo.tipo == "TABLETA":
+        usados.update(DETALLE_NO_APLICA_TABLETA)
     secciones = []
     for titulo, nombres in grupos:
         filas = [por_campo[n] for n in nombres if n in por_campo]
@@ -437,10 +460,28 @@ def ficha_modal(equipo, usuario):
     contados = cuenta(destacados) + [
         fv for _, filas in secciones for fv in cuenta(filas)
     ]
-    vacios = sum(1 for _, v in contados if v in ("", None))
     comp_faltan = sum(1 for c in componentes if c["faltan"])
-    faltantes = vacios + comp_faltan + (0 if observaciones else 1)
-    total = len(contados) + len(componentes) + 1
+    if radio is not None:
+        # En radios la presencia/estado de accesorios sí se controla como
+        # completitud. Los textos descriptivos vacíos siguen siendo opcionales.
+        faltantes = comp_faltan
+        total = len(componentes)
+        completos = total - faltantes
+        porcentaje = round(completos * 100 / total) if total else 100
+    else:
+        # Los datos técnicos opcionales no deben parecer pendientes ni teñirse
+        # como si fueran obligatorios para poder registrar el equipo.
+        faltantes = 0
+        total = 0
+        completos = 0
+        porcentaje = 100
+
+    antivirus_vencido = False
+    if equipo.tipo in (Equipo.Tipo.COMPUTADOR, Equipo.Tipo.TABLETA):
+        detalle_computador = detalle_de(equipo)
+        vencimiento = getattr(detalle_computador, "vencimiento_antivirus", None)
+        antivirus_vencido = bool(vencimiento and vencimiento < timezone.localdate())
+
     cliente_puesto = ""
     if radio is not None:
         cliente_puesto = " · ".join(
@@ -458,11 +499,12 @@ def ficha_modal(equipo, usuario):
         ],
         "notas_componentes": [c["nota"] for c in componentes if c["nota"]],
         "avisos": avisos,
+        "antivirus_vencido": antivirus_vencido,
         "observaciones": observaciones,
         "faltantes": faltantes,
         "total": total,
-        "completos": total - faltantes,
-        "porcentaje": round((total - faltantes) * 100 / total) if total else 100,
+        "completos": completos,
+        "porcentaje": porcentaje,
         "datos_de_baja": datos_de_baja,
         "responsable": responsable,
         "cliente_puesto": cliente_puesto,
@@ -1063,13 +1105,41 @@ def _volver_a_pestanas(placa, pestana="resumen"):
     return redirect(destino + "?embed=1#" + pestana)
 
 
-def pasos_formulario_equipo(formulario, detalle):
-    """Agrupa los campos del formulario de equipo en pasos (Identificación, Responsable…).
 
-    La plantilla los muestra como secciones; los campos del detalle por tipo
-    van en su propio paso.
+def grupos_detalle_formulario(detalle):
+    """Separa las caracterÃ­sticas del computador por Ã¡rea funcional."""
+    if detalle is None:
+        return []
+    campos = list(detalle)
+    nombres = {campo.name for campo in campos}
+    if "sistema_operativo" not in nombres:
+        return [{"titulo": "CaracterÃ­sticas", "campos": campos, "computador": False}]
+
+    software = {
+        "sistema_operativo", "licencia_so", "antivirus", "licencia_antivirus",
+        "vencimiento_antivirus", "office", "licencia_office",
+        "software_licenciado", "software_libre",
+    }
+    conectividad = {
+        "mac_ethernet", "mac_wifi", "ip_ethernet", "ip_wifi", "imei",
+        "linea_celular",
+    }
+    grupos = [
+        {"titulo": "CaracterÃ­sticas fÃ­sicas", "campos": [c for c in campos if c.name not in software | conectividad], "computador": True},
+        {"titulo": "Software y licencias", "campos": [c for c in campos if c.name in software], "computador": True},
+        {"titulo": "Red y conectividad", "campos": [c for c in campos if c.name in conectividad], "computador": True},
+    ]
+    return [grupo for grupo in grupos if grupo["campos"]]
+
+
+def pasos_formulario_equipo(formulario, detalle):
+    """Agrupa los campos del formulario en pasos.
+
+    Las observaciones y revisión siempre aparecen como último paso,
+    después de las características específicas del equipo.
     """
     pasos = []
+
     campos_comunes = {
         "Identificación": (
             "placa", "serial", "marca", "modelo", "propiedad", "fecha_compra",
@@ -1078,38 +1148,103 @@ def pasos_formulario_equipo(formulario, detalle):
             "estado_operativo", "responsable_nombre", "responsable_cedula",
             "ubicacion",
         ),
-        "Observaciones y revisión": (
-            "observaciones", "requiere_revision", "motivo_revision",
-        ),
     }
-    usados = set()
-    for titulo, nombres in campos_comunes.items():
-        campos = [formulario[nombre] for nombre in nombres
-                  if nombre in formulario.fields]
-        usados.update(nombres)
-        if campos:
-            pasos.append({"titulo": titulo, "campos": campos})
 
+    nombres_revision = (
+        "observaciones",
+        "requiere_revision",
+        "motivo_revision",
+    )
+
+    usados = set(nombres_revision)
+
+    # 1. Datos generales del equipo.
+    for titulo, nombres in campos_comunes.items():
+        campos = [
+            formulario[nombre]
+            for nombre in nombres
+            if nombre in formulario.fields
+        ]
+
+        usados.update(nombres)
+
+        if campos:
+            pasos.append({
+                "titulo": titulo,
+                "campos": campos,
+            })
+
+    # 2. Otros datos generales.
     restantes = [
         campo for campo in formulario
         if campo.name not in usados
     ]
-    if restantes:
-        pasos.append({"titulo": "Otros datos generales", "campos": restantes})
 
+    if restantes:
+        pasos.append({
+            "titulo": "Otros datos generales",
+            "campos": restantes,
+        })
+
+    # 3. Características específicas del equipo.
     if detalle is not None:
         campos_detalle = list(detalle)
         tamano_paso = 6
-        total_pasos = (len(campos_detalle) + tamano_paso - 1) // tamano_paso
+        total_pasos = (
+            len(campos_detalle) + tamano_paso - 1
+        ) // tamano_paso
+
         for inicio in range(0, len(campos_detalle), tamano_paso):
             numero = inicio // tamano_paso + 1
             titulo = f"Características {numero} de {total_pasos}"
+
             pasos.append({
                 "titulo": titulo,
-                "campos": campos_detalle[inicio:inicio + tamano_paso],
+                "campos": campos_detalle[
+                    inicio:inicio + tamano_paso
+                ],
             })
 
+    # 4. Observaciones y revisión: SIEMPRE EL ÚLTIMO PASO.
+    grupos = grupos_detalle_formulario(detalle)
+    if grupos and grupos[0]["computador"]:
+        # Reemplaza los bloques genÃ©ricos de seis campos por categorÃ­as claras.
+        pasos = [p for p in pasos if not p["titulo"].startswith("CaracterÃ­sticas ")]
+        for grupo in grupos:
+            campos_detalle = grupo["campos"]
+            tamano_paso = len(campos_detalle) if grupo["titulo"] == "Red y conectividad" else 6
+            bloques = []
+            inicio = 0
+            while inicio < len(campos_detalle):
+                fin = min(inicio + tamano_paso, len(campos_detalle))
+                nombres_bloque = {c.name for c in campos_detalle[inicio:fin]}
+                if nombres_bloque & {
+                    "telefono_ip_asignado", "telefono_ip_serial", "telefono_ip_modelo",
+                }:
+                    while fin < len(campos_detalle) and campos_detalle[fin - 1].name != "telefono_ip_modelo":
+                        fin += 1
+                bloques.append(campos_detalle[inicio:fin])
+                inicio = fin
+            for numero, bloque in enumerate(bloques, 1):
+                titulo = grupo["titulo"]
+                if len(bloques) > 1:
+                    titulo += f" {numero} de {len(bloques)}"
+                pasos.append({"titulo": titulo, "campos": bloque})
+
+    campos_revision = [
+        formulario[nombre]
+        for nombre in nombres_revision
+        if nombre in formulario.fields
+    ]
+
+    if campos_revision:
+        pasos.append({
+            "titulo": "Observaciones y revisión",
+            "campos": campos_revision,
+        })
+
     return pasos
+
 
 
 def render_equipo_pestanas(
@@ -1161,6 +1296,7 @@ def render_equipo_pestanas(
         "formulario_edicion": formulario_edicion,
         "detalle_edicion": detalle_edicion,
         "pasos_edicion": pasos_edicion,
+        "grupos_detalle_edicion": grupos_detalle_formulario(detalle_edicion),
         "mantenimientos": MantenimientoEquipo.objects.filter(
             equipo=equipo
         ).select_related("registrado_por").order_by("-fecha_intervencion"),
@@ -1284,6 +1420,7 @@ def guardar_equipo(request, equipo, titulo):
     return render(request, "inventario/equipo_form.html", {
         "formulario": formulario,
         "detalle": detalle,
+        "grupos_detalle": grupos_detalle_formulario(detalle),
         "equipo": equipo,
         "titulo": titulo,
         "ofrecer_entrega": ofrecer_entrega,

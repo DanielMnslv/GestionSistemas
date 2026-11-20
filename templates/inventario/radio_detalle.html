@@ -150,6 +150,13 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                     </header>
                     <form method="post" action="{% url 'inventario:asignacion_devolver' asignacion_activa.pk %}" class="rd-baja-form">
                         {% csrf_token %}
+			<label for="fecha-devolucion-radio">Fecha y hora real de devolución</label>
+<input
+    type="datetime-local"
+    id="fecha-devolucion-radio"
+    name="fecha_devolucion"
+    required
+>
                         {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
                         <label for="obs-devolucion-radio">Observaciones de la devolución</label>
                         <textarea id="obs-devolucion-radio" name="observaciones_devolucion" rows="2"

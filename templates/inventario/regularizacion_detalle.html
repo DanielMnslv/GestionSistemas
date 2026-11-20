@@ -1,0 +1,408 @@
+
+{% extends "base.html" %}
+
+{% block title %}Detalle de regularización | JANO Inventario{% endblock %}
+
+{% block page_heading %}Detalle de regularización{% endblock %}
+
+{% block extra_css %}
+<style>
+.jr-detail{display:grid;gap:19px}
+.jr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;flex-wrap:wrap}
+.jr-top h1{font-size:23px;font-weight:750;margin:0 0 7px}
+.jr-top p{font-size:12px;color:#718096;margin:0;line-height:1.7}
+.jr-top-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.jr-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 13px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;color:#334155;font-size:12px;font-weight:650;text-decoration:none;cursor:pointer}
+.jr-btn:hover{background:#f8fafc}
+.jr-btn-primary{background:#3730a3;border-color:#3730a3;color:white}
+.jr-btn-primary:hover{background:#312e81;color:white}
+.jr-panel{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:15px;overflow:hidden}
+.jr-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.jr-stat{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:13px;padding:16px}
+.jr-stat-label{font-size:11px;color:#64748b;font-weight:650}
+.jr-stat-value{font-size:25px;font-weight:800;line-height:1.2;margin-top:8px;color:#1e293b;font-variant-numeric:tabular-nums}
+.jr-stat-note{font-size:10px;color:#94a3b8;margin-top:5px}
+.jr-status{display:inline-flex;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#eef2ff;color:#4338ca}
+.jr-status-open{background:#fff7ed;color:#c2410c}
+.jr-status-done{background:#ecfdf5;color:#047857}
+.jr-status-cancel{background:#f1f5f9;color:#64748b}
+.jr-meta{padding:17px 20px;display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.jr-meta-item{font-size:12px;color:#64748b}
+.jr-meta-item strong{color:#334155;display:block;font-size:11px;margin-bottom:5px}
+.jr-section-head{padding:17px 20px;border-bottom:1px solid #edf0f4;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.jr-section-head h2{font-size:15px;margin:0;font-weight:750}
+.jr-section-head p{font-size:11px;color:#94a3b8;margin:4px 0 0}
+.jr-assets{display:grid;gap:14px}
+.jr-asset{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:14px;overflow:hidden}
+.jr-asset-head{padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #edf0f4;flex-wrap:wrap}
+.jr-asset-title{display:flex;align-items:center;gap:12px}
+.jr-asset-icon{width:39px;height:39px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#475569;border-radius:11px;flex:none}
+.jr-asset-title h3{font-size:14px;margin:0 0 4px;font-weight:750}
+.jr-asset-title p{font-size:11px;color:#94a3b8;margin:0}
+.jr-asset-body{padding:17px 18px}
+.jr-data-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 20px}
+.jr-data-label{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;font-weight:700;margin-bottom:5px}
+.jr-data-value{font-size:12px;color:#334155;font-weight:600;overflow-wrap:anywhere}
+.jr-asset-notes{margin-top:14px;padding:11px 13px;border-radius:9px;background:#f8fafc;font-size:11px;line-height:1.6;color:#64748b}
+.jr-receipt{margin-top:17px;padding-top:16px;border-top:1px solid #edf0f4}
+.jr-receipt-title{font-size:12px;font-weight:750;margin-bottom:13px;color:#334155}
+.jr-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.jr-field{display:grid;gap:7px}
+.jr-field-full{grid-column:1/-1}
+.jr-field label{font-size:11px;font-weight:700;color:#64748b}
+.jr-field input,.jr-field select,.jr-field textarea{width:100%;box-sizing:border-box;border:1px solid #dfe4eb;border-radius:8px;padding:9px 11px;min-height:39px;font:inherit;font-size:12px;background:#fff;color:#1e293b}
+.jr-field textarea{min-height:75px;resize:vertical}
+.jr-confirm{display:flex;align-items:flex-start;gap:9px;font-size:11px;color:#475569;line-height:1.5}
+.jr-confirm input{margin-top:2px}
+.jr-receipt-actions{display:flex;justify-content:flex-end;margin-top:13px}
+.jr-result-note{padding:10px 12px;margin-top:14px;background:#f8fafc;border-radius:9px;color:#64748b;font-size:11px;line-height:1.6}
+.jr-empty{padding:38px;text-align:center;color:#64748b;font-size:12px}
+
+@media(max-width:1050px){
+    .jr-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:700px){
+    .jr-data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .jr-form-grid{grid-template-columns:1fr}
+    .jr-field-full{grid-column:auto}
+}
+@media(max-width:460px){
+    .jr-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .jr-data-grid{grid-template-columns:1fr}
+    .jr-top-actions{width:100%}
+    .jr-top-actions .jr-btn{width:100%}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jr-detail">
+
+    <header class="jr-top">
+        <div>
+            <h1>Regularización #{{ regularizacion.id }}</h1>
+            <p>
+                Responsable:
+                <strong>{{ regularizacion.nombre_origen|default:"Sin nombre" }}</strong><br>
+                Cédula: {{ regularizacion.cedula_origen }}
+            </p>
+        </div>
+
+        <div class="jr-top-actions">
+            {% if not proceso_cerrado and resumen.pendientes %}
+                <a href="{% url 'inventario:regularizacion_recepcion_masiva' regularizacion.id %}"
+                   class="jr-btn jr-btn-primary">
+                    <svg class="jx-i"><use href="#i-check"/></svg>
+                    Preparar recepción masiva
+                </a>
+            {% endif %}
+
+            <a href="{% url 'inventario:regularizaciones_lista' %}" class="jr-btn">
+                <svg class="jx-i"><use href="#i-arrow"/></svg>
+                Volver al listado
+            </a>
+        </div>
+    </header>
+
+    <section class="jr-summary">
+        <div class="jr-stat">
+            <div class="jr-stat-label">Activos incluidos</div>
+            <div class="jr-stat-value">{{ resumen.total }}</div>
+            <div class="jr-stat-note">Total del proceso</div>
+        </div>
+
+        <div class="jr-stat">
+            <div class="jr-stat-label">Pendientes</div>
+            <div class="jr-stat-value">{{ resumen.pendientes }}</div>
+            <div class="jr-stat-note">Sin resultado definitivo</div>
+        </div>
+
+        <div class="jr-stat">
+            <div class="jr-stat-label">Recibidos</div>
+            <div class="jr-stat-value">{{ resumen.recibidos }}</div>
+            <div class="jr-stat-note">Recepción registrada</div>
+        </div>
+
+        <div class="jr-stat">
+            <div class="jr-stat-label">Con novedades</div>
+            <div class="jr-stat-value">{{ resumen.novedades }}</div>
+            <div class="jr-stat-note">Requieren revisión</div>
+        </div>
+
+        <div class="jr-stat">
+            <div class="jr-stat-label">No localizados</div>
+            <div class="jr-stat-value">{{ resumen.no_localizados }}</div>
+            <div class="jr-stat-note">Sin recuperación física</div>
+        </div>
+
+        <div class="jr-stat">
+            <div class="jr-stat-label">En verificación</div>
+            <div class="jr-stat-value">{{ resumen.verificacion }}</div>
+            <div class="jr-stat-note">Inconsistencias por revisar</div>
+        </div>
+    </section>
+
+    <section class="jr-panel">
+        <div class="jr-meta">
+            <div class="jr-meta-item">
+                <strong>Estado del proceso</strong>
+                <span class="jr-status
+                    {% if regularizacion.estado == 'EN_RECUPERACION' %}jr-status-open
+                    {% elif regularizacion.estado == 'COMPLETADA' %}jr-status-done
+                    {% elif regularizacion.estado == 'CANCELADA' %}jr-status-cancel
+                    {% endif %}">
+                    {{ regularizacion.get_estado_display }}
+                </span>
+            </div>
+
+            <div class="jr-meta-item">
+                <strong>Creado por</strong>
+                {{ regularizacion.creado_por }}
+            </div>
+
+            <div class="jr-meta-item">
+                <strong>Fecha de creación</strong>
+                {{ regularizacion.creado_en|date:"d/m/Y H:i" }}
+            </div>
+        </div>
+
+        {% if regularizacion.observaciones %}
+            <div style="padding:0 20px 17px;font-size:12px;color:#64748b">
+                <strong style="color:#334155">Observaciones iniciales:</strong>
+                {{ regularizacion.observaciones }}
+            </div>
+        {% endif %}
+    </section>
+
+    <section>
+        <div class="jr-section-head">
+            <div>
+                <h2>Activos de la regularización</h2>
+                <p>
+                    Consulta la información de cada activo y registra su resultado
+                    individualmente o mediante la recepción masiva.
+                </p>
+            </div>
+
+            <span class="jr-status">{{ page_obj.paginator.count }} activos</span>
+        </div>
+
+        <div class="jr-assets">
+            {% for item in items %}
+                <article class="jr-asset">
+
+                    <div class="jr-asset-head">
+                        <div class="jr-asset-title">
+                            <span class="jr-asset-icon">
+                                <svg class="jx-i"><use href="#i-monitor"/></svg>
+                            </span>
+
+                            <div>
+                                <h3>{{ item.placa_origen|default:"Activo sin placa" }}</h3>
+                                <p>
+                                    {{ item.equipo.marca|default:"Sin marca" }}
+                                    {{ item.equipo.modelo|default:"" }}
+                                    · Serial: {{ item.serial_origen|default:"Sin serial" }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <span class="jr-status
+                            {% if item.resultado == 'RECIBIDO' %}jr-status-done
+                            {% elif item.resultado == 'RECIBIDO_NOVEDADES' %}jr-status-open
+                            {% elif item.resultado == 'NO_LOCALIZADO' %}jr-status-cancel
+                            {% endif %}">
+                            {{ item.get_resultado_display }}
+                        </span>
+                    </div>
+
+                    <div class="jr-asset-body">
+                        <div class="jr-data-grid">
+
+                            <div>
+                                <div class="jr-data-label">Origen del registro</div>
+                                <div class="jr-data-value">{{ item.get_origen_display }}</div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Tipo de equipo</div>
+                                <div class="jr-data-value">{{ item.equipo.get_tipo_display }}</div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Responsable original</div>
+                                <div class="jr-data-value">
+                                    {{ item.responsable_nombre_origen|default:"No registrado" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Cédula del equipo</div>
+                                <div class="jr-data-value">
+                                    {{ item.responsable_cedula_origen|default:"No registrada" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Cédula original del radio</div>
+                                <div class="jr-data-value">
+                                    {{ item.cedula_radio_origen|default:"No aplica" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Ubicación original</div>
+                                <div class="jr-data-value">
+                                    {{ item.ubicacion_origen|default:"No registrada" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Cliente</div>
+                                <div class="jr-data-value">
+                                    {{ item.cliente_origen|default:"No registrado" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Puesto</div>
+                                <div class="jr-data-value">
+                                    {{ item.puesto_origen|default:"No registrado" }}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="jr-data-label">Coordinador</div>
+                                <div class="jr-data-value">
+                                    {{ item.coordinador_origen|default:"No registrado" }}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {% if item.recibido_en %}
+                            <div class="jr-result-note">
+                                <strong>Registro realizado por:</strong>
+                                {{ item.recibido_por }}
+                                · {{ item.recibido_en|date:"d/m/Y H:i" }}
+                            </div>
+                        {% endif %}
+
+                        {% if item.estado_fisico %}
+                            <div class="jr-result-note">
+                                <strong>Estado físico:</strong>
+                                {{ item.estado_fisico }}
+                            </div>
+                        {% endif %}
+
+                        {% if item.observaciones %}
+                            <div class="jr-result-note">
+                                <strong>Observaciones:</strong>
+                                {{ item.observaciones }}
+                            </div>
+                        {% endif %}
+
+                        {% if not proceso_cerrado and item.resultado != "RECIBIDO" and item.resultado != "RECIBIDO_NOVEDADES" %}
+                            <div class="jr-receipt">
+                                <div class="jr-receipt-title">
+                                    Registrar verificación del activo
+                                </div>
+
+                                <form method="post"
+                                      action="{% url 'inventario:regularizacion_item_recibir' item.id %}">
+                                    {% csrf_token %}
+
+                                    <div class="jr-form-grid">
+                                        <div class="jr-field">
+                                            <label for="resultado_{{ item.id }}">
+                                                Resultado de la verificación *
+                                            </label>
+
+                                            <select name="resultado"
+                                                    id="resultado_{{ item.id }}"
+                                                    required>
+                                                <option value="">Seleccionar resultado</option>
+
+                                                {% for valor, etiqueta in resultados %}
+                                                    {% if valor != "PENDIENTE" %}
+                                                        <option value="{{ valor }}"
+                                                            {% if item.resultado == valor %}selected{% endif %}>
+                                                            {{ etiqueta }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <div class="jr-field">
+                                            <label for="estado_fisico_{{ item.id }}">
+                                                Estado físico
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                name="estado_fisico"
+                                                id="estado_fisico_{{ item.id }}"
+                                                value="{{ item.estado_fisico }}"
+                                                maxlength="100"
+                                                placeholder="Ej. Bueno, regular, dañado"
+                                            >
+                                        </div>
+
+                                        <div class="jr-field jr-field-full">
+                                            <label for="observaciones_{{ item.id }}">
+                                                Observaciones
+                                            </label>
+
+                                            <textarea
+                                                name="observaciones"
+                                                id="observaciones_{{ item.id }}"
+                                                rows="2"
+                                                placeholder="Novedades, condiciones o detalles de la verificación..."
+                                            >{{ item.observaciones }}</textarea>
+                                        </div>
+
+                                        <div class="jr-field jr-field-full">
+                                            <label class="jr-confirm">
+                                                <input type="checkbox"
+                                                       name="confirmar_recepcion"
+                                                       value="si">
+                                                Confirmo que he recibido físicamente este activo.
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="jr-receipt-actions">
+                                        <button type="submit" class="jr-btn jr-btn-primary">
+                                            <svg class="jx-i"><use href="#i-check"/></svg>
+                                            Registrar resultado
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                        {% elif proceso_cerrado %}
+                            <div class="jr-result-note">
+                                Este proceso está cerrado y no admite modificaciones.
+                            </div>
+
+                        {% else %}
+                            <div class="jr-result-note">
+                                La recepción de este activo ya está registrada.
+                            </div>
+                        {% endif %}
+                    </div>
+                </article>
+
+            {% empty %}
+                <div class="jr-panel jr-empty">
+                    No hay activos incluidos en esta regularización.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% include "inventario/_paginacion.html" %}
+
+</div>
+{% endblock %}

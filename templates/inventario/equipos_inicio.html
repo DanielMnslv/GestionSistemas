@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% comment %}
 Sección Equipos: una tarjeta por tipo que lleva a la lista ya filtrada (vista equipos_inicio).
@@ -8,43 +9,115 @@ Sección Equipos: una tarjeta por tipo que lleva a la lista ya filtrada (vista e
 
 {% block content %}
 <div class="jx-pagehead">
-    <span class="jx-tile-ico jx-tile-ico-lg"><svg class="jx-i"><use href="#i-grid"/></svg></span>
+    <span class="jx-tile-ico jx-tile-ico-lg">
+        <svg class="jx-i"><use href="#i-grid"/></svg>
+    </span>
+
     <div>
         <h1>Equipos</h1>
         <p>Infraestructura tecnológica de Seguridad JANO por tipo de equipo</p>
     </div>
+
     <div class="jx-head-actions">
-        {% if permisos.equipos or request.user.is_superuser %}<a class="jx-btn jx-btn-primary" href="{% url 'inventario:equipo_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Registrar equipo</a>{% endif %}
+        {% if permisos.equipos or request.user.is_superuser %}
+        <a class="jx-btn jx-btn-primary" href="{% url 'inventario:equipo_crear' %}">
+            <svg class="jx-i"><use href="#i-plus"/></svg>
+            Registrar equipo
+        </a>
+        {% endif %}
     </div>
 </div>
 
 <div class="jx-tiles">
+
+    <!-- Todos los equipos -->
     <a class="jx-tile" href="{{ url_todos }}">
-        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-list"/></svg></span>
+        <span class="jx-tile-ico">
+            <svg class="jx-i"><use href="#i-list"/></svg>
+        </span>
+
         <strong>Todos los equipos</strong>
+
         <p>Lista completa con búsqueda, filtros y exportación a Excel</p>
-        <span class="jx-tile-meta"><b>{{ total }}</b> activo{{ total|pluralize }} · {{ total_entregados }} entregado{{ total_entregados|pluralize }}</span>
+
+        <span class="jx-tile-meta">
+            <b>{{ total }}</b> activo{{ total|pluralize }}
+            · {{ total_entregados }} entregado{{ total_entregados|pluralize }}
+        </span>
     </a>
+
+    <!-- Tarjetas dinámicas por tipo de equipo -->
     {% for t in tarjetas %}
     <div class="jx-tile">
-        <a class="jx-tile-cover" href="{{ t.url }}" aria-label="Ver {{ t.titulo|lower }}"></a>
-        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-{{ t.icono }}"/></svg></span>
+        <a
+            class="jx-tile-cover"
+            href="{{ t.url }}"
+            aria-label="Ver {{ t.titulo|lower }}"
+        ></a>
+
+        <span class="jx-tile-ico">
+            <svg class="jx-i"><use href="#i-{{ t.icono }}"/></svg>
+        </span>
+
         <strong>{{ t.titulo }}</strong>
+
         <p>{{ t.descripcion }}</p>
+
         <span class="jx-tile-meta">
-            <b>{{ t.total }}</b> activo{{ t.total|pluralize }} · {{ t.entregados }} entregado{{ t.entregados|pluralize }} ·
-            <a href="{{ t.url_bodega }}">{{ t.bodega }} en bodega</a>{% if t.revision %} ·
-            <a class="is-warn" href="{{ t.url_revision }}">{{ t.revision }} por revisar</a>{% endif %}
+            <b>{{ t.total }}</b> activo{{ t.total|pluralize }}
+            · {{ t.entregados }} entregado{{ t.entregados|pluralize }}
+            · <a href="{{ t.url_bodega }}">{{ t.bodega }} en bodega</a>
+
+            {% if t.revision %}
+            · <a class="is-warn" href="{{ t.url_revision }}">
+                {{ t.revision }} por revisar
+            </a>
+            {% endif %}
         </span>
     </div>
     {% empty %}
-    <div class="jx-empty"><svg class="jx-i"><use href="#i-inbox"/></svg><p>Todavía no hay equipos registrados.</p></div>
+    <div class="jx-empty">
+        <svg class="jx-i"><use href="#i-inbox"/></svg>
+        <p>Todavía no hay equipos registrados.</p>
+    </div>
     {% endfor %}
-    <a class="jx-tile jx-tile-baul" href="{% url 'inventario:equipos_bajas' %}">
-        <span class="jx-tile-ico"><svg class="jx-i"><use href="#i-box"/></svg></span>
-        <strong>Baúl de bajas</strong>
-        <p>Equipos excluidos definitivamente del inventario, con fecha, motivo y quién los dio de baja</p>
-        <span class="jx-tile-meta"><b>{{ bajas }}</b> dado{{ bajas|pluralize }} de baja</span>
+
+    <!-- Traslado masivo a bodega -->
+    {% if permisos.regularizacion_inventario or request.user.is_superuser %}
+    <a class="jx-tile" href="{% url 'inventario:traslado_bodega' %}">
+        <span class="jx-tile-ico">
+            <svg class="jx-i"><use href="#i-box"/></svg>
+        </span>
+
+        <strong>Traslado masivo a bodega</strong>
+
+        <p>
+            Consolidar los activos de un responsable en Bodega central JANO
+        </p>
+
+        <span class="jx-tile-meta">
+            Operación especial de inventario
+        </span>
     </a>
+    {% endif %}
+
+    <!-- Baúl de bajas -->
+    <a class="jx-tile jx-tile-baul" href="{% url 'inventario:equipos_bajas' %}">
+        <span class="jx-tile-ico">
+            <svg class="jx-i"><use href="#i-box"/></svg>
+        </span>
+
+        <strong>Baúl de bajas</strong>
+
+        <p>
+            Equipos excluidos definitivamente del inventario,
+            con fecha, motivo y quién los dio de baja
+        </p>
+
+        <span class="jx-tile-meta">
+            <b>{{ bajas }}</b> dado{{ bajas|pluralize }} de baja
+        </span>
+    </a>
+
 </div>
 {% endblock %}

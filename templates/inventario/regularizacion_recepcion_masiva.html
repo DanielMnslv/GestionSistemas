@@ -1,0 +1,205 @@
+
+{% extends "base.html" %}
+
+{% block title %}Recepción masiva | JANO Inventario{% endblock %}
+{% block page_heading %}Recepción masiva de activos{% endblock %}
+
+{% block extra_css %}
+<style>
+.jrm{display:grid;gap:18px}
+.jrm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.jrm-head h1{font-size:22px;font-weight:750;margin:0 0 6px}
+.jrm-head p{font-size:12px;color:#718096;margin:0;line-height:1.6}
+.jrm-panel{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:14px;overflow:hidden}
+.jrm-info{padding:16px 19px;font-size:12px;line-height:1.7;color:#475569}
+.jrm-info strong{color:#1e293b}
+.jrm-toolbar{padding:15px 19px;border-bottom:1px solid #edf0f4;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.jrm-toolbar h2{font-size:14px;margin:0;font-weight:750}
+.jrm-count{font-size:11px;color:#64748b}
+.jrm-list{display:grid;gap:12px;padding:15px}
+.jrm-item{border:1px solid var(--border,#e5e7eb);border-radius:11px;overflow:hidden}
+.jrm-item-head{padding:12px 14px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.jrm-item-head strong{font-size:12px;color:#1e293b}
+.jrm-item-head small{display:block;font-size:10px;color:#64748b;margin-top:4px}
+.jrm-fields{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.jrm-field{display:grid;gap:6px}
+.jrm-field-full{grid-column:1/-1}
+.jrm-field label{font-size:11px;font-weight:700;color:#64748b}
+.jrm-field input,.jrm-field select,.jrm-field textarea{width:100%;box-sizing:border-box;border:1px solid #dfe4eb;border-radius:8px;padding:9px 10px;min-height:38px;font:inherit;font-size:12px;background:#fff;color:#1e293b}
+.jrm-field textarea{min-height:58px;resize:vertical}
+.jrm-submit{padding:17px 19px;border-top:1px solid #edf0f4;display:grid;gap:12px}
+.jrm-confirm{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#475569;line-height:1.6}
+.jrm-confirm input{margin-top:3px}
+.jrm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.jrm-btn{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:9px 14px;border-radius:8px;border:1px solid #dfe4eb;background:#fff;color:#334155;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}
+.jrm-btn-primary{background:#3730a3;border-color:#3730a3;color:#fff}
+.jrm-warning{padding:12px 14px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:9px;font-size:11px;line-height:1.6}
+@media(max-width:650px){.jrm-fields{grid-template-columns:1fr}.jrm-field-full{grid-column:auto}.jrm-actions>*{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jrm">
+
+    <header class="jrm-head">
+        <div>
+            <h1>Inspección y recepción masiva</h1>
+            <p>
+                Regularización #{{ regularizacion.id }}
+                · Cédula {{ regularizacion.cedula_origen }}
+            </p>
+        </div>
+
+        <a class="jrm-btn"
+           href="{% url 'inventario:regularizacion_detalle' regularizacion.id %}">
+            Volver al detalle
+        </a>
+    </header>
+
+    <section class="jrm-panel">
+        <div class="jrm-info">
+            <strong>{{ total_items }} activos incluidos.</strong>
+            Registra individualmente el estado físico de cada activo.
+            Selecciona «Recibido con novedades» cuando corresponda y
+            describe las novedades. Ninguna asignación se cerrará mientras
+            estés diligenciando esta pantalla.
+        </div>
+
+        <div class="jrm-info">
+            <strong>Destino físico:</strong> Bodega central JANO.
+            <br>
+            La confirmación ejecutará la recepción de todos los activos
+            en una única transacción. Si uno falla las validaciones,
+            se revertirá la operación completa.
+        </div>
+    </section>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <section class="jrm-panel">
+            <div class="jrm-toolbar">
+                <h2>Inspección individual de activos</h2>
+                <span class="jrm-count">{{ total_items }} activos por revisar</span>
+            </div>
+
+            <div class="jrm-list">
+                {% for item in items %}
+                <article class="jrm-item">
+
+                    <div class="jrm-item-head">
+                        <div>
+                            <strong>
+                                {{ item.placa_origen|default:item.equipo.placa|default:"Sin placa" }}
+                            </strong>
+                            <small>
+                                {{ item.equipo.get_tipo_display }}
+                                · {{ item.equipo.marca|default:"Sin marca" }}
+                                {{ item.equipo.modelo|default:"" }}
+                                · Serial: {{ item.serial_origen|default:"Sin serial" }}
+                            </small>
+                        </div>
+                        <span class="jrm-count">{{ item.get_origen_display }}</span>
+                    </div>
+
+                    <div class="jrm-fields">
+
+                        <div class="jrm-field">
+                            <label for="resultado_{{ item.id }}">
+                                Resultado de recepción *
+                            </label>
+                            <select
+                                name="resultado_{{ item.id }}"
+                                id="resultado_{{ item.id }}"
+                                required
+                            >
+                                <option value="">Seleccionar</option>
+                                {% for valor, etiqueta in resultados_recepcion %}
+                                <option
+                                    value="{{ valor }}"
+                                    {% if item.form_resultado == valor %}selected{% endif %}
+                                >
+                                    {{ etiqueta }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="jrm-field">
+                            <label for="estado_{{ item.id }}">
+                                Estado físico individual *
+                            </label>
+                            <input
+                                type="text"
+                                name="estado_fisico_{{ item.id }}"
+                                id="estado_{{ item.id }}"
+                                maxlength="100"
+                                required
+                                value="{{ item.form_estado_fisico|default:item.estado_fisico }}"
+                                placeholder="Ej. Bueno, regular, dañado"
+                            >
+                        </div>
+
+                        <div class="jrm-field jrm-field-full">
+                            <label for="observaciones_{{ item.id }}">
+                                Observaciones y novedades
+                            </label>
+                            <textarea
+                                name="observaciones_{{ item.id }}"
+                                id="observaciones_{{ item.id }}"
+                                placeholder="Describe daños, faltantes, accesorios o particularidades..."
+                            >{% if item.form_observaciones != None %}{{ item.form_observaciones }}{% else %}{{ item.observaciones }}{% endif %}</textarea>
+                        </div>
+
+                    </div>
+                </article>
+                {% empty %}
+                <div class="jrm-info">
+                    Esta regularización no contiene activos.
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if items %}
+            <div class="jrm-submit">
+                <div class="jrm-warning">
+                    Antes de confirmar, revisa los 164 registros (o el total
+                    indicado arriba). La operación cerrará las asignaciones
+                    originales y trasladará los activos a Bodega central JANO.
+                    Esta acción no representa una baja de equipos ni un retiro
+                    laboral.
+                </div>
+
+                <label class="jrm-confirm">
+                    <input
+                        type="checkbox"
+                        name="confirmar_lote"
+                        value="si"
+                        required
+                    >
+                    Confirmo que todos los activos incluidos fueron
+                    inspeccionados físicamente y recibidos en Bodega central JANO.
+                    Autorizo ejecutar la recepción masiva.
+                </label>
+
+                <div class="jrm-actions">
+                    <a
+                        class="jrm-btn"
+                        href="{% url 'inventario:regularizacion_detalle' regularizacion.id %}"
+                    >
+                        Cancelar
+                    </a>
+                    <button
+                        type="submit"
+                        class="jrm-btn jrm-btn-primary"
+                        onclick="return confirm('¿Confirmas la recepción de TODOS los activos? Si alguno falla, se revertirá la operación completa.');"
+                    >
+                        Confirmar recepción de todo el lote
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+    </form>
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from urllib.parse import urlencode
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.core.paginator import Paginator
+from django.utils.dateparse import parse_datetime
 
 from .forms import (
     MantenimientoEquipoForm,
@@ -1008,8 +1009,23 @@ def asignacion_acta(request, asignacion_id):
 @requiere_permiso("entregas")
 def asignacion_devolver(request, asignacion_id):
     """Registra la devolución de un radio entregado y su estado al volver. Solo por POST."""
+
     if request.method != "POST":
         return redirect("inventario:equipos_lista")
+
+    fecha_devolucion = parse_datetime(
+        request.POST.get("fecha_devolucion", "").strip()
+    )
+
+    if fecha_devolucion is None:
+        messages.error(
+            request,
+            "Debes indicar una fecha y hora válida de devolución.",
+        )
+        return redirect("inventario:equipos_lista")
+
+    if timezone.is_naive(fecha_devolucion):
+        fecha_devolucion = timezone.make_aware(fecha_devolucion)
 
     with transaction.atomic():
         asignacion = get_object_or_404(
@@ -1023,7 +1039,7 @@ def asignacion_devolver(request, asignacion_id):
         )
 
         asignacion.estado = AsignacionRadio.Estado.DEVUELTO
-        asignacion.fecha_devolucion = timezone.now()
+        asignacion.fecha_devolucion = fecha_devolucion
         asignacion.recibido_por = request.user
         asignacion.observaciones_devolucion = (
             request.POST.get("observaciones_devolucion", "").strip()

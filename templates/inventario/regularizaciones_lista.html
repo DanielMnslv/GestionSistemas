@@ -1,0 +1,183 @@
+
+{% extends "base.html" %}
+
+{% block title %}Regularizaciones de inventario | JANO Inventario{% endblock %}
+
+{% block page_heading %}Regularización de inventario{% endblock %}
+
+{% block extra_css %}
+<style>
+.jr-page{display:grid;gap:20px}
+.jr-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.jr-hero h1{font-size:24px;margin:0 0 6px;font-weight:750;color:var(--text-primary,#172033)}
+.jr-hero p{margin:0;color:var(--text-secondary,#718096);font-size:13px}
+.jr-hero-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:13px;background:#eef2ff;color:#4338ca;margin-right:12px}
+.jr-title{display:flex;align-items:center}
+.jr-panel{background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);border-radius:16px;overflow:hidden}
+.jr-panel-head{padding:17px 20px;border-bottom:1px solid var(--border,#edf0f4);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.jr-panel-head h2{font-size:15px;margin:0;font-weight:700}
+.jr-panel-head p{font-size:12px;color:var(--text-secondary,#718096);margin:4px 0 0}
+.jr-filter{padding:17px 20px;display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(180px,1fr) auto auto;gap:12px;align-items:end}
+.jr-field{display:grid;gap:7px}
+.jr-field label{font-size:12px;font-weight:650;color:var(--text-secondary,#64748b)}
+.jr-field input,.jr-field select,.jr-field textarea{width:100%;min-height:40px;border:1px solid var(--border,#dfe3e8);border-radius:9px;padding:9px 12px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:13px;box-sizing:border-box}
+.jr-field textarea{min-height:100px;resize:vertical}
+.jr-field input:focus,.jr-field select:focus,.jr-field textarea:focus{outline:2px solid #c7d2fe;border-color:#6366f1}
+.jr-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 15px;border:1px solid var(--border,#dfe3e8);border-radius:9px;background:var(--surface,#fff);color:var(--text-primary,#263248);font-size:13px;font-weight:650;text-decoration:none;cursor:pointer;white-space:nowrap}
+.jr-btn:hover{background:#f8fafc}
+.jr-btn-primary{background:#3730a3;border-color:#3730a3;color:white}
+.jr-btn-primary:hover{background:#312e81;color:white}
+.jr-table-wrap{overflow-x:auto}
+.jr-table{width:100%;border-collapse:collapse;min-width:850px}
+.jr-table th{padding:12px 15px;text-align:left;background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.055em;font-weight:750;white-space:nowrap}
+.jr-table td{padding:15px;border-top:1px solid var(--border,#edf0f4);font-size:13px;vertical-align:middle}
+.jr-table tbody tr:hover{background:#fafbff}
+.jr-main-cell{font-weight:700;color:var(--text-primary,#1e293b)}
+.jr-sub-cell{font-size:11px;color:#94a3b8;margin-top:4px}
+.jr-number{font-weight:750;font-variant-numeric:tabular-nums}
+.jr-status{display:inline-flex;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#eef2ff;color:#4338ca}
+.jr-status-open{background:#fff7ed;color:#c2410c}
+.jr-status-done{background:#ecfdf5;color:#047857}
+.jr-status-cancel{background:#f1f5f9;color:#64748b}
+.jr-empty{padding:48px 20px;text-align:center;color:#64748b}
+.jr-empty strong{display:block;color:#334155;font-size:15px;margin-bottom:6px}
+.jr-empty p{font-size:12px;margin:0}
+.jr-action{font-size:12px;font-weight:700;color:#4338ca;text-decoration:none}
+.jr-action:hover{text-decoration:underline}
+@media(max-width:760px){.jr-filter{grid-template-columns:1fr 1fr}.jr-filter .jr-field:first-child{grid-column:1/-1}.jr-hero{align-items:flex-start}.jr-hero .jr-btn{width:100%}}
+@media(max-width:480px){.jr-filter{grid-template-columns:1fr}.jr-filter .jr-field:first-child{grid-column:auto}.jr-filter .jr-btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jr-page">
+
+    <header class="jr-hero">
+        <div class="jr-title">
+            <span class="jr-hero-icon">
+                <svg class="jx-i"><use href="#i-box"/></svg>
+            </span>
+            <div>
+                <h1>Control de regularizaciones</h1>
+                <p>Seguimiento y recuperación de activos tecnológicos, conservando su historial.</p>
+            </div>
+        </div>
+
+        <a href="{% url 'inventario:regularizacion_crear' %}" class="jr-btn jr-btn-primary">
+            <svg class="jx-i"><use href="#i-plus"/></svg>
+            Nueva regularización
+        </a>
+    </header>
+
+    <section class="jr-panel">
+        <div class="jr-panel-head">
+            <div>
+                <h2>Buscar procesos</h2>
+                <p>Filtra por cédula o estado de regularización.</p>
+            </div>
+        </div>
+
+        <form method="get" class="jr-filter">
+            <div class="jr-field">
+                <label for="jr-cedula">Cédula del responsable</label>
+                <input
+                    type="text"
+                    id="jr-cedula"
+                    name="cedula"
+                    value="{{ cedula_filtro }}"
+                    placeholder="Escribe el número de cédula"
+                >
+            </div>
+
+            <div class="jr-field">
+                <label for="jr-estado">Estado del proceso</label>
+                <select name="estado" id="jr-estado">
+                    <option value="">Todos los estados</option>
+                    {% for valor, etiqueta in estados %}
+                    <option value="{{ valor }}" {% if estado_filtro == valor %}selected{% endif %}>
+                        {{ etiqueta }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="jr-btn jr-btn-primary">
+                <svg class="jx-i"><use href="#i-search"/></svg>
+                Filtrar
+            </button>
+
+            <a href="{% url 'inventario:regularizaciones_lista' %}" class="jr-btn">
+                Limpiar
+            </a>
+        </form>
+    </section>
+
+    <section class="jr-panel">
+        <div class="jr-panel-head">
+            <div>
+                <h2>Historial de procesos</h2>
+                <p>Consulta el avance y los resultados de cada regularización.</p>
+            </div>
+            <span class="jr-status">{{ page_obj.paginator.count }} procesos</span>
+        </div>
+
+        <div class="jr-table-wrap">
+            <table class="jr-table">
+                <thead>
+                    <tr>
+                        <th>Responsable</th>
+                        <th>Estado</th>
+                        <th>Activos</th>
+                        <th>Pendientes</th>
+                        <th>Recibidos</th>
+                        <th>Por verificar</th>
+                        <th>Creación</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proceso in regularizaciones %}
+                    <tr>
+                        <td>
+                            <div class="jr-main-cell">{{ proceso.nombre_origen|default:"Sin nombre" }}</div>
+                            <div class="jr-sub-cell">C.C. {{ proceso.cedula_origen }}</div>
+                        </td>
+                        <td>
+                            <span class="jr-status
+                                {% if proceso.estado == 'EN_RECUPERACION' %}jr-status-open
+                                {% elif proceso.estado == 'COMPLETADA' %}jr-status-done
+                                {% elif proceso.estado == 'CANCELADA' %}jr-status-cancel
+                                {% endif %}">
+                                {{ proceso.get_estado_display }}
+                            </span>
+                        </td>
+                        <td><span class="jr-number">{{ proceso.total_items }}</span></td>
+                        <td><span class="jr-number">{{ proceso.pendientes }}</span></td>
+                        <td><span class="jr-number">{{ proceso.recibidos }}</span></td>
+                        <td><span class="jr-number">{{ proceso.no_localizados|add:proceso.en_verificacion }}</span></td>
+                        <td>{{ proceso.creado_en|date:"d/m/Y" }}<div class="jr-sub-cell">{{ proceso.creado_en|date:"H:i" }}</div></td>
+                        <td>
+                            <a class="jr-action" href="{% url 'inventario:regularizacion_detalle' proceso.pk %}">
+                                Ver detalle →
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="jr-empty">
+                                <strong>No hay regularizaciones registradas</strong>
+                                <p>Cuando inicies un proceso, aparecerá aquí su seguimiento.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% include "inventario/_paginacion.html" %}
+
+</div>
+{% endblock %}

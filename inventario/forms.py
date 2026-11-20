@@ -249,7 +249,10 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             self.initial["estados_entrega"] = self.instance.estados_entrega or []
             self._preparar_edicion()
         for field in self.fields.values():
-            field.widget.attrs["class"] = "form-control"
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs["class"] = "form-check-input"
+            else:
+                field.widget.attrs["class"] = "form-control"
 
     def _preparar_edicion(self):
         """Ajustes al corregir una intervención ya registrada.
@@ -450,6 +453,7 @@ class AsignacionRadioForm(forms.ModelForm):
         - Si se elige un puesto del catálogo, el cliente y el puesto se copian
           de él; si no, hay que escribirlos.
     """
+
     ESTADOS = [
         "estado_radio_entrega", "estado_base_entrega",
         "estado_cargador_entrega", "estado_antena_entrega",
@@ -615,6 +619,17 @@ class RadioForm(forms.ModelForm):
         - El estado del radio es uno de los 4 estados; los de las piezas usan
           Bueno, Regular, Dañado o No tiene.
     """
+    MODALIDADES_SERVICIO = [
+        ("", "Seleccione una modalidad"),
+        ("Punto a punto", "Punto a punto"),
+        ("Repetidora", "Repetidora"),
+    ]
+    modalidad_servicio = forms.ChoiceField(
+        label="Modalidad de servicio",
+        choices=MODALIDADES_SERVICIO,
+        required=False,
+    )
+
     ESTADOS = [
         ("", "Sin dato"),
         ("Bueno", "Bueno"),
@@ -626,17 +641,52 @@ class RadioForm(forms.ModelForm):
         "bateria_1", "bateria_2", "perilla_encendido", "perilla_frecuencia",
         "antena", "clip", "base", "cargador",
     ]
+    ESTADOS_ACCESORIO_UNIFICADO = [
+        ("", "Sin dato"),
+        ("No tiene", "No tiene"),
+        ("Bueno", "Bueno"),
+        ("Regular", "Regular"),
+        ("Dañado", "Dañado"),
+    ]
+    # Campos virtuales: combinan presencia y condición sin agregar columnas.
+    base_unificado = forms.ChoiceField(
+        label="Base de carga", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+    cargador_unificado = forms.ChoiceField(
+        label="Cargador", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+    antena_unificada = forms.ChoiceField(
+        label="Antena", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+    clip_unificado = forms.ChoiceField(
+        label="Clip", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+    perilla_encendido_unificada = forms.ChoiceField(
+        label="Perilla de encendido", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+    perilla_frecuencia_unificada = forms.ChoiceField(
+        label="Perilla de frecuencia", choices=ESTADOS_ACCESORIO_UNIFICADO, required=False
+    )
+
+    CAMPOS_ACCESORIOS_UNIFICADOS = {
+        "base_unificado": ("base", "estado_base"),
+        "cargador_unificado": ("cargador", "estado_cargador"),
+        "antena_unificada": ("antena", "estado_antena"),
+        "clip_unificado": ("clip", "estado_clip"),
+        "perilla_encendido_unificada": ("perilla_encendido", "estado_perilla_encendido"),
+        "perilla_frecuencia_unificada": ("perilla_frecuencia", "estado_perilla_frecuencia"),
+    }
 
     class Meta:
         model = Radio
         fields = [
             "codigo_fisico", "placa", "serial",
             "marca", "modelo", "tipo_frecuencia", "modalidad_servicio",
-            "estado_radio", "estado_base", "estado_cargador",
-            "estado_antena", "estado_baterias",
-            "estado_perilla_encendido", "estado_perilla_frecuencia", "estado_clip",
-            "bateria_1", "bateria_2", "perilla_encendido",
-            "perilla_frecuencia", "antena", "clip", "base", "cargador",
+            "estado_radio", "estado_baterias",
+            "bateria_1", "bateria_2",
+            "base_unificado", "cargador_unificado", "antena_unificada",
+            "clip_unificado", "perilla_encendido_unificada",
+            "perilla_frecuencia_unificada",
             "software_programacion", "version_software", "tipo_licencia",
             "licencia_software", "fecha_compra",
             "observaciones", "requiere_revision", "motivo_revision",
@@ -655,7 +705,14 @@ class RadioForm(forms.ModelForm):
             "estado_perilla_encendido": "Estado de la perilla de encendido",
             "estado_perilla_frecuencia": "Estado de la perilla de frecuencia",
             "estado_clip": "Estado del clip",
-            "bateria_1": "Batería 1",
+            "base_unificado": "Base de carga",
+            "cargador_unificado": "Cargador",
+            "antena_unificada": "Antena",
+            "clip_unificado": "Clip",
+            "perilla_encendido_unificada": "Perilla de encendido",
+            "perilla_frecuencia_unificada": "Perilla de frecuencia",
+            "bateria_1": "Batería 1 (presencia)",
+            "bateria_2": "Batería 2 (presencia)",
             "bateria_2": "Batería 2",
             "perilla_encendido": "Perilla de encendido",
             "perilla_frecuencia": "Perilla de frecuencia",
@@ -680,10 +737,15 @@ class RadioForm(forms.ModelForm):
         """
         super().__init__(*args, **kwargs)
 
-        for campo in ("estado_radio", "estado_base", "estado_cargador",
-                      "estado_antena", "estado_baterias",
-                      "estado_perilla_encendido", "estado_perilla_frecuencia",
-                      "estado_clip"):
+        # Conserva modalidades históricas que no estén en la lista nueva.
+        modalidad_actual = getattr(self.instance, "modalidad_servicio", "")
+        if modalidad_actual and modalidad_actual not in dict(self.MODALIDADES_SERVICIO):
+            self.fields["modalidad_servicio"].choices = [
+                *self.MODALIDADES_SERVICIO,
+                (modalidad_actual, f"{modalidad_actual} (valor existente)"),
+            ]
+
+        for campo in ("estado_radio", "estado_baterias"):
             actual = getattr(self.instance, campo, "")
             if campo == "estado_radio":
                 opciones = [("", "Sin dato"), *Radio.ESTADOS]
@@ -691,12 +753,32 @@ class RadioForm(forms.ModelForm):
                 opciones = list(self.ESTADOS)
             # Conserva valores libres que vienen de importaciones.
             if actual and actual not in dict(opciones):
-                opciones.append((actual, actual))
+                opciones.append((actual, f"{actual} (valor existente)"))
             self.fields[campo] = forms.ChoiceField(
                 label=self.Meta.labels[campo], choices=opciones,
                 required=False,
             )
-        for campo in self.ACCESORIOS:
+
+        # Inicializa cada selector unificado desde los dos campos históricos.
+        for nombre, (campo_presencia, campo_estado) in self.CAMPOS_ACCESORIOS_UNIFICADOS.items():
+            presencia = getattr(self.instance, campo_presencia, None)
+            estado = (getattr(self.instance, campo_estado, "") or "").strip()
+            if presencia is False or estado.lower() == "no tiene":
+                inicial = "No tiene"
+            elif estado:
+                inicial = estado
+                opciones = list(self.fields[nombre].choices)
+                if estado not in dict(opciones):
+                    opciones.append((estado, f"{estado} (valor existente)"))
+                    self.fields[nombre].choices = opciones
+            else:
+                # Si el accesorio existe pero no tiene condición registrada,
+                # mostrar "Sin dato" sin inventar un estado adicional.
+                inicial = ""
+            self.fields[nombre].initial = inicial
+        # Las baterías conservan presencia independiente; el modelo solo
+        # dispone de un estado compartido para ambas.
+        for campo in ("bateria_1", "bateria_2"):
             self.fields[campo] = forms.NullBooleanField(
                 label=self.Meta.labels.get(campo, campo.capitalize()),
                 required=False,
@@ -714,6 +796,32 @@ class RadioForm(forms.ModelForm):
         for nombre, field in self.fields.items():
             if nombre != "requiere_revision":
                 field.widget.attrs["class"] = "form-control"
+
+    def save(self, commit=True):
+        """Guarda los selectores unificados en los campos históricos del modelo.
+
+        No crea columnas ni requiere migraciones. Los campos de presencia y
+        estado existentes siguen siendo la fuente persistente.
+        """
+        instance = super().save(commit=False)
+        for nombre, (campo_presencia, campo_estado) in self.CAMPOS_ACCESORIOS_UNIFICADOS.items():
+            valor = self.cleaned_data.get(nombre, "")
+            if valor == "No tiene":
+                setattr(instance, campo_presencia, False)
+                setattr(instance, campo_estado, "No tiene")
+            elif valor:
+                # Acepta y conserva estados históricos importados.
+                setattr(instance, campo_presencia, True)
+                setattr(instance, campo_estado, valor)
+            else:
+                # "Sin dato" no debe borrar información histórica. En un radio
+                # nuevo, los campos permanecen en sus valores vacíos iniciales.
+                pass
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
     def clean_placa(self):
         """Normaliza la placa (sin espacios, mayúsculas) y verifica que no se repita."""
@@ -829,9 +937,36 @@ class EquipoForm(forms.ModelForm):
         opciones += [(x, x) for x in sedes]
         self.fields["ubicacion"].widget = forms.Select(choices=opciones)
         self.fields["ubicacion"].help_text = "Con la sede, el equipo aparece en el mapa del inicio."
+        asignacion_activa = None
         if self.instance.pk:
             # La placa identifica al equipo en las importaciones y en T.MANT.
             self.fields["placa"].disabled = True
+            asignacion_activa = (
+                self.instance.asignaciones
+                .filter(estado=AsignacionEquipo.Estado.ASIGNADO)
+                .select_related("funcionario")
+                .order_by("-fecha_entrega", "-id")
+                .first()
+            )
+        if asignacion_activa:
+            funcionario = asignacion_activa.funcionario
+            self.fields["responsable_nombre"].initial = (
+                funcionario.nombre_completo if funcionario
+                else asignacion_activa.nombre_recibe
+            )
+            self.fields["responsable_cedula"].initial = (
+                funcionario.cedula if funcionario
+                else asignacion_activa.cedula_recibe
+            )
+        self.fields["responsable_nombre"].disabled = True
+        self.fields["responsable_cedula"].disabled = True
+        self.fields["responsable_nombre"].help_text = (
+            "Se muestra el responsable de la entrega activa. "
+            "Los cambios se registran desde Entregas y actas."
+        )
+        self.fields["responsable_cedula"].help_text = (
+            "La identificación se toma de la persona vinculada a la entrega activa."
+        )
         for nombre, field in self.fields.items():
             if nombre != "requiere_revision":
                 field.widget.attrs["class"] = "form-control"
@@ -879,6 +1014,26 @@ class DetalleComputadorForm(DetalleForm):
     "licencias"; sin él, ni se muestran ni se pueden modificar.
     """
     LICENCIAS = ["licencia_so", "licencia_antivirus", "licencia_office"]
+    CLASES = [
+        ("Portátil / Laptop", "Portátil / Laptop"),
+        ("Escritorio torre", "Escritorio torre"),
+        ("Todo en uno", "Todo en uno"),
+        ("Servidor", "Servidor"),
+        ("Android", "Android"),
+        ("Otro", "Otro"),
+    ]
+    clase = forms.ChoiceField(
+        label="Clase",
+        choices=[("", "Seleccione la clase"), *CLASES],
+        required=False,
+        help_text="Elija la clase que corresponda al equipo.",
+    )
+    telefono_ip_asignado = forms.BooleanField(
+        label="Tiene teléfono IP asignado",
+        required=False,
+        help_text="Marque esta opción para registrar un teléfono IP.",
+        widget=forms.CheckboxInput(attrs={"data-telefono-ip-toggle": ""}),
+    )
 
     class Meta:
         model = DetalleComputador
@@ -922,10 +1077,71 @@ class DetalleComputadorForm(DetalleForm):
     def __init__(self, *args, ver_licencias=False, **kwargs):
         """Quita los campos de licencia si ``ver_licencias`` es falso."""
         super().__init__(*args, **kwargs)
+        actual = (getattr(self.instance, "clase", "") or "").strip()
+        opciones = list(self.fields["clase"].choices)
+        if actual and actual not in dict(opciones):
+            opciones.append((actual, f"{actual} (valor actual)"))
+        self.fields["clase"].choices = opciones
+
+        es_tableta = (
+            getattr(getattr(self.instance, "equipo", None), "tipo", "")
+            == Equipo.Tipo.TABLETA
+        )
+        if es_tableta:
+            # Estos componentes son propios de una estación de trabajo; no
+            # se solicitan en tabletas. Al excluirlos del ModelForm, cualquier
+            # dato histórico que existiera queda intacto en la base de datos.
+            for campo in (
+                "mouse", "teclado", "monitor_serial", "monitor_modelo",
+                "monitor2_serial", "monitor2_modelo", "ups_serial",
+                "ups_modelo", "telefono_ip_asignado",
+                "telefono_ip_serial", "telefono_ip_modelo",
+            ):
+                self.fields.pop(campo, None)
+        else:
+            telefono_actual = bool(
+                getattr(self.instance, "telefono_ip_serial", "")
+                or getattr(self.instance, "telefono_ip_modelo", "")
+            )
+            if not self.is_bound:
+                self.initial["telefono_ip_asignado"] = telefono_actual
+
+            habilitado = bool(self["telefono_ip_asignado"].value())
+            toggle = self.fields["telefono_ip_asignado"]
+            toggle.widget.attrs["class"] = "telefono-ip-toggle"
+            for campo in ("telefono_ip_serial", "telefono_ip_modelo"):
+                widget = self.fields[campo].widget
+                widget.attrs["class"] = "form-control telefono-ip-input"
+                widget.attrs["data-telefono-ip-field"] = ""
+                if habilitado:
+                    widget.attrs.pop("disabled", None)
+                else:
+                    widget.attrs["disabled"] = "disabled"
+
+            # El check aparece inmediatamente antes de los datos del teléfono.
+            orden = list(self.fields)
+            orden.remove("telefono_ip_asignado")
+            indice = orden.index("telefono_ip_serial")
+            orden.insert(indice, "telefono_ip_asignado")
+            self.order_fields(orden)
+
         if not ver_licencias:
             # Sin el permiso, las claves ni se muestran ni se modifican.
             for campo in self.LICENCIAS:
                 del self.fields[campo]
+
+    def save(self, commit=True):
+        instancia = super().save(commit=False)
+        if (
+            "telefono_ip_asignado" in self.fields
+            and not self.cleaned_data.get("telefono_ip_asignado")
+        ):
+            instancia.telefono_ip_serial = ""
+            instancia.telefono_ip_modelo = ""
+        if commit:
+            instancia.save()
+            self.save_m2m()
+        return instancia
 
 
 class DetalleImpresoraForm(DetalleForm):

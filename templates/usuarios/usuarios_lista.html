@@ -1,165 +1,106 @@
-{% comment %}
-Accesos a la plataforma: lista de cuentas con su rol y estado (vista usuarios_lista; solo superusuarios).
-{% endcomment %}
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de usuarios | JANO Inventario</title>
-    <script>
-        /* Tema claro/oscuro: se fija antes de pintar para evitar el parpadeo (el botón vive en static/js/tema.js). */
-        (function () {
-            var t = null;
-            try { t = localStorage.getItem("jano-tema"); } catch (e) {}
-            if (t !== "dark" && t !== "light") {
-                t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-            }
-            document.documentElement.setAttribute("data-tema", t);
-        })();
-    </script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 30px;
-            background: #f4f5f9;
-            color: #080808;
-        }
 
-        h1 {
-            color: #080D79;
-        }
+{% block title %}Accesos a la plataforma{% endblock %}
+{% block page_heading %}Accesos a la plataforma{% endblock %}
 
-        .contenedor {
-            max-width: 1100px;
-            margin: auto;
-        }
-
-        .tabla-contenedor {
-            overflow-x: auto;
-            background: white;
-            border-radius: 8px;
-            padding: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background: #080D79;
-            color: white;
-        }
-
-        .activo {
-            color: #247a36;
-            font-weight: bold;
-        }
-
-        .inactivo {
-            color: #b42318;
-            font-weight: bold;
-        }
-
-        a {
-            color: #080D79;
-        }
-
-        /* Modo oscuro (se activa con data-tema="dark", ver static/js/tema.js) */
-        html[data-tema="dark"] { color-scheme: dark; }
-        html[data-tema="dark"] body { background: #0c1020; color: #e6e9f5; }
-        html[data-tema="dark"] h1,
-        html[data-tema="dark"] a { color: #aab1ff; }
-        html[data-tema="dark"] main,
-        html[data-tema="dark"] .tabla-contenedor { background: #151a2c; }
-        html[data-tema="dark"] th,
-        html[data-tema="dark"] td { border-bottom-color: #2a3254; }
-        html[data-tema="dark"] th { background: #1a23b8; color: #fff; }
-        html[data-tema="dark"] input,
-        html[data-tema="dark"] select { background: #10142a; color: #e6e9f5; border-color: #2a3254; }
-        html[data-tema="dark"] .ayuda { color: #abb1bb; }
-        html[data-tema="dark"] .errorlist,
-        html[data-tema="dark"] .inactivo { color: #e19e9e; }
-        html[data-tema="dark"] .activo { color: #8fd69a; }
-        html[data-tema="dark"] button { background: #1a23b8; color: #fff; }
-    </style>
-    <link rel="stylesheet" href="{% static 'css/16-modo-oscuro.css' %}?v=20261104a">
-    <script src="{% static 'js/tema.js' %}?v=20261104a" defer></script>
-</head>
-<body>
-    <main class="contenedor">
-        <h1>Gestión de usuarios</h1>
-        <p>JANO Inventario | Seguridad JANO Ltda.</p>
-
-      <p>
-    <a href="{% url 'inicio' %}">Volver al inicio</a>
-    |
-    <a href="{% url 'usuario_crear' %}">Crear usuario nuevo</a>
-</p>
+{% block content %}
+<div class="jx-head jx-head-compact">
+    <div>
+        <h1>Accesos a la plataforma</h1>
+        <p>{{ total }} cuenta{{ total|pluralize }} de acceso a JANO Inventario. Los accesos a SEIF, Novasoft y otros sistemas se administran por separado.</p>
+    </div>
+    <div class="jx-head-actions">
+        <a class="jx-btn" href="{% url 'inventario:personas_lista' %}">Directorio de personas</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_accesoplataforma_changelist' %}">Accesos externos</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_plataformaacceso_changelist' %}">Plataformas</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_perfilplataforma_changelist' %}">Perfiles</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_controlssiusuario_changelist' %}">Controles SSI</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_activoinformacionssi_changelist' %}">Matriz SSI</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_catalogossi_changelist' %}">Catálogos SSI</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_vinculacionpersona_changelist' %}">Vinculaciones</a>
+        <a class="jx-btn" href="{% url 'admin:inventario_sede_changelist' %}">Sedes</a>
+        <a class="jx-btn jx-btn-primary" href="{% url 'usuario_crear' %}"><svg class="jx-i"><use href="#i-plus"/></svg>Crear cuenta</a>
+    </div>
+</div>
 
 {% if messages %}
-    {% for message in messages %}
-        <p>{{ message }}</p>
-    {% endfor %}
+<div class="jx-messages" role="status">
+    {% for message in messages %}<div class="jx-alert jx-alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+</div>
 {% endif %}
 
-        <div class="tabla-contenedor">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Nombre</th>
-                        <th>Correo</th>
-                        <th>Tipo de acceso</th>
-                        <th>Estado</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for usuario in usuarios %}
-                    <tr>
-                        <td>{{ usuario.username }}</td>
-                        <td>{{ usuario.get_full_name|default:"—" }}</td>
-                        <td>{{ usuario.email|default:"—" }}</td>
-                        <td>
-    {% if usuario.is_superuser %}
-        Administrador
-    {% elif usuario.groups.all %}
-        {% for grupo in usuario.groups.all %}
-            {{ grupo.name }}{% if not forloop.last %}, {% endif %}
-        {% empty %}
-            Usuario estándar
-        {% endfor %}
-    {% else %}
-        Usuario estándar
+<form method="get" class="jx-filterbar" aria-label="Buscar y filtrar cuentas">
+    <label class="jx-filter-search">
+        <svg class="jx-i"><use href="#i-search"/></svg>
+        <span class="sr-only">Buscar usuario, cédula o persona</span>
+        <input type="search" name="q" value="{{ q }}" placeholder="Usuario, cédula, nombre, área o correo…">
+    </label>
+    <label class="jx-select"><span>Estado</span>
+        <select name="estado" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+            <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Es staff</span>
+        <select name="staff" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="si" {% if staff == 'si' %}selected{% endif %}>Sí</option>
+            <option value="no" {% if staff == 'no' %}selected{% endif %}>No</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Superusuario</span>
+        <select name="superusuario" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="si" {% if superusuario == 'si' %}selected{% endif %}>Sí</option>
+            <option value="no" {% if superusuario == 'no' %}selected{% endif %}>No</option>
+        </select>
+    </label>
+    <label class="jx-select"><span>Grupo</span>
+        <select name="grupo" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for nombre in grupos %}<option value="{{ nombre }}" {% if grupo == nombre %}selected{% endif %}>{{ nombre }}</option>{% endfor %}
+        </select>
+    </label>
+    <button class="jx-btn jx-btn-primary" type="submit">Buscar</button>
+    {% if q or estado or staff or superusuario or grupo %}<a class="jx-chip-clear" href="{% url 'usuarios_lista' %}">Limpiar filtros</a>{% endif %}
+</form>
+
+<section class="jx-card jx-card-flush">
+    <div class="jx-table-wrap">
+        <table class="jx-table">
+            <thead><tr>
+                <th>Usuario</th><th>Nombre completo</th><th>Correo</th><th>Cédula</th>
+                <th>Área</th><th>Último ingreso</th><th>Activo</th>
+                <th>Staff</th><th>Superusuario</th><th></th>
+            </tr></thead>
+            <tbody>
+            {% for usuario in usuarios %}
+                <tr>
+                    <td><strong>{{ usuario.username }}</strong></td>
+                    <td>{{ usuario.get_full_name|default:"—" }}</td>
+                    <td>{{ usuario.email|default:"—" }}</td>
+                    <td>{{ usuario.persona_directorio.cedula|default:"—" }}</td>
+                    <td>{{ usuario.persona_directorio.area|default:"—" }}</td>
+                    <td>{% if usuario.last_login %}{{ usuario.last_login|date:"d/m/Y H:i" }}{% else %}<span class="muted">Sin ingresos registrados</span>{% endif %}</td>
+                    <td>{% if usuario.is_active %}<span class="jx-badge jx-badge-ok">Activo</span>{% else %}<span class="jx-badge jx-badge-bad">Inactivo</span>{% endif %}</td>
+                    <td>{% if usuario.is_staff %}Sí{% else %}No{% endif %}</td>
+                    <td>{% if usuario.is_superuser %}Sí{% else %}No{% endif %}</td>
+                    <td><a class="jx-btn jx-btn-sm" href="{% url 'usuario_editar' usuario.pk %}">Editar</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="10"><div class="jx-empty"><svg class="jx-i"><use href="#i-users"/></svg><p>No hay cuentas que coincidan con estos filtros.</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="jx-table-foot" aria-label="Paginación">
+        {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&estado={{ estado|urlencode }}&staff={{ staff|urlencode }}&superusuario={{ superusuario|urlencode }}&grupo={{ grupo|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&estado={{ estado|urlencode }}&staff={{ staff|urlencode }}&superusuario={{ superusuario|urlencode }}&grupo={{ grupo|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
     {% endif %}
-</td>
-                        <td>
-                            {% if usuario.is_active %}
-                                <span class="activo">Activo</span>
-                            {% else %}
-                                <span class="inactivo">Inactivo</span>
-                            {% endif %}
-                        </td>
-                        <td><a href="{% url 'usuario_editar' usuario.pk %}">Editar</a></td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">No hay usuarios registrados.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </main>
-</body>
-</html>
+</section>
+{% endblock %}
