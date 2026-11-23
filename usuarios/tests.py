@@ -19,6 +19,7 @@ class UsuarioEditarTests(TestCase):
 
     def datos(self, **cambios):
         datos = {
+            "cedula": "1029984706",
             "first_name": "Darka",
             "last_name": "Prueba",
             "email": "darka@example.com",

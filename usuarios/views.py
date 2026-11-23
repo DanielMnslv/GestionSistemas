@@ -31,9 +31,23 @@ def login_view(request):
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
 
+        usuario_autenticacion = username
+        if username.isdigit():
+            # Cuentas heredadas pueden conservar un username antiguo (p. ej.
+            # k.ruiz) si ya están enlazadas a la persona del directorio.
+            from inventario.models import Funcionario
+
+            persona = (
+                Funcionario.objects.select_related("usuario_jano")
+                .filter(cedula=username)
+                .first()
+            )
+            if persona and persona.usuario_jano_id:
+                usuario_autenticacion = persona.usuario_jano.get_username()
+
         user = authenticate(
             request,
-            username=username,
+            username=usuario_autenticacion,
             password=password,
         )
 

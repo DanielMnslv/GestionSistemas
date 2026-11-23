@@ -6,6 +6,8 @@
     background: #f6f7f9;
 }
 
+.login-screen .tema-flotante { display: none !important; }
+
 .login-screen .login-container {
     display: grid;
     grid-template-columns: 45% 55%;
@@ -78,6 +80,16 @@
     font-size: 23px;
     font-weight: 700;
     letter-spacing: 0;
+}
+
+.login-platform-title {
+    display: block;
+    margin-bottom: 8px;
+    color: #30358f;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
 }
 
 .login-screen .login-heading p {
@@ -182,15 +194,6 @@
 
 .login-screen .login-button:hover { background: #252a7b; }
 
-.login-first-time {
-    margin: 24px 8px 0;
-    color: #687184;
-    font-size: 11px;
-    line-height: 1.45;
-}
-
-.login-first-time strong { color: #293142; }
-
 .login-alert {
     margin: 0 0 16px;
     padding: 10px 12px;
@@ -199,6 +202,39 @@
     background: #fff0f0;
     color: #9b2424;
     font-size: 13px;
+}
+
+/* El acceso mantiene el estándar claro aunque el usuario use tema oscuro dentro de la plataforma. */
+html[data-tema="dark"] .login-screen,
+html[data-tema="dark"] .login-screen .login-container,
+html[data-tema="dark"] .login-screen .login-form-container {
+    background: #f6f7f9;
+}
+
+html[data-tema="dark"] .login-screen .login-form input {
+    border: 1px solid #dce2ed;
+    background: #e8effc;
+    color: #202638;
+}
+
+html[data-tema="dark"] .login-screen .login-form input:focus {
+    border-color: #30358f;
+    outline: 2px solid #c8d32b;
+}
+
+html[data-tema="dark"] .login-screen .login-heading h1,
+html[data-tema="dark"] .login-screen .login-form label {
+    color: #202638;
+}
+
+html[data-tema="dark"] .login-screen .login-heading p,
+html[data-tema="dark"] .login-screen .login-field-help {
+    color: #687184;
+}
+
+html[data-tema="dark"] .login-screen .login-button {
+    background: #30358f;
+    color: #fff;
 }
 
 @media (max-width: 760px) {

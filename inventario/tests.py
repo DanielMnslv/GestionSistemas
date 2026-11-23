@@ -53,10 +53,79 @@ class MantenimientoTipoIntervencionTests(TestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Protegemos con Propósito")
+        self.assertContains(respuesta, "Plataforma de Gestión Sistemas")
         self.assertContains(respuesta, "Número de cédula")
         self.assertContains(respuesta, "¿Olvidaste tu contraseña?")
         self.assertContains(respuesta, "login-password-toggle")
-        self.assertNotContains(respuesta, "JANO INVENTARIO</span>")
+        self.assertNotContains(respuesta, "¿Primera vez?")
+
+
+class AccesoPorCedulaTests(TestCase):
+    def test_editar_usuario_permite_asignar_cedula_y_vincula_persona(self):
+        from inventario.models import Funcionario
+        from usuarios.forms import UsuarioEditarForm
+
+        usuario = get_user_model().objects.create_user(
+            username="k.ruiz", password="ClaveSegura123!",
+            first_name="Kevin", last_name="Ruiz", email="kevin@example.com",
+        )
+        persona = Funcionario.objects.create(
+            cedula="1029984706", nombre_completo="Kevin Ruiz Bohorquez",
+        )
+        formulario = UsuarioEditarForm(
+            data={
+                "cedula": persona.cedula,
+                "first_name": "Kevin",
+                "last_name": "Ruiz",
+                "email": "kevin@example.com",
+                "is_active": "on",
+                "rol": "Técnico de mantenimiento",
+            },
+            instance=usuario,
+        )
+
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        formulario.save()
+        usuario.refresh_from_db()
+        persona.refresh_from_db()
+        self.assertEqual(usuario.username, persona.cedula)
+        self.assertEqual(persona.usuario_jano, usuario)
+
+    def test_login_acepta_cedula_de_persona_vinculada_a_usuario_heredado(self):
+        from inventario.models import Funcionario
+
+        usuario = get_user_model().objects.create_user(
+            username="k.ruiz", password="ClaveSegura123!",
+        )
+        Funcionario.objects.create(
+            cedula="1029984706", nombre_completo="Kevin Ruiz",
+            usuario_jano=usuario,
+        )
+
+        respuesta = self.client.post(
+            reverse("login"),
+            {"username": "1029984706", "password": "ClaveSegura123!"},
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(self.client.session["_auth_user_id"], str(usuario.pk))
+
+    def test_pantalla_de_edicion_muestra_cedula(self):
+        admin = get_user_model().objects.create_superuser(
+            username="admin", password="ClaveSegura123!",
+        )
+        usuario = get_user_model().objects.create_user(
+            username="k.ruiz", password="ClaveSegura123!",
+        )
+        self.client.force_login(admin)
+
+        respuesta = self.client.get(
+            reverse("usuario_editar", args=[usuario.pk]),
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, 'name="cedula"')
+        self.assertContains(respuesta, "Número de cédula")
 
 
 class EquipoFormCatalogoYPropiedadTests(TestCase):
