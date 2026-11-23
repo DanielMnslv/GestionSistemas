@@ -1967,7 +1967,7 @@ html[data-tema="dark"] .pf-solo {
     color: #a8acc0;
 }
 html[data-tema="dark"] .pf-sin {
-    color: #efd6a6;
+    color: #b5bdc9;
 }
 html[data-tema="dark"] .pf-vacio-dato {
     background: #50482e;
@@ -1978,7 +1978,7 @@ html[data-tema="dark"] .pf-vacio-dato strong {
 }
 html[data-tema="dark"] .eq-panel .pf-secciones > .pf-card dl > div.pf-fila-vacia,
 html[data-tema="dark"] .pf-fila-vacia {
-    background: #50482e;
+    background: #353a43;
 }
 html[data-tema="dark"] .pf-na {
     color: #8d93af;

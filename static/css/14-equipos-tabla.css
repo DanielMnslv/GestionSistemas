@@ -181,14 +181,14 @@
 .pf-solo input { width: 15px; height: 15px; margin: 0; accent-color: #080D79; }
 
 /* ---------- Ficha: datos vacíos, siempre visibles ---------- */
-.pf-sin { color: #8A5A00; font-weight: 700; }
+.pf-sin { color: #687386; font-weight: 700; }
 
 .pf-vacio-dato { background: #FFF3CF; border-color: #F2D58A !important; }
 
 .pf-vacio-dato strong { color: #8A5A00; }
 
 .eq-panel .pf-secciones > .pf-card dl > div.pf-fila-vacia,
-.pf-fila-vacia { padding: 7px 6px; border-radius: 6px; background: #FFF3CF; }
+.pf-fila-vacia { padding: 7px 6px; border-radius: 6px; background: #F1F3F5; }
 
 .pf-obs-vacia { margin: 0; padding: 7px 8px; border-radius: 6px; }
 
