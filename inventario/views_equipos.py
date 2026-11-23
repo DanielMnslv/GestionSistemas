@@ -1268,6 +1268,19 @@ def render_equipo_pestanas(
         for titulo, filas in agrupar_detalle(equipo, request.user)
         if filas
     ]
+    # En la ficha solo se omiten los datos de red vacíos; el resto de
+    # características opcionales se conserva para que siga visible el esquema.
+    secciones_filtradas = []
+    for titulo, filas in secciones_detalle:
+        if titulo == "Red y comunicaciones":
+            filas = [
+                (etiqueta, valor)
+                for etiqueta, valor in filas
+                if str(valor or "").strip() not in {"", "-", "–", "—"}
+            ]
+        if filas:
+            secciones_filtradas.append((titulo, filas))
+    secciones_detalle = secciones_filtradas
     if puede(request.user, "equipos") and formulario_edicion is None:
         formulario_edicion = EquipoForm(instance=equipo)
         detalle_edicion = formulario_detalle(equipo, usuario=request.user)
@@ -1290,6 +1303,7 @@ def render_equipo_pestanas(
             primera_entrega=not equipo.asignaciones.exists()
         )
 
+    observaciones = (equipo.observaciones or "").strip()
     return render(request, "inventario/equipo_pestanas.html", {
         "equipo": equipo,
         "ficha": ficha_modal(equipo, request.user),
@@ -1297,6 +1311,7 @@ def render_equipo_pestanas(
         "formulario_entrega": formulario_entrega,
         "clausula": CLAUSULA_EQUIPOS,
         "secciones_detalle": secciones_detalle,
+        "observaciones_visibles": observaciones not in {"", "-", "–", "—"},
         "formulario_edicion": formulario_edicion,
         "detalle_edicion": detalle_edicion,
         "pasos_edicion": pasos_edicion,
@@ -1366,6 +1381,7 @@ def equipo_crear(request):
 
 
 @login_required
+@xframe_options_sameorigin
 @requiere_permiso("equipos")
 def equipo_editar(request, placa):
     """Edición de un equipo; los radios se redirigen a su propio formulario.

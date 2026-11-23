@@ -95,8 +95,10 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
             </div>
             {% endif %}
 
+            {% if observaciones_visibles %}
             <h3 class="rd-subtitle">Observaciones</h3>
-            <p class="rd-note">{% if equipo.observaciones %}{{ equipo.observaciones|linebreaksbr }}{% else %}-{% endif %}</p>
+            <p class="rd-note">{{ equipo.observaciones|linebreaksbr }}</p>
+            {% endif %}
         </div>
     </section>
 

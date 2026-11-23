@@ -2468,9 +2468,40 @@ class InventarioEquiposVistasTests(TestCase):
         )
 
         self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta["X-Frame-Options"], "SAMEORIGIN")
         self.assertEqual(respuesta.context["pestana_inicial"], "editar")
         self.assertIn("serial", respuesta.context["formulario_edicion"].errors)
         self.assertContains(respuesta, 'id="panel-editar"')
+
+    def test_ficha_oculta_solo_red_vacia_y_observaciones_sin_contenido(self):
+        detalle = self.pc.computador
+        detalle.mac_ethernet = "00-11-22-33-44-55"
+        detalle.mac_wifi = ""
+        detalle.ip_ethernet = ""
+        detalle.ip_wifi = ""
+        detalle.imei = ""
+        detalle.linea_celular = ""
+        detalle.save()
+        self.pc.observaciones = " - "
+        self.pc.save(update_fields=["observaciones"])
+        self.client.force_login(self.encargado)
+
+        respuesta = self.client.get(
+            reverse("inventario:equipo_pestanas", args=[self.pc.placa])
+        )
+
+        secciones = dict(respuesta.context["secciones_detalle"])
+        self.assertEqual(
+            secciones["Red y comunicaciones"],
+            [("MAC Ethernet", "00-11-22-33-44-55")],
+        )
+        self.assertFalse(respuesta.context["observaciones_visibles"])
+        self.assertTrue(any(
+            valor == ""
+            for titulo, filas in secciones.items()
+            if titulo != "Red y comunicaciones"
+            for _, valor in filas
+        ))
 
     def test_lista_muestra_pestanas_en_todos_los_equipos_no_radio(self):
         tipos = (
