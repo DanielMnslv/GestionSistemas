@@ -199,13 +199,9 @@ GRUPOS_DETALLE = {
 GRUPOS_DETALLE["TABLETA"] = [
     ("Características de la tableta", ["clase", "procesador",
                    "capacidad_disco", "capacidad_ram"]),
-    ("Accesorios de tableta", ["regulador", "parlantes", "webcam"]),
-    ("Sistema y licencias", ["sistema_operativo", "licencia_so", "antivirus",
-                              "licencia_antivirus", "vencimiento_antivirus",
-                              "office", "licencia_office"]),
-    ("Software", ["software_licenciado", "software_libre"]),
-    ("Red y comunicaciones", ["mac_ethernet", "mac_wifi", "ip_ethernet",
-                               "ip_wifi", "imei", "linea_celular"]),
+    ("Sistema y aplicaciones", ["sistema_operativo", "software_licenciado",
+                                 "software_libre"]),
+    ("Conectividad", ["mac_wifi", "ip_wifi", "imei", "linea_celular"]),
 ]
 
 DETALLE_NO_APLICA_TABLETA = {
@@ -213,6 +209,9 @@ DETALLE_NO_APLICA_TABLETA = {
     "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
     "telefono_ip_serial", "telefono_ip_modelo",
     "velocidad_procesador", "tipo_disco", "tipo_ram",
+    "regulador", "parlantes", "webcam", "licencia_so", "antivirus",
+    "licencia_antivirus", "vencimiento_antivirus", "office",
+    "licencia_office", "mac_ethernet", "ip_ethernet",
 }
 
 # Pares modelo + serial que se muestran en una sola fila: (clave, etiqueta, campo modelo, campo serial).
@@ -1115,6 +1114,27 @@ def grupos_detalle_formulario(detalle):
         return []
     campos = list(detalle)
     nombres = {campo.name for campo in campos}
+    instancia = getattr(detalle, "instance", detalle)
+    tipo_equipo = getattr(getattr(instancia, "equipo", None), "tipo", "")
+    if tipo_equipo == Equipo.Tipo.TABLETA:
+        grupos_tableta = [
+            ("Características de la tableta", {
+                "clase", "procesador", "capacidad_disco", "capacidad_ram",
+            }),
+            ("Sistema y aplicaciones", {
+                "sistema_operativo", "software_licenciado", "software_libre",
+            }),
+            ("Conectividad", {"mac_wifi", "ip_wifi", "imei", "linea_celular"}),
+        ]
+        return [
+            {
+                "titulo": titulo,
+                "campos": [campo for campo in campos if campo.name in nombres_grupo],
+                "computador": True,
+            }
+            for titulo, nombres_grupo in grupos_tableta
+            if any(campo.name in nombres_grupo for campo in campos)
+        ]
     if "sistema_operativo" not in nombres:
         return [{"titulo": "Características", "campos": campos, "computador": False}]
 

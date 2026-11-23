@@ -69,8 +69,9 @@ class MantenimientoTipoIntervencionTests(TestCase):
         self.assertLess(html.index("Observaciones"), html.index("Nombre de quien recibe"))
         self.assertLess(html.index("Nombre de quien recibe"), html.index("Firma de quien recibe"))
 
-    def test_formulario_de_tableta_no_pide_perifericos_ni_campos_de_pc(self):
+    def test_formulario_de_tableta_solo_pide_datos_relevantes_del_dispositivo(self):
         from inventario.models import DetalleComputador
+        from inventario.views_equipos import grupos_detalle_formulario
 
         tableta = Equipo.objects.create(placa="TAB-MT1", tipo=Equipo.Tipo.TABLETA)
         detalle = DetalleComputador(equipo=tableta)
@@ -80,12 +81,25 @@ class MantenimientoTipoIntervencionTests(TestCase):
             "mouse", "teclado", "monitor_serial", "monitor_modelo",
             "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
             "telefono_ip_serial", "telefono_ip_modelo", "velocidad_procesador",
-            "tipo_disco", "tipo_ram",
+            "tipo_disco", "tipo_ram", "regulador", "parlantes", "webcam",
+            "licencia_so", "antivirus", "licencia_antivirus",
+            "vencimiento_antivirus", "office", "licencia_office",
+            "mac_ethernet", "ip_ethernet",
         }
         self.assertTrue(no_aplican.isdisjoint(formulario.fields))
+        self.assertTrue({
+            "clase", "procesador", "capacidad_disco", "capacidad_ram",
+            "sistema_operativo", "software_licenciado", "software_libre",
+            "mac_wifi", "ip_wifi", "imei", "linea_celular",
+        }.issubset(formulario.fields))
         clases = dict(formulario.fields["clase"].choices)
         self.assertIn("Tableta Android", clases)
         self.assertNotIn("Escritorio torre", clases)
+        grupos = grupos_detalle_formulario(formulario)
+        self.assertEqual(
+            [grupo["titulo"] for grupo in grupos],
+            ["Características de la tableta", "Sistema y aplicaciones", "Conectividad"],
+        )
 
     def test_mantenimiento_acepta_firma_jpeg_adjunta(self):
         from django.core.files.uploadedfile import SimpleUploadedFile

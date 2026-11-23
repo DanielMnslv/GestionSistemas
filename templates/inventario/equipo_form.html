@@ -63,15 +63,30 @@ Vista guardar_equipo (views_equipos.py). Al registrar ofrece «Guardar y entrega
                 <span class="ficha-section-number">02</span>
                 Características del {{ equipo.get_tipo_display|lower }}
             </h3>
-            <div class="ficha-form-grid">
-                {% for field in detalle %}
-                    {% if field.widget_type == "textarea" %}
-                        {% include "inventario/_campo.html" with ancho_completo=True %}
-                    {% else %}
-                        {% include "inventario/_campo.html" %}
-                    {% endif %}
+            {% if equipo.tipo == "TABLETA" %}
+                {% for grupo in grupos_detalle %}
+                <h4 class="ficha-subsection-heading">{{ grupo.titulo }}</h4>
+                <div class="ficha-form-grid">
+                    {% for field in grupo.campos %}
+                        {% if field.widget_type == "textarea" %}
+                            {% include "inventario/_campo.html" with ancho_completo=True %}
+                        {% else %}
+                            {% include "inventario/_campo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
                 {% endfor %}
-            </div>
+            {% else %}
+                <div class="ficha-form-grid">
+                    {% for field in detalle %}
+                        {% if field.widget_type == "textarea" %}
+                            {% include "inventario/_campo.html" with ancho_completo=True %}
+                        {% else %}
+                            {% include "inventario/_campo.html" %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
                 {% if not permisos.licencias %}
                 <p class="ficha-field-help">Las claves de licencia solo las ven y editan el técnico y el administrador.</p>

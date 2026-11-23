@@ -1450,15 +1450,18 @@ class DetalleComputadorForm(DetalleForm):
             == Equipo.Tipo.TABLETA
         )
         if es_tableta:
-            # Estos componentes son propios de una estación de trabajo; no
-            # se solicitan en tabletas. Al excluirlos del ModelForm, cualquier
-            # dato histórico que existiera queda intacto en la base de datos.
+            # La tableta no requiere los periféricos, especificaciones de
+            # computador ni campos de licenciamiento propios de escritorio.
+            # Los datos históricos quedan intactos en la base de datos.
             for campo in (
                 "mouse", "teclado", "monitor_serial", "monitor_modelo",
                 "monitor2_serial", "monitor2_modelo", "ups_serial",
                 "ups_modelo", "telefono_ip_asignado",
                 "telefono_ip_serial", "telefono_ip_modelo",
                 "velocidad_procesador", "tipo_disco", "tipo_ram",
+                "regulador", "parlantes", "webcam", "licencia_so",
+                "antivirus", "licencia_antivirus", "vencimiento_antivirus",
+                "office", "licencia_office", "mac_ethernet", "ip_ethernet",
             ):
                 self.fields.pop(campo, None)
             # El mismo modelo técnico sirve para computadores y tabletas,
@@ -1498,7 +1501,7 @@ class DetalleComputadorForm(DetalleForm):
         if not ver_licencias:
             # Sin el permiso, las claves ni se muestran ni se modifican.
             for campo in self.LICENCIAS:
-                del self.fields[campo]
+                self.fields.pop(campo, None)
 
     def save(self, commit=True):
         instancia = super().save(commit=False)

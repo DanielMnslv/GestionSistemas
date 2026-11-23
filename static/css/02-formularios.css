@@ -88,6 +88,14 @@
     font-size: 16px;
 }
 
+.ficha-subsection-heading {
+    margin: 22px 0 14px;
+    padding-top: 16px;
+    border-top: 1px solid var(--jano-border, #E2E6EF);
+    color: var(--jano-blue);
+    font-size: 14px;
+}
+
 .ficha-section-number {
     display: grid;
     width: 34px;
