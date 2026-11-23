@@ -108,6 +108,7 @@
 }
 
 .ficha-field { min-width: 0; }
+.ficha-field[hidden] { display: none !important; }
 
 .ficha-field.full-width { grid-column: 1 / -1; }
 

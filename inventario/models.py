@@ -2,7 +2,7 @@
 
 Cada clase es una tabla de la base de datos. Grupos principales:
 
-- Equipos: ``Equipo`` (registro comÃºn de todo activo de TI) y sus detalles uno
+- Equipos: ``Equipo`` (registro común de todo activo de TI) y sus detalles uno
   a uno por tipo: ``Radio``, ``DetalleComputador``, ``DetalleImpresora``,
   ``DetalleGPS`` y ``DetalleAlarma``.
 - Mantenimiento: ``MantenimientoEquipo`` (intervenciones realizadas),
@@ -11,15 +11,15 @@ Cada clase es una tabla de la base de datos. Grupos principales:
 - Entregas: ``AsignacionRadio`` (radio a un puesto de un cliente, recibe el
   supervisor), ``AsignacionEquipo`` (equipo a un funcionario) y
   ``TransferenciaComponentesRadio`` (accesorios que pasan de un radio a otro).
-- Personas y catÃ¡logos: ``Funcionario``, ``Cliente``, ``Puesto``,
+- Personas y catálogos: ``Funcionario``, ``Cliente``, ``Puesto``,
   ``RetiroFuncionario`` e ``ItemRetiro`` (paz y salvo).
-- Seguridad informÃ¡tica: ``VerificacionPolitica``, ``RenovacionAntivirus``,
+- Seguridad informática: ``VerificacionPolitica``, ``RenovacionAntivirus``,
   ``AvisoAntivirus`` y ``CambioGPS``.
 - Mesa de ayuda: ``Ticket``, ``EventoTicket`` y ``FotoTicket``.
-- Control: ``RegistroAuditoria`` (quiÃ©n hizo quÃ©).
+- Control: ``RegistroAuditoria`` (quién hizo qué).
 
 Casi todas las tablas tienen ``public_id`` (UUID estable) para identificar el
-registro ante otras plataformas (API de integraciÃ³n con GestiÃ³n TIC).
+registro ante otras plataformas (API de integración con Gestión TIC).
 """
 import uuid
 
@@ -31,23 +31,23 @@ from .estados import tono_estado
 
 
 class Equipo(models.Model):
-    """Activo de TI: radio, computador, impresora, GPS, alarmaâ€¦
+    """Activo de TI: radio, computador, impresora, GPS, alarma…
 
-    ReÃºne los datos comunes y concentra mantenimientos, alertas y
+    Reúne los datos comunes y concentra mantenimientos, alertas y
     programaciones. Los datos propios de cada tipo viven en tablas de
     detalle uno a uno (por ejemplo, Radio).
 
     Reglas:
-        - ``placa`` es Ãºnica entre todos los equipos.
+        - ``placa`` es única entre todos los equipos.
         - Un equipo dado de baja (``activo=False``) conserva su historial,
           pero sale del inventario vigente, de las alertas y de las entregas.
         - ``responsable_*`` y ``ubicacion`` reflejan la entrega vigente; las
-          vistas de entrega y devoluciÃ³n los actualizan.
+          vistas de entrega y devolución los actualizan.
         - ``requiere_revision`` marca equipos con datos dudosos que alguien
-          debe verificar fÃ­sicamente.
+          debe verificar físicamente.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Tipo(models.TextChoices):
@@ -57,17 +57,21 @@ class Equipo(models.Model):
         COMPUTADOR = "COMPUTADOR", "Computador"
         TABLETA = "TABLETA", "Tableta"
         IMPRESORA = "IMPRESORA", "Impresora"
-        ESCANER = "ESCANER", "EscÃ¡ner"
+        ESCANER = "ESCANER", "Escáner"
         GPS = "GPS", "GPS"
         ALARMA = "ALARMA", "Alarma"
         UPS = "UPS", "UPS"
         OTRO = "OTRO", "Otro"
 
     class EstadoOperativo(models.TextChoices):
-        """Si el equipo funciona o no (vacÃ­o = sin dato)."""
+        """Si el equipo funciona o no (vacío = sin dato)."""
 
         OPERATIVO = "OPERATIVO", "Operativo"
         NO_OPERATIVO = "NO_OPERATIVO", "No operativo"
+
+    class Propiedad(models.TextChoices):
+        SEGURIDAD_JANO = "SEGURIDAD JANO", "SEGURIDAD JANO"
+        ARRENDADO = "ARRENDADO", "ARRENDADO"
 
     placa = models.CharField(max_length=50, unique=True)
     tipo = models.CharField(max_length=20, choices=Tipo.choices, db_index=True)
@@ -77,7 +81,13 @@ class Equipo(models.Model):
     propiedad = models.CharField(
         max_length=100,
         blank=True,
-        help_text="Propio, arrendado, de JANOTECâ€¦",
+        choices=Propiedad.choices,
+        help_text="Selecciona si pertenece a SEGURIDAD JANO o es ARRENDADO.",
+    )
+    proveedor_arrendamiento = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Nombre o razón social del proveedor",
     )
     fecha_compra = models.DateField(null=True, blank=True)
     estado_operativo = models.CharField(
@@ -90,7 +100,7 @@ class Equipo(models.Model):
 
     @property
     def estado_texto(self):
-        """Estado a mostrar: el del radio (Operativo, Regular, DaÃ±ado, Baja)
+        """Estado a mostrar: el del radio (Operativo, Regular, Dañado, Baja)
         si es un radio; si no, el estado operativo del equipo."""
         radio = getattr(self, "radio", None)
         if radio is not None and radio.estado_radio:
@@ -105,7 +115,7 @@ class Equipo(models.Model):
             "Baja": "red", "No operativo": "red",
         }.get(self.estado_texto, "gray")
 
-    # QuiÃ©n tiene el equipo y dÃ³nde estÃ¡ hoy. Las entregas los actualizan.
+    # Quién tiene el equipo y dónde está hoy. Las entregas los actualizan.
     responsable_nombre = models.CharField(max_length=200, blank=True)
     responsable_cedula = models.CharField(max_length=50, blank=True)
     ubicacion = models.CharField(max_length=200, blank=True)
@@ -127,11 +137,11 @@ class Equipo(models.Model):
         return f"{self.placa} ({self.get_tipo_display()})"
 
     def actualizar_estado_operativo(self):
-        """Toma el estado operativo del Ãºltimo mantenimiento que lo indique.
+        """Toma el estado operativo del último mantenimiento que lo indique.
 
-        Solo cuentan las intervenciones que dejaron el equipo Â«OperativoÂ» o
-        Â«No operativoÂ» (Â«Pendiente de pruebasÂ» no cambia nada). Devuelve True
-        si el estado cambiÃ³.
+        Solo cuentan las intervenciones que dejaron el equipo «Operativo» o
+        «No operativo» («Pendiente de pruebas» no cambia nada). Devuelve True
+        si el estado cambió.
         """
         ultimo = (
             self.mantenimientos.filter(estado_final__in=[
@@ -149,27 +159,27 @@ class Equipo(models.Model):
 
 
 class Radio(models.Model):
-    """Radio de comunicaciÃ³n (detalle del Equipo de tipo RADIO).
+    """Radio de comunicación (detalle del Equipo de tipo RADIO).
 
-    Guarda la identificaciÃ³n, el estado de cada accesorio y a quÃ© cliente y
-    puesto estÃ¡ entregado hoy. Al guardar, ``sincronizar_equipo`` crea o
+    Guarda la identificación, el estado de cada accesorio y a qué cliente y
+    puesto está entregado hoy. Al guardar, ``sincronizar_equipo`` crea o
     actualiza su registro en ``Equipo`` para que el radio aparezca en el
     inventario general, los mantenimientos y los informes.
 
     Reglas:
-        - La placa (RJ) es Ãºnica cuando no estÃ¡ vacÃ­a.
+        - La placa (RJ) es única cuando no está vacía.
         - ``estado_radio`` es uno de los 4 estados: Operativo, Regular,
-          DaÃ±ado o Baja. Si se marca "Baja", el radio queda inactivo.
-        - Los accesorios (``bateria_1`` â€¦ ``cargador``) son SÃ­/No/Sin dato.
-        - ``coordinador_zona`` es el supervisor del puesto que lo recibiÃ³;
+          Dañado o Baja. Si se marca "Baja", el radio queda inactivo.
+        - Los accesorios (``bateria_1`` … ``cargador``) son Sí/No/Sin dato.
+        - ``coordinador_zona`` es el supervisor del puesto que lo recibió;
           ``cliente_asignado`` y ``puesto_asignado`` copian la entrega vigente.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     # La placa (RJ) es el identificador del radio.
     codigo_fisico = models.CharField(
-        "CÃ³digo fÃ­sico",
+        "Código físico",
         max_length=50,
         blank=True,
     )
@@ -180,19 +190,19 @@ class Radio(models.Model):
         db_index=True,
     )
     serial = models.CharField(
-        "NÃºmero de serie",
+        "Número de serie",
         max_length=100,
         blank=True,
         db_index=True,
     )
 
-    # IdentificaciÃ³n del equipo.
+    # Identificación del equipo.
     marca = models.CharField(max_length=100, blank=True)
     modelo = models.CharField(max_length=100, blank=True)
     tipo_frecuencia = models.CharField(max_length=50, blank=True)
     modalidad_servicio = models.CharField(max_length=100, blank=True)
 
-    # Accesorios del inventario fÃ­sico.
+    # Accesorios del inventario físico.
     bateria_1 = models.BooleanField(null=True, blank=True)
     bateria_2 = models.BooleanField(null=True, blank=True)
     perilla_encendido = models.BooleanField(null=True, blank=True)
@@ -203,7 +213,7 @@ class Radio(models.Model):
     cargador = models.BooleanField(null=True, blank=True)
 
     # Estados registrados en las fuentes operativas.
-    # Estado Ãºnico del radio: Operativo, Regular, DaÃ±ado o Baja.
+    # Estado único del radio: Operativo, Regular, Dañado o Baja.
     estado_radio = models.CharField(max_length=100, blank=True)
     estado_base = models.CharField(max_length=100, blank=True)
     estado_cargador = models.CharField(max_length=100, blank=True)
@@ -214,7 +224,7 @@ class Radio(models.Model):
     estado_clip = models.CharField(max_length=100, blank=True)
     mantenimiento = models.CharField(max_length=50, blank=True)
 
-    # InformaciÃ³n operativa actual.
+    # Información operativa actual.
     coordinador_zona = models.CharField(max_length=200, blank=True)
     cedula_funcionario = models.CharField(max_length=50, blank=True)
     cliente_asignado = models.CharField(max_length=200, blank=True)
@@ -240,7 +250,7 @@ class Radio(models.Model):
     fecha_baja = models.DateField(null=True, blank=True)
     motivo_baja = models.TextField(blank=True)
 
-    # InformaciÃ³n adicional de la hoja BASEDATOS-RADIOS.
+    # Información adicional de la hoja BASEDATOS-RADIOS.
     software_programacion = models.CharField(max_length=200, blank=True)
     version_software = models.CharField(max_length=50, blank=True)
     tipo_licencia = models.CharField(max_length=100, blank=True)
@@ -279,7 +289,7 @@ class Radio(models.Model):
 
     @classmethod
     def normalizar_estado(cls, texto):
-        """Lleva un texto libre ("Bueno", "malo"â€¦) a uno de los 4 estados.
+        """Lleva un texto libre ("Bueno", "malo"…) a uno de los 4 estados.
         Devuelve "" si no se reconoce."""
         t = (texto or "").strip().lower()
         if not t:
@@ -298,7 +308,7 @@ class Radio(models.Model):
         """Guarda el radio y sincroniza su registro en Equipo.
 
         Si el estado es "Baja", lo desactiva y fija la fecha de baja (hoy, si
-        no tenÃ­a). Respeta ``update_fields`` agregando los campos que cambia.
+        no tenía). Respeta ``update_fields`` agregando los campos que cambia.
         """
         if self.estado_radio == self.ESTADO_BAJA and self.activo:
             self.activo = False
@@ -313,7 +323,7 @@ class Radio(models.Model):
         """Campos de Equipo que se copian desde el radio.
 
         Traduce el estado del radio al estado operativo del equipo (Regular
-        cuenta como operativo) y arma la ubicaciÃ³n como "cliente - puesto".
+        cuenta como operativo) y arma la ubicación como "cliente - puesto".
         """
         return {
             "tipo": Equipo.Tipo.RADIO,
@@ -357,7 +367,7 @@ class Radio(models.Model):
         """Crea o actualiza el Equipo asociado con los datos del radio.
 
         Usa ``update`` en lugar de ``save`` para no disparar de nuevo la
-        sincronizaciÃ³n ni las seÃ±ales de auditorÃ­a del Equipo.
+        sincronización ni las señales de auditoría del Equipo.
         """
         datos = {"placa": self.placa_equipo(), **self.datos_equipo()}
         if self.equipo_id:
@@ -370,48 +380,48 @@ class Radio(models.Model):
 
 
 class MantenimientoEquipo(models.Model):
-    """IntervenciÃ³n realizada a un equipo (preventivo, correctivoâ€¦).
+    """Intervención realizada a un equipo (preventivo, correctivo…).
 
-    Es el historial tÃ©cnico del equipo. El preventivo vence seis meses
-    despuÃ©s de la Ãºltima intervenciÃ³n (ver ``inventario/estado_mantenimiento.py``).
+    Es el historial técnico del equipo. El preventivo vence seis meses
+    después de la última intervención (ver ``inventario/estado_mantenimiento.py``).
 
     Campos clave:
         - ``actividades_preventivas``: lista de claves de lo revisado.
         - ``componentes_intervenidos``: partes tocadas en un correctivo
           (claves de ``inventario/actividades_mantenimiento.py``).
-        - ``estados_entrega``: cÃ³mo queda el equipo (``EstadoEntrega``).
-        - ``ticket``: solicitud de soporte que originÃ³ la intervenciÃ³n.
+        - ``estados_entrega``: cómo queda el equipo (``EstadoEntrega``).
+        - ``ticket``: solicitud de soporte que originó la intervención.
         - ``origen_archivo``/``origen_hoja``/``fila_origen``: trazabilidad de
           los registros importados del Sheet; evitan importarlos dos veces.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Tipo(models.TextChoices):
-        """Clase de intervenciÃ³n."""
+        """Clase de intervención."""
 
         PREVENTIVO = "PREVENTIVO", "Mantenimiento preventivo"
         CORRECTIVO = "CORRECTIVO", "Mantenimiento correctivo"
-        INSPECCION = "INSPECCION", "InspecciÃ³n"
-        DIAGNOSTICO = "DIAGNOSTICO", "DiagnÃ³stico"
-        REPARACION = "REPARACION", "ReparaciÃ³n"
-        CORRECCION = "CORRECCION", "CorrecciÃ³n"
-        OTRO = "OTRO", "Otra operaciÃ³n"
+        INSPECCION = "INSPECCION", "Inspección"
+        DIAGNOSTICO = "DIAGNOSTICO", "Diagnóstico"
+        REPARACION = "REPARACION", "Reparación"
+        CORRECCION = "CORRECCION", "Corrección"
+        OTRO = "OTRO", "Otra operación"
 
-    # Los que se ofrecen al registrar o programar; los demÃ¡s quedan solo
+    # Los que se ofrecen al registrar o programar; los demás quedan solo
     # para registros viejos e importaciones.
     TIPOS_FORMULARIO = ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO", "CORRECCION"]
 
     class Resultado(models.TextChoices):
-        """Si la intervenciÃ³n resolviÃ³ el problema."""
+        """Si la intervención resolvió el problema."""
 
         SOLUCIONADO = "SOLUCIONADO", "Solucionado"
-        PARCIAL = "PARCIAL", "SoluciÃ³n parcial"
+        PARCIAL = "PARCIAL", "Solución parcial"
         PENDIENTE = "PENDIENTE", "Pendiente"
 
     class EstadoFinal(models.TextChoices):
-        """CÃ³mo quedÃ³ el equipo al terminar la intervenciÃ³n."""
+        """Cómo quedó el equipo al terminar la intervención."""
 
         OPERATIVO = "OPERATIVO", "Operativo"
         NO_OPERATIVO = "NO_OPERATIVO", "No operativo"
@@ -421,7 +431,7 @@ class MantenimientoEquipo(models.Model):
         )
 
     class EstadoEntrega(models.TextChoices):
-        """DecisiÃ³n tÃ©cnica al entregar el equipo despuÃ©s del mantenimiento."""
+        """Decisión técnica al entregar el equipo después del mantenimiento."""
 
         OPERATIVO = "OPERATIVO", "Equipo queda operativo"
         SEGUNDO_NIVEL = "SEGUNDO_NIVEL", "Requiere mantenimiento de segundo nivel"
@@ -429,12 +439,12 @@ class MantenimientoEquipo(models.Model):
         BAJA = "BAJA", "No se repara (baja)"
 
     ACTIVIDADES_PREVENTIVAS = [
-        ("componentes_internos", "VerificaciÃ³n de componentes internos"),
-        ("pantalla_monitor", "VerificaciÃ³n de pantalla o monitor"),
-        ("mouse_teclado", "VerificaciÃ³n de mouse y teclado"),
-        ("fuente_adaptador", "VerificaciÃ³n de fuente o adaptador de energÃ­a"),
-        ("perifericos_externos", "VerificaciÃ³n de perifÃ©ricos externos"),
-        ("prueba_funcionamiento", "VerificaciÃ³n de funcionamiento posterior al mantenimiento"),
+        ("componentes_internos", "Verificación de componentes internos"),
+        ("pantalla_monitor", "Verificación de pantalla o monitor"),
+        ("mouse_teclado", "Verificación de mouse y teclado"),
+        ("fuente_adaptador", "Verificación de fuente o adaptador de energía"),
+        ("perifericos_externos", "Verificación de periféricos externos"),
+        ("prueba_funcionamiento", "Verificación de funcionamiento posterior al mantenimiento"),
         ("otros", "Otros"),
     ]
 
@@ -446,7 +456,7 @@ class MantenimientoEquipo(models.Model):
     )
 
     fecha_intervencion = models.DateTimeField(
-        verbose_name="Fecha y hora de la intervenciÃ³n",
+        verbose_name="Fecha y hora de la intervención",
         db_index=True,
     )
 
@@ -460,7 +470,7 @@ class MantenimientoEquipo(models.Model):
     funcionario_responsable = models.ForeignKey(
         "Funcionario", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="mantenimientos_equipo",
-        help_text="Funcionario responsable al momento de la intervenciÃ³n.",
+        help_text="Funcionario responsable al momento de la intervención.",
     )
     motivo = models.TextField()
     diagnostico = models.TextField(blank=True)
@@ -487,7 +497,7 @@ class MantenimientoEquipo(models.Model):
 
     observaciones = models.TextField(blank=True)
 
-    # Solicitud (ticket) que originÃ³ la intervenciÃ³n, si la hay.
+    # Solicitud (ticket) que originó la intervención, si la hay.
     ticket = models.ForeignKey(
         "Ticket",
         on_delete=models.SET_NULL,
@@ -504,8 +514,8 @@ class MantenimientoEquipo(models.Model):
 
     registrado_en = models.DateTimeField(auto_now_add=True)
 
-    # Trazabilidad de importaciones histÃ³ricas.
-    # Los registros manuales pueden dejar estos campos vacÃ­os.
+    # Trazabilidad de importaciones históricas.
+    # Los registros manuales pueden dejar estos campos vacíos.
     origen_archivo = models.CharField(
         max_length=255,
         blank=True,
@@ -525,7 +535,7 @@ class MantenimientoEquipo(models.Model):
 
 
     class Meta:
-        verbose_name = "IntervenciÃ³n de mantenimiento"
+        verbose_name = "Intervención de mantenimiento"
         verbose_name_plural = "Historial de intervenciones"
         ordering = ["-fecha_intervencion", "-id"]
         indexes = [
@@ -544,16 +554,16 @@ class MantenimientoEquipo(models.Model):
 
 
     def save(self, *args, **kwargs):
-        """Guarda la intervenciÃ³n y actualiza el estado operativo del equipo.
+        """Guarda la intervención y actualiza el estado operativo del equipo.
 
-        Si esta es la intervenciÃ³n mÃ¡s reciente, el equipo queda Â«OperativoÂ»
-        o Â«No operativoÂ» segÃºn su estado final.
+        Si esta es la intervención más reciente, el equipo queda «Operativo»
+        o «No operativo» según su estado final.
         """
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
 
     def __str__(self):
-        """Placa, tipo de intervenciÃ³n y fecha."""
+        """Placa, tipo de intervención y fecha."""
         return (
             f"{self.equipo.placa} - "
             f"{self.get_tipo_display()} - "
@@ -564,16 +574,16 @@ class MantenimientoEquipo(models.Model):
 class MantenimientoProgramado(models.Model):
     """Visita de mantenimiento prevista para una fecha.
 
-    Al registrar la intervenciÃ³n correspondiente queda ``COMPLETADO`` y
+    Al registrar la intervención correspondiente queda ``COMPLETADO`` y
     enlazada en ``intervencion_realizada``. Las que siguen ``PROGRAMADO``
     con fecha pasada se muestran como atrasadas.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Estado(models.TextChoices):
-        """SituaciÃ³n de la visita."""
+        """Situación de la visita."""
 
         PROGRAMADO = "PROGRAMADO", "Programado"
         COMPLETADO = "COMPLETADO", "Completado"
@@ -596,7 +606,7 @@ class MantenimientoProgramado(models.Model):
 
     descripcion = models.TextField()
 
-    # Lo que se va a revisar, segÃºn el tipo de equipo y de mantenimiento
+    # Lo que se va a revisar, según el tipo de equipo y de mantenimiento
     # (claves de actividades_mantenimiento).
     actividades = models.JSONField(default=list, blank=True)
 
@@ -647,13 +657,13 @@ class MantenimientoProgramado(models.Model):
 class AlertaMantenimiento(models.Model):
     """Aviso por correo de que vence el preventivo de un equipo.
 
-    La crea y envÃ­a el comando ``procesar_alertas_mantenimiento``. Hay una
-    sola alerta por equipo y fecha de vencimiento; si el envÃ­o falla se
+    La crea y envía el comando ``procesar_alertas_mantenimiento``. Hay una
+    sola alerta por equipo y fecha de vencimiento; si el envío falla se
     reintenta y queda el error en ``detalle_error``.
     """
 
     class Estado(models.TextChoices):
-        """SituaciÃ³n del envÃ­o."""
+        """Situación del envío."""
 
         PENDIENTE = "PENDIENTE", "Pendiente"
         ENVIADA = "ENVIADA", "Enviada"
@@ -711,7 +721,7 @@ class AlertaMantenimiento(models.Model):
         ]
 
     def __str__(self):
-        """Placa, vencimiento y estado del envÃ­o."""
+        """Placa, vencimiento y estado del envío."""
         return (
             f"{self.equipo.placa} - "
             f"Vence {self.fecha_vencimiento:%d/%m/%Y} - "
@@ -720,19 +730,19 @@ class AlertaMantenimiento(models.Model):
 
 
 class AsignacionRadio(models.Model):
-    """Entrega de un radio a un puesto de un cliente (y su devoluciÃ³n).
+    """Entrega de un radio a un puesto de un cliente (y su devolución).
 
-    Recibe y firma el supervisor del puesto (``coordinador_zona``); la cÃ©dula
-    es opcional. Guarda el estado de cada pieza al entregar, la aceptaciÃ³n de
-    la clÃ¡usula y la firma, que se imprimen en el acta.
+    Recibe y firma el supervisor del puesto (``coordinador_zona``); la cédula
+    es opcional. Guarda el estado de cada pieza al entregar, la aceptación de
+    la cláusula y la firma, que se imprimen en el acta.
 
     Reglas:
         - Un radio solo puede tener una entrega en estado ``ASIGNADO``.
         - ``cliente_asignado``/``puesto_asignado`` guardan el texto aunque el
-          puesto del catÃ¡logo cambie o no exista (entregas antiguas).
+          puesto del catálogo cambie o no exista (entregas antiguas).
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Estado(models.TextChoices):
@@ -774,15 +784,15 @@ class AsignacionRadio(models.Model):
 
     observaciones_entrega = models.TextField(blank=True)
 
-    # Puesto del catÃ¡logo; cliente_asignado y puesto_asignado guardan el
-    # texto (tambiÃ©n para entregas anteriores al catÃ¡logo).
+    # Puesto del catálogo; cliente_asignado y puesto_asignado guardan el
+    # texto (también para entregas anteriores al catálogo).
     puesto = models.ForeignKey(
         "Puesto", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="asignaciones_radio",
     )
 
     # Estado del equipo al momento de la entrega (como en el formulario de
-    # Google: Bueno, Regular, DaÃ±ado o No tiene).
+    # Google: Bueno, Regular, Dañado o No tiene).
     estado_radio_entrega = models.CharField(max_length=100, blank=True)
     estado_base_entrega = models.CharField(max_length=100, blank=True)
     estado_cargador_entrega = models.CharField(max_length=100, blank=True)
@@ -814,7 +824,7 @@ class AsignacionRadio(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "AsignaciÃ³n de radio"
+        verbose_name = "Asignación de radio"
         verbose_name_plural = "Asignaciones de radios"
         ordering = ["-fecha_entrega", "-id"]
         constraints = [
@@ -826,7 +836,7 @@ class AsignacionRadio(models.Model):
         ]
 
     def __str__(self):
-        """Placa del radio, cÃ©dula de quien recibe y estado."""
+        """Placa del radio, cédula de quien recibe y estado."""
         return (
             f"{self.radio.placa or 'Sin placa'} - "
             f"{self.cedula_funcionario} - {self.estado}"
@@ -838,13 +848,13 @@ class AsignacionRadio(models.Model):
 
     @property
     def viene_del_formulario(self):
-        """True si la entrega se importÃ³ del formulario de Google."""
+        """True si la entrega se importó del formulario de Google."""
         texto = (self.observaciones_entrega or "").lstrip()
         return texto.startswith(self.PREFIJO_FORMULARIO)
 
     @property
     def observaciones_entrega_limpias(self):
-        """Observaciones sin el marcador tÃ©cnico de la importaciÃ³n."""
+        """Observaciones sin el marcador técnico de la importación."""
         texto = (self.observaciones_entrega or "").strip()
         if texto.startswith(self.PREFIJO_FORMULARIO):
             texto = texto[len(self.PREFIJO_FORMULARIO):].strip()
@@ -858,7 +868,7 @@ class AsignacionRadio(models.Model):
             ("Base", self.estado_base_entrega),
             ("Cargador", self.estado_cargador_entrega),
             ("Antena", self.estado_antena_entrega),
-            ("BaterÃ­as", self.estado_baterias_entrega),
+            ("Baterías", self.estado_baterias_entrega),
         )
         return [
             {"nombre": n, "valor": v or "", "tono": tono_estado(v)}
@@ -869,7 +879,7 @@ class AsignacionRadio(models.Model):
 class TransferenciaComponentesRadio(models.Model):
     """Trazabilidad del movimiento de accesorios entre dos radios."""
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     radio_origen = models.ForeignKey(
@@ -906,9 +916,9 @@ class TransferenciaComponentesRadio(models.Model):
 
 
 class DetalleComputador(models.Model):
-    """Datos tÃ©cnicos de computadores y tabletas (uno a uno con Equipo).
+    """Datos técnicos de computadores y tabletas (uno a uno con Equipo).
 
-    Hardware, perifÃ©ricos, licencias (visibles solo con el permiso
+    Hardware, periféricos, licencias (visibles solo con el permiso
     "licencias"), antivirus con su vencimiento y datos de red. El
     vencimiento del antivirus alimenta los avisos y el informe de licencias.
     """
@@ -918,7 +928,7 @@ class DetalleComputador(models.Model):
     )
     clase = models.CharField(
         max_length=100, blank=True,
-        help_text="PortÃ¡til, escritorio, todo en uno, servidor, Androidâ€¦",
+        help_text="Portátil, escritorio, todo en uno, servidor, Android…",
     )
     procesador = models.CharField(max_length=150, blank=True)
     velocidad_procesador = models.CharField(max_length=50, blank=True)
@@ -941,7 +951,7 @@ class DetalleComputador(models.Model):
     telefono_ip_serial = models.CharField(max_length=100, blank=True)
     telefono_ip_modelo = models.CharField(max_length=150, blank=True)
 
-    # Las claves de licencia solo las ven el tÃ©cnico y el superusuario
+    # Las claves de licencia solo las ven el técnico y el superusuario
     # (permiso "licencias").
     sistema_operativo = models.CharField(max_length=150, blank=True)
     licencia_so = models.CharField(max_length=200, blank=True)
@@ -966,14 +976,14 @@ class DetalleComputador(models.Model):
 
 
 class DetalleImpresora(models.Model):
-    """Datos propios de impresoras y escÃ¡neres (uno a uno con Equipo)."""
+    """Datos propios de impresoras y escáneres (uno a uno con Equipo)."""
 
     equipo = models.OneToOneField(
         Equipo, on_delete=models.CASCADE, related_name="impresora"
     )
     clase = models.CharField(
         max_length=100, blank=True,
-        help_text="LÃ¡ser, tinta, multifuncionalâ€¦",
+        help_text="Láser, tinta, multifuncional…",
     )
 
     class Meta:
@@ -982,9 +992,9 @@ class DetalleImpresora(models.Model):
 
 
 class DetalleGPS(models.Model):
-    """Datos del GPS: IMEI, lÃ­nea, operador y vehÃ­culo donde estÃ¡ instalado.
+    """Datos del GPS: IMEI, línea, operador y vehículo donde está instalado.
 
-    Los cambios de lÃ­nea o vehÃ­culo se guardan en ``CambioGPS``.
+    Los cambios de línea o vehículo se guardan en ``CambioGPS``.
     """
 
     equipo = models.OneToOneField(
@@ -998,7 +1008,7 @@ class DetalleGPS(models.Model):
     fecha_asignacion = models.DateTimeField(null=True, blank=True)
     plataforma = models.CharField(
         max_length=100, blank=True,
-        help_text="Estado en la plataforma de rastreo (reporta, no reportaâ€¦).",
+        help_text="Estado en la plataforma de rastreo (reporta, no reporta…).",
     )
 
     class Meta:
@@ -1025,13 +1035,13 @@ class DetalleAlarma(models.Model):
 
 
 class Funcionario(models.Model):
-    """Personal administrativo que recibe computadores, impresorasâ€¦
+    """Personal administrativo que recibe computadores, impresoras…
 
-    La cÃ©dula es Ãºnica y tambiÃ©n es el usuario con el que el funcionario
+    La cédula es única y también es el usuario con el que el funcionario
     entra al portal "Mi soporte" (ver ``crear_cuentas_solicitantes``).
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class TipoPersona(models.TextChoices):
@@ -1079,14 +1089,14 @@ class Funcionario(models.Model):
         ordering = ["nombre_completo"]
 
     def __str__(self):
-        """Nombre y cÃ©dula."""
+        """Nombre y cédula."""
         return f"{self.nombre_completo} ({self.cedula})"
 
 
 class CambioGPS(models.Model):
-    """Historial de cambios de lÃ­nea, operador o vehÃ­culo de un GPS."""
+    """Historial de cambios de línea, operador o vehículo de un GPS."""
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     equipo = models.ForeignKey(
@@ -1137,14 +1147,14 @@ class AvisoAntivirus(models.Model):
 
 
 class AsignacionEquipo(models.Model):
-    """Entrega de un equipo (computador, impresora, tabletaâ€¦) a un
+    """Entrega de un equipo (computador, impresora, tableta…) a un
     funcionario. Las entregas de radios a puestos van en AsignacionRadio.
 
     Solo puede haber una entrega vigente (``ASIGNADO``) por equipo. Se copian
-    nombre y cÃ©dula de quien recibe para que el historial no cambie.
+    nombre y cédula de quien recibe para que el historial no cambie.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Estado(models.TextChoices):
@@ -1154,10 +1164,10 @@ class AsignacionEquipo(models.Model):
         DEVUELTO = "DEVUELTO", "Devuelto"
 
     class EstadoEntrega(models.TextChoices):
-        """CondiciÃ³n fÃ­sica del equipo al momento de entregarlo.
+        """Condición física del equipo al momento de entregarlo.
 
-        Queda en el acta firmada como constancia de cÃ³mo lo recibiÃ³ el
-        funcionario. Las entregas anteriores a este campo quedan vacÃ­as.
+        Queda en el acta firmada como constancia de cómo lo recibió el
+        funcionario. Las entregas anteriores a este campo quedan vacías.
         """
 
         NUEVO = "NUEVO", "Nuevo"
@@ -1171,7 +1181,7 @@ class AsignacionEquipo(models.Model):
         Funcionario, on_delete=models.PROTECT, related_name="asignaciones",
         null=True, blank=True,
     )
-    # Copia de quiÃ©n recibiÃ³, para entregas importadas sin funcionario
+    # Copia de quién recibió, para entregas importadas sin funcionario
     # registrado y para que el historial no cambie si se edita el
     # funcionario.
     nombre_recibe = models.CharField(max_length=200, blank=True)
@@ -1187,7 +1197,7 @@ class AsignacionEquipo(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name="equipos_entregados",
     )
-    # Estado del equipo al entregarlo (nuevo, usadoâ€¦); va en el acta firmada.
+    # Estado del equipo al entregarlo (nuevo, usado…); va en el acta firmada.
     estado_entrega = models.CharField(
         max_length=10, choices=EstadoEntrega.choices, blank=True,
     )
@@ -1225,10 +1235,10 @@ class AsignacionEquipo(models.Model):
 
 
 class VerificacionPolitica(models.Model):
-    """VerificaciÃ³n de la polÃ­tica de seguridad informÃ¡tica en un computador
+    """Verificación de la política de seguridad informática en un computador
     (puntos en inventario/politica.py)."""
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     equipo = models.ForeignKey(
@@ -1240,11 +1250,11 @@ class VerificacionPolitica(models.Model):
         max_length=200, blank=True,
         help_text="Funcionario responsable del equipo al momento de verificar.",
     )
-    # {"usuario_dominio": "CUMPLE", "usb_desactivado": "NO CUMPLE", â€¦}
+    # {"usuario_dominio": "CUMPLE", "usb_desactivado": "NO CUMPLE", …}
     respuestas = models.JSONField(default=dict)
     observaciones = models.TextField(blank=True)
     actualizacion = models.TextField(
-        blank=True, help_text="Actualizaciones realizadas (antivirus, Office, Windowsâ€¦).",
+        blank=True, help_text="Actualizaciones realizadas (antivirus, Office, Windows…).",
     )
     registrado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -1253,8 +1263,8 @@ class VerificacionPolitica(models.Model):
     importada = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = "VerificaciÃ³n de polÃ­tica de seguridad"
-        verbose_name_plural = "Verificaciones de polÃ­tica de seguridad"
+        verbose_name = "Verificación de política de seguridad"
+        verbose_name_plural = "Verificaciones de política de seguridad"
         ordering = ["-fecha", "-id"]
         constraints = [
             models.UniqueConstraint(
@@ -1263,12 +1273,12 @@ class VerificacionPolitica(models.Model):
         ]
 
     def __str__(self):
-        """Placa y fecha de la verificaciÃ³n."""
+        """Placa y fecha de la verificación."""
         return f"{self.equipo.placa} - {self.fecha:%d/%m/%Y}"
 
     @property
     def incumplimientos(self):
-        """Puntos de la polÃ­tica que no se cumplen en esta verificaciÃ³n."""
+        """Puntos de la política que no se cumplen en esta verificación."""
         from .politica import incumplimientos
 
         return incumplimientos(self.respuestas)
@@ -1277,7 +1287,7 @@ class VerificacionPolitica(models.Model):
 class Cliente(models.Model):
     """Cliente de Seguridad Jano (hoja CLIENTES_PUESTOS)."""
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     id_externo = models.CharField(max_length=20, unique=True, null=True, blank=True)
@@ -1298,7 +1308,7 @@ class Cliente(models.Model):
 class Puesto(models.Model):
     """Puesto de servicio de un cliente (sede y nombre del puesto)."""
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     id_externo = models.CharField(max_length=20, unique=True, null=True, blank=True)
@@ -1359,11 +1369,11 @@ class Sede(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.cliente.nombre} Â· {self.nombre}"
+        return f"{self.cliente.nombre} · {self.nombre}"
 
 
 class VinculacionPersona(models.Model):
-    """RelaciÃ³n histÃ³rica de una persona con cliente, sede y puesto."""
+    """Relación histórica de una persona con cliente, sede y puesto."""
 
     class Estado(models.TextChoices):
         ACTIVA = "ACTIVA", "Activa"
@@ -1396,7 +1406,7 @@ class VinculacionPersona(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "VinculaciÃ³n de persona"
+        verbose_name = "Vinculación de persona"
         verbose_name_plural = "Vinculaciones de personas"
         ordering = ["-fecha_inicio", "-id"]
         indexes = [
@@ -1427,9 +1437,9 @@ class VinculacionPersona(models.Model):
         if self.fecha_fin and self.fecha_inicio and self.fecha_fin < self.fecha_inicio:
             raise ValidationError({"fecha_fin": "No puede ser anterior a la fecha inicial."})
         if self.estado == self.Estado.ACTIVA and self.fecha_fin:
-            raise ValidationError({"fecha_fin": "Una vinculaciÃ³n activa no puede tener fecha final."})
+            raise ValidationError({"fecha_fin": "Una vinculación activa no puede tener fecha final."})
         if self.estado == self.Estado.FINALIZADA and not self.fecha_fin:
-            raise ValidationError({"fecha_fin": "Registra la fecha de finalizaciÃ³n."})
+            raise ValidationError({"fecha_fin": "Registra la fecha de finalización."})
         if self.sede_id and self.sede.cliente_id != self.cliente_id:
             raise ValidationError({"sede": "La sede debe pertenecer al cliente seleccionado."})
         if self.puesto_id and self.puesto.cliente_id != self.cliente_id:
@@ -1439,7 +1449,7 @@ class VinculacionPersona(models.Model):
 
 
 class PlataformaAcceso(models.Model):
-    """CatÃ¡logo de sistemas externos administrados desde JANO."""
+    """Catálogo de sistemas externos administrados desde JANO."""
 
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     nombre = models.CharField(max_length=120, unique=True)
@@ -1477,11 +1487,11 @@ class PerfilPlataforma(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.plataforma.nombre} Â· {self.nombre}"
+        return f"{self.plataforma.nombre} · {self.nombre}"
 
 
 class CatalogoSSI(models.Model):
-    """CatÃ¡logos de referencia provenientes de la matriz SSI."""
+    """Catálogos de referencia provenientes de la matriz SSI."""
 
     categoria = models.CharField(max_length=100)
     valor = models.CharField(max_length=150)
@@ -1489,8 +1499,8 @@ class CatalogoSSI(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name = "Dato de catÃ¡logo SSI"
-        verbose_name_plural = "CatÃ¡logos SSI"
+        verbose_name = "Dato de catálogo SSI"
+        verbose_name_plural = "Catálogos SSI"
         ordering = ["categoria", "valor"]
         constraints = [
             models.UniqueConstraint(
@@ -1503,9 +1513,9 @@ class CatalogoSSI(models.Model):
 
 
 class AccesoPlataforma(models.Model):
-    """AsignaciÃ³n vigente o histÃ³rica de una cuenta a una persona.
+    """Asignación vigente o histórica de una cuenta a una persona.
 
-    No almacena contraseÃ±as, tokens ni secretos de autenticaciÃ³n.
+    No almacena contraseñas, tokens ni secretos de autenticación.
     """
 
     class Estado(models.TextChoices):
@@ -1558,14 +1568,14 @@ class AccesoPlataforma(models.Model):
         if self.perfil_id and self.perfil.plataforma_id != self.plataforma_id:
             raise ValidationError({"perfil": "El perfil debe corresponder a la plataforma."})
         if self.fecha_asignacion and self.fecha_revocacion and self.fecha_revocacion < self.fecha_asignacion:
-            raise ValidationError({"fecha_revocacion": "No puede preceder a la asignaciÃ³n."})
+            raise ValidationError({"fecha_revocacion": "No puede preceder a la asignación."})
 
 
 class ControlSSIUsuario(models.Model):
-    """EvaluaciÃ³n histÃ³rica de controles de seguridad por persona."""
+    """Evaluación histórica de controles de seguridad por persona."""
 
     class Respuesta(models.TextChoices):
-        SI = "SI", "SÃ­"
+        SI = "SI", "Sí"
         NO = "NO", "No"
         NA = "NA", "No aplica"
 
@@ -1593,12 +1603,12 @@ class ControlSSIUsuario(models.Model):
 
 
 class ActivoInformacionSSI(models.Model):
-    """Activo de informaciÃ³n y clasificaciÃ³n de la matriz SSI."""
+    """Activo de información y clasificación de la matriz SSI."""
 
     class TipoActivo(models.TextChoices):
         HARDWARE = "HARDWARE", "Hardware"
         SOFTWARE = "SOFTWARE", "Software"
-        INFORMACION = "INFORMACION", "InformaciÃ³n"
+        INFORMACION = "INFORMACION", "Información"
         SERVICIO = "SERVICIO", "Servicio"
         OTRO = "OTRO", "Otro"
 
@@ -1622,8 +1632,8 @@ class ActivoInformacionSSI(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Activo de informaciÃ³n SSI"
-        verbose_name_plural = "Activos de informaciÃ³n SSI"
+        verbose_name = "Activo de información SSI"
+        verbose_name_plural = "Activos de información SSI"
         ordering = ["proceso", "activo"]
 
     def __str__(self):
@@ -1631,13 +1641,13 @@ class ActivoInformacionSSI(models.Model):
 
 
 class RenovacionAntivirus(models.Model):
-    """RenovaciÃ³n de la licencia de antivirus de un computador.
+    """Renovación de la licencia de antivirus de un computador.
 
     Al registrarla se actualizan antivirus, licencia y vencimiento en
     ``DetalleComputador``. ``importada`` marca las que vienen del Sheet.
     """
 
-    # Identificador pÃºblico estable para integraciÃ³n entre plataformas.
+    # Identificador público estable para integración entre plataformas.
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     equipo = models.ForeignKey(
         Equipo, on_delete=models.CASCADE, related_name="renovaciones_antivirus"
@@ -1653,7 +1663,7 @@ class RenovacionAntivirus(models.Model):
     importada = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = "RenovaciÃ³n de antivirus"
+        verbose_name = "Renovación de antivirus"
         verbose_name_plural = "Renovaciones de antivirus"
         ordering = ["-fecha", "-id"]
         constraints = [
@@ -1666,7 +1676,7 @@ class RenovacionAntivirus(models.Model):
 
 
 class RetiroFuncionario(models.Model):
-    """Retiro de un funcionario (renuncia, despidoâ€¦) y su paz y salvo.
+    """Retiro de un funcionario (renuncia, despido…) y su paz y salvo.
 
     Talento Humano lo inicia; TIC valida cada equipo que la persona tiene a
     cargo. El paz y salvo se emite cuando todos quedan devueltos en buen
@@ -1680,7 +1690,7 @@ class RetiroFuncionario(models.Model):
 
         RENUNCIA = "RENUNCIA", "Renuncia"
         DESPIDO = "DESPIDO", "Despido"
-        FIN_CONTRATO = "FIN_CONTRATO", "TerminaciÃ³n de contrato"
+        FIN_CONTRATO = "FIN_CONTRATO", "Terminación de contrato"
         TRASLADO = "TRASLADO", "Traslado"
         OTRO = "OTRO", "Otro"
 
@@ -1730,14 +1740,14 @@ class RetiroFuncionario(models.Model):
 
 
 class ItemRetiro(models.Model):
-    """Un equipo que la persona tenÃ­a a cargo al iniciar su retiro."""
+    """Un equipo que la persona tenía a cargo al iniciar su retiro."""
 
     class Resultado(models.TextChoices):
-        """Lo que TIC encontrÃ³ al validar el equipo."""
+        """Lo que TIC encontró al validar el equipo."""
 
         PENDIENTE = "PENDIENTE", "Pendiente de validar"
         DEVUELTO = "DEVUELTO", "Devuelto en buen estado"
-        DEVUELTO_DANO = "DEVUELTO_DANO", "Devuelto con daÃ±o"
+        DEVUELTO_DANO = "DEVUELTO_DANO", "Devuelto con daño"
         REASIGNADO = "REASIGNADO", "Reasignado a otra persona"
         FALTANTE = "FALTANTE", "No fue entregado (faltante)"
 
@@ -1789,15 +1799,15 @@ class ItemRetiro(models.Model):
 
     @property
     def puesto_radio(self):
-        """Cliente Â· puesto donde estÃ¡ el radio segÃºn su entrega (si la hay)."""
+        """Cliente · puesto donde está el radio según su entrega (si la hay)."""
         a = self.asignacion_radio
         if not a:
             return ""
-        return " Â· ".join(x for x in (a.cliente_asignado, a.puesto_asignado) if x)
+        return " · ".join(x for x in (a.cliente_asignado, a.puesto_asignado) if x)
 
     @property
     def queda_a_cargo(self):
-        """A nombre de quiÃ©n queda el equipo despuÃ©s de validarlo."""
+        """A nombre de quién queda el equipo después de validarlo."""
         R = self.Resultado
         persona = self.retiro.funcionario.nombre_completo
         if self.resultado == R.REASIGNADO and self.reasignado_a:
@@ -1815,10 +1825,10 @@ class ItemRetiro(models.Model):
 
 
 class RegistroAuditoria(models.Model):
-    """BitÃ¡cora de lo que se hace en la plataforma (ver inventario/auditoria.py)."""
+    """Bitácora de lo que se hace en la plataforma (ver inventario/auditoria.py)."""
 
     class Accion(models.TextChoices):
-        """QuÃ© hizo el usuario."""
+        """Qué hizo el usuario."""
 
         CREAR = "CREAR", "Creó"
         EDITAR = "EDITAR", "Modificó"
@@ -1832,7 +1842,7 @@ class RegistroAuditoria(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="registros_auditoria",
     )
-    # Se guarda el nombre por si el usuario se elimina despuÃ©s.
+    # Se guarda el nombre por si el usuario se elimina después.
     usuario_nombre = models.CharField(max_length=150)
     accion = models.CharField(max_length=20, choices=Accion.choices, db_index=True)
     modelo = models.CharField("Tipo de registro", max_length=100)
@@ -1846,24 +1856,24 @@ class RegistroAuditoria(models.Model):
     ruta = models.CharField(max_length=255, blank=True)
 
     class Meta:
-        verbose_name = "Registro de auditorÃ­a"
-        verbose_name_plural = "AuditorÃ­a"
+        verbose_name = "Registro de auditoría"
+        verbose_name_plural = "Auditoría"
         ordering = ["-fecha", "-id"]
 
     def __str__(self):
-        """Fecha, usuario, acciÃ³n y tipo de registro."""
+        """Fecha, usuario, acción y tipo de registro."""
         return f"{self.fecha:%d/%m/%Y %H:%M} {self.usuario_nombre} {self.get_accion_display()} {self.modelo}"
 
 
 class Ticket(models.Model):
     """Caso de mantenimiento o soporte: lo pide un funcionario (formulario
-    pÃºblico), lo crea el Ã¡rea de TI o sale de un mantenimiento preventivo.
-    Flujo: abierto â†’ asignado â†’ en atenciÃ³n â†’ resuelto â†’ cerrado."""
+    público), lo crea el área de TI o sale de un mantenimiento preventivo.
+    Flujo: abierto â†’ asignado â†’ en atención â†’ resuelto â†’ cerrado."""
 
     class Origen(models.TextChoices):
-        """Por dÃ³nde llegÃ³ la solicitud."""
+        """Por dónde llegó la solicitud."""
 
-        FORMULARIO = "FORMULARIO", "Formulario pÃºblico"
+        FORMULARIO = "FORMULARIO", "Formulario público"
         INTERNO = "INTERNO", "Registrado por TI"
         PREVENTIVO = "PREVENTIVO", "Mantenimiento preventivo"
         IMPORTADO = "IMPORTADO", "Importado del Sheet"
@@ -1871,17 +1881,17 @@ class Ticket(models.Model):
     class Tipo(models.TextChoices):
         """Clase de servicio pedido."""
 
-        CORRECTIVO = "CORRECTIVO", "Correctivo (daÃ±o o falla)"
+        CORRECTIVO = "CORRECTIVO", "Correctivo (daño o falla)"
         PREVENTIVO = "PREVENTIVO", "Mantenimiento preventivo"
         SOPORTE = "SOPORTE", "Soporte (correo, programas, red)"
 
     class Categoria(models.TextChoices):
-        """Tema de la solicitud, como en el formulario pÃºblico."""
+        """Tema de la solicitud, como en el formulario público."""
 
         SOFTWARE = "SOFTWARE", "Correo, Novasoft, SEIF, servidor o internet"
-        EQUIPO_OFICINA = "EQUIPO_OFICINA", "DaÃ±o en equipo de oficina"
+        EQUIPO_OFICINA = "EQUIPO_OFICINA", "Daño en equipo de oficina"
         OPERACION = "OPERACION", (
-            "DaÃ±o en elementos de operaciÃ³n (radios, repetidora, cÃ¡maras)"
+            "Daño en elementos de operación (radios, repetidora, cámaras)"
         )
         MANTENIMIENTO = "MANTENIMIENTO", "Mantenimiento preventivo"
         OTRA = "OTRA", "Otra"
@@ -1894,11 +1904,11 @@ class Ticket(models.Model):
         ALTA = "ALTA", "Alta"
 
     class Estado(models.TextChoices):
-        """Etapa del caso (ver flujo en la descripciÃ³n de la clase)."""
+        """Etapa del caso (ver flujo en la descripción de la clase)."""
 
         ABIERTO = "ABIERTO", "Abierto"
         ASIGNADO = "ASIGNADO", "Asignado"
-        EN_ATENCION = "EN_ATENCION", "En atenciÃ³n"
+        EN_ATENCION = "EN_ATENCION", "En atención"
         RESUELTO = "RESUELTO", "Resuelto"
         CERRADO = "CERRADO", "Cerrado"
         CANCELADO = "CANCELADO", "Cancelado"
@@ -1931,7 +1941,7 @@ class Ticket(models.Model):
     )
     descripcion = models.TextField()
 
-    # QuiÃ©n pide el servicio.
+    # Quién pide el servicio.
     funcionario = models.ForeignKey(
         "Funcionario", on_delete=models.SET_NULL, related_name="tickets",
         null=True, blank=True,
@@ -1942,7 +1952,7 @@ class Ticket(models.Model):
     solicitante_telefono = models.CharField(max_length=50, blank=True)
     ubicacion = models.CharField("Sede o lugar", max_length=200, blank=True)
 
-    # AsignaciÃ³n.
+    # Asignación.
     tecnico = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name="tickets_asignados", null=True, blank=True,
@@ -1973,20 +1983,20 @@ class Ticket(models.Model):
         ordering = ["-creado_en", "-id"]
 
     def __str__(self):
-        """NÃºmero y estado, por ejemplo "TK-2026-0001 - Abierto"."""
+        """Número y estado, por ejemplo "TK-2026-0001 - Abierto"."""
         return f"{self.numero} - {self.get_estado_display()}"
 
     def save(self, *args, **kwargs):
-        """Asigna el nÃºmero consecutivo del aÃ±o la primera vez que se guarda."""
+        """Asigna el número consecutivo del año la primera vez que se guarda."""
         if not self.numero:
             self.numero = self.siguiente_numero(self.creado_en)
         super().save(*args, **kwargs)
 
     @staticmethod
     def siguiente_numero(fecha):
-        """Siguiente nÃºmero libre del aÃ±o de ``fecha``: TK-AAAA-NNNN.
+        """Siguiente número libre del año de ``fecha``: TK-AAAA-NNNN.
 
-        Toma el mayor nÃºmero existente con ese prefijo y le suma uno.
+        Toma el mayor número existente con ese prefijo y le suma uno.
         """
         anio = timezone.localtime(fecha).year if timezone.is_aware(fecha) else fecha.year
         prefijo = f"TK-{anio}-"
@@ -1999,29 +2009,29 @@ class Ticket(models.Model):
 
     @property
     def activo(self):
-        """True mientras el caso no estÃ© cerrado ni cancelado."""
+        """True mientras el caso no esté cerrado ni cancelado."""
         return self.estado in self.ACTIVOS
 
     @property
     def tiempo_respuesta(self):
-        """Tiempo desde la creaciÃ³n hasta la resoluciÃ³n."""
+        """Tiempo desde la creación hasta la resolución."""
         if self.resuelto_en:
             return self.resuelto_en - self.creado_en
         return None
 
 
 class EventoTicket(models.Model):
-    """BitÃ¡cora del ticket: cada cambio de estado, comentario o correo.
+    """Bitácora del ticket: cada cambio de estado, comentario o correo.
 
     ``publico=False`` marca comentarios internos que el solicitante no ve.
     """
 
     class Tipo(models.TextChoices):
-        """QuÃ© pasÃ³ en el caso."""
+        """Qué pasó en el caso."""
 
         CREADO = "CREADO", "Creado"
         ASIGNADO = "ASIGNADO", "Asignado"
-        ATENCION = "ATENCION", "En atenciÃ³n"
+        ATENCION = "ATENCION", "En atención"
         RESUELTO = "RESUELTO", "Resuelto"
         CONFIRMADO = "CONFIRMADO", "Confirmado por el solicitante"
         REABIERTO = "REABIERTO", "Reabierto"
@@ -2040,7 +2050,7 @@ class EventoTicket(models.Model):
     )
     tipo = models.CharField(max_length=15, choices=Tipo.choices)
     texto = models.TextField(blank=True)
-    # Los comentarios internos no se muestran en la pÃ¡gina pÃºblica del caso.
+    # Los comentarios internos no se muestran en la página pública del caso.
     publico = models.BooleanField(default=True)
 
     class Meta:
@@ -2049,12 +2059,12 @@ class EventoTicket(models.Model):
         ordering = ["fecha", "id"]
 
     def __str__(self):
-        """NÃºmero del ticket y tipo de evento."""
-        return f"{self.ticket.numero} Â· {self.get_tipo_display()}"
+        """Número del ticket y tipo de evento."""
+        return f"{self.ticket.numero} · {self.get_tipo_display()}"
 
 
 class FotoTicket(models.Model):
-    """Foto adjunta a un ticket (evidencia del daÃ±o o de la soluciÃ³n)."""
+    """Foto adjunta a un ticket (evidencia del daño o de la solución)."""
 
     ticket = models.ForeignKey(
         Ticket, on_delete=models.CASCADE, related_name="fotos"
@@ -2081,7 +2091,7 @@ class RegularizacionInventario(models.Model):
 
     class Estado(models.TextChoices):
         BORRADOR = "BORRADOR", "Borrador"
-        EN_RECUPERACION = "EN_RECUPERACION", "En recuperaciÃ³n"
+        EN_RECUPERACION = "EN_RECUPERACION", "En recuperación"
         COMPLETADA = "COMPLETADA", "Completada"
         CANCELADA = "CANCELADA", "Cancelada"
 
@@ -2124,38 +2134,38 @@ class RegularizacionInventario(models.Model):
     cerrado_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name = "RegularizaciÃ³n de inventario"
+        verbose_name = "Regularización de inventario"
         verbose_name_plural = "Regularizaciones de inventario"
         ordering = ["-creado_en", "-id"]
 
     def __str__(self):
-        return f"RegularizaciÃ³n {self.cedula_origen} - {self.get_estado_display()}"
+        return f"Regularización {self.cedula_origen} - {self.get_estado_display()}"
 
 
 class ItemRegularizacionInventario(models.Model):
-    """Activo individual incluido en una regularizaciÃ³n.
+    """Activo individual incluido en una regularización.
 
-    Conserva la referencia y una fotografÃ­a de los datos de asignaciÃ³n
-    originales. La recepciÃ³n fÃ­sica se registra por separado.
+    Conserva la referencia y una fotografía de los datos de asignación
+    originales. La recepción física se registra por separado.
     """
 
     cedula_radio_origen = models.CharField(
     max_length=50,
     blank=True,
-    verbose_name="CÃ©dula original de asignaciÃ³n del radio",
+    verbose_name="Cédula original de asignación del radio",
 )
 
     class Origen(models.TextChoices):
-        RADIO = "RADIO", "AsignaciÃ³n de radio"
-        EQUIPO = "EQUIPO", "AsignaciÃ³n de equipo"
+        RADIO = "RADIO", "Asignación de radio"
+        EQUIPO = "EQUIPO", "Asignación de equipo"
         DIRECTO = "DIRECTO", "Responsable directo del equipo"
 
     class Resultado(models.TextChoices):
-        PENDIENTE = "PENDIENTE", "Pendiente de verificaciÃ³n"
+        PENDIENTE = "PENDIENTE", "Pendiente de verificación"
         RECIBIDO = "RECIBIDO", "Recibido"
         RECIBIDO_NOVEDADES = "RECIBIDO_NOVEDADES", "Recibido con novedades"
         NO_LOCALIZADO = "NO_LOCALIZADO", "No localizado"
-        VERIFICACION = "VERIFICACION", "En verificaciÃ³n"
+        VERIFICACION = "VERIFICACION", "En verificación"
 
     regularizacion = models.ForeignKey(
         RegularizacionInventario,
@@ -2189,7 +2199,7 @@ class ItemRegularizacionInventario(models.Model):
         related_name="items_regularizacion",
     )
 
-    # FotografÃ­a de la informaciÃ³n existente al incluir el activo.
+    # Fotografía de la información existente al incluir el activo.
     placa_origen = models.CharField(max_length=50, blank=True)
     serial_origen = models.CharField(max_length=100, blank=True)
     responsable_nombre_origen = models.CharField(max_length=200, blank=True)
@@ -2223,8 +2233,8 @@ class ItemRegularizacionInventario(models.Model):
     actualizado_en = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Activo de regularizaciÃ³n"
-        verbose_name_plural = "Activos de regularizaciÃ³n"
+        verbose_name = "Activo de regularización"
+        verbose_name_plural = "Activos de regularización"
         ordering = ["equipo__tipo", "equipo__placa", "id"]
         constraints = [
             models.UniqueConstraint(

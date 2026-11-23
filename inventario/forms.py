@@ -241,6 +241,17 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         self.fields["trabajo_realizado"].required = False
         self.fields["causa_dano"].required = False
         self._preparar_tipos()
+        if not self.instance.pk:
+            tipos_permitidos = {
+                MantenimientoEquipo.Tipo.PREVENTIVO,
+                MantenimientoEquipo.Tipo.CORRECTIVO,
+                MantenimientoEquipo.Tipo.DIAGNOSTICO,
+            }
+            self.fields["tipo"].choices = [("", "Seleccione el tipo")] + [
+                (valor, etiqueta)
+                for valor, etiqueta in MantenimientoEquipo.Tipo.choices
+                if valor in tipos_permitidos
+            ]
         # Los registros importados del Sheet no traen actividades, partes ni
         # causa del daño: al corregirlos no se exige completarlos.
         self.exigir_detalle = not (self.instance.pk and self.instance.origen_archivo)
@@ -792,6 +803,19 @@ class RadioForm(forms.ModelForm):
         if not self.instance.pk:
             # La placa (RJ) es el identificador del radio.
             self.fields["placa"].required = True
+            self.placas_opciones, placa_sugerida = sugerencias_placa_equipo(
+                Equipo.Tipo.RADIO
+            )
+            self.fields["placa"].widget.attrs.update({
+                "list": "lista-placas-radio",
+                "autocomplete": "off",
+                "placeholder": "Escribe una placa RJ o elige el siguiente consecutivo",
+            })
+            self.fields["placa"].help_text = (
+                "Puedes escribir otra placa o aceptar la sugerencia del consecutivo."
+            )
+            if not self.is_bound and not self.initial.get("placa"):
+                self.initial["placa"] = placa_sugerida
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
 
         revision_activa = (
@@ -899,6 +923,71 @@ class RadioBajaForm(forms.Form):
 
 SEDE_PRINCIPAL = "SEGURIDAD JANO LTDA SEDE PRINCIPAL"
 
+PREFIJOS_PLACA_POR_TIPO = {
+    Equipo.Tipo.RADIO: "RJ-",
+    Equipo.Tipo.COMPUTADOR: "PC--",
+    Equipo.Tipo.TABLETA: "TBL-",
+    Equipo.Tipo.IMPRESORA: "IMP-",
+    Equipo.Tipo.ESCANER: "ESC-",
+    Equipo.Tipo.GPS: "GPS-",
+    Equipo.Tipo.ALARMA: "ALAR-",
+    Equipo.Tipo.UPS: "UPS-",
+    Equipo.Tipo.OTRO: "OTR-",
+}
+
+
+def sugerencias_placa_equipo(tipo):
+    """Devuelve placas existentes del tipo y el siguiente consecutivo disponible."""
+    existentes_tipo = list(
+        Equipo.objects.filter(tipo=tipo).values_list("placa", flat=True)
+    )
+    prefijos = {}
+    for placa in existentes_tipo:
+        coincidencia = re.match(r"^(.*?)(\d+)$", placa.strip())
+        if coincidencia:
+            prefijo, consecutivo = coincidencia.groups()
+            datos = prefijos.setdefault(prefijo, {"cantidad": 0, "maximo": 0})
+            datos["cantidad"] += 1
+            datos["maximo"] = max(datos["maximo"], int(consecutivo))
+
+    if prefijos:
+        prefijo = max(
+            prefijos,
+            key=lambda valor: (prefijos[valor]["cantidad"], prefijos[valor]["maximo"]),
+        )
+    else:
+        prefijo = PREFIJOS_PLACA_POR_TIPO.get(tipo, "EQ-")
+
+    # Las placas son únicas globalmente, así que un prefijo compartido por
+    # varios tipos (por ejemplo IMP-) debe continuar el mayor consecutivo global.
+    placas_globales = list(Equipo.objects.values_list("placa", flat=True))
+    placas_con_prefijo = [
+        placa for placa in placas_globales
+        if re.match(rf"^{re.escape(prefijo)}(\d+)$", placa.strip(), re.I)
+    ]
+    coincidencias_globales = [
+        re.match(rf"^{re.escape(prefijo)}(\d+)$", placa.strip(), re.I)
+        for placa in placas_con_prefijo
+    ]
+    ancho = max((len(m.group(1)) for m in coincidencias_globales), default=3)
+    siguiente_numero = max(
+        (int(m.group(1)) for m in coincidencias_globales), default=0
+    ) + 1
+    siguiente = f"{prefijo}{siguiente_numero:0{ancho}d}"
+    while Equipo.objects.filter(placa__iexact=siguiente).exists():
+        siguiente_numero += 1
+        siguiente = f"{prefijo}{siguiente_numero:0{ancho}d}"
+
+    opciones = set(existentes_tipo)
+    opciones.update(placas_con_prefijo)
+    opciones.add(siguiente)
+
+    def orden_placa(valor):
+        match = re.match(r"^(.*?)(\d+)$", valor)
+        return (match.group(1).casefold(), int(match.group(2)), valor.casefold()) if match else (valor.casefold(), -1, valor.casefold())
+
+    return sorted(opciones, key=orden_placa), siguiente
+
 
 class EquipoForm(forms.ModelForm):
     """Datos comunes de cualquier equipo que no sea radio."""
@@ -907,6 +996,7 @@ class EquipoForm(forms.ModelForm):
         model = Equipo
         fields = [
             "placa", "serial", "marca", "modelo", "propiedad",
+            "proveedor_arrendamiento",
             "fecha_compra", "estado_operativo", "responsable_nombre",
             "responsable_cedula", "ubicacion", "observaciones",
             "requiere_revision", "motivo_revision",
@@ -915,6 +1005,7 @@ class EquipoForm(forms.ModelForm):
             "placa": "Placa",
             "estado_operativo": "Estado operativo",
             "fecha_compra": "Fecha de compra",
+            "proveedor_arrendamiento": "Nombre o razón social del proveedor",
             "responsable_nombre": "Responsable",
             "responsable_cedula": "Cédula del responsable",
             "ubicacion": "Sede",
@@ -937,6 +1028,40 @@ class EquipoForm(forms.ModelForm):
         """
         super().__init__(*args, **kwargs)
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
+        propiedad_actual = (self.instance.propiedad or "").strip()
+        self.propiedad_original = propiedad_actual
+        opciones_propiedad = [
+            ("", "Seleccione la propiedad"),
+            *Equipo.Propiedad.choices,
+        ]
+        if propiedad_actual and propiedad_actual not in dict(opciones_propiedad):
+            opciones_propiedad.append((propiedad_actual, f"{propiedad_actual} (valor actual)"))
+        self.fields["propiedad"].choices = opciones_propiedad
+        self.fields["propiedad"].widget.attrs["data-propiedad-selector"] = ""
+        self.fields["proveedor_arrendamiento"].label = "Nombre o razón social del proveedor"
+        self.fields["proveedor_arrendamiento"].help_text = "Escribe únicamente el nombre o razón social."
+        self.fields["proveedor_arrendamiento"].widget.attrs["data-proveedor-arrendamiento"] = ""
+        propiedad_seleccionada = (
+            self.data.get("propiedad", "") if self.is_bound else propiedad_actual
+        )
+        self.fields["proveedor_arrendamiento"].disabled = (
+            propiedad_seleccionada != Equipo.Propiedad.ARRENDADO
+        )
+
+        self.placas_opciones, placa_sugerida = sugerencias_placa_equipo(
+            self.instance.tipo
+        )
+        if not self.instance.pk:
+            self.fields["placa"].widget.attrs.update({
+                "list": "lista-placas-equipo",
+                "autocomplete": "off",
+                "placeholder": "Escribe una placa o elige un consecutivo sugerido",
+            })
+            self.fields["placa"].help_text = (
+                "Puedes escribir una placa propia o usar la sugerencia del siguiente consecutivo."
+            )
+            if not self.is_bound and not self.initial.get("placa"):
+                self.initial["placa"] = placa_sugerida
         # La sede se elige de la lista (sede principal y sedes de los puestos)
         # para que el equipo aparezca en el mapa "Dónde están los equipos".
         actual = (self.instance.ubicacion or "").strip()
@@ -1086,6 +1211,20 @@ class EquipoForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        propiedad = cleaned.get("propiedad") or ""
+        proveedor = (cleaned.get("proveedor_arrendamiento") or "").strip()
+        if propiedad == Equipo.Propiedad.ARRENDADO:
+            if not proveedor:
+                self.add_error(
+                    "proveedor_arrendamiento",
+                    "Escribe el nombre o la razón social del proveedor.",
+                )
+            cleaned["proveedor_arrendamiento"] = proveedor
+        elif (
+            propiedad == Equipo.Propiedad.SEGURIDAD_JANO
+            or propiedad != self.propiedad_original
+        ):
+            cleaned["proveedor_arrendamiento"] = ""
         if self._responsable_manual:
             nombre, cedula = getattr(self, "_responsable_elegido", ("", ""))
             cleaned["responsable_nombre"] = nombre

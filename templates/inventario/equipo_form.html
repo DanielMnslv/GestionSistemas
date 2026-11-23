@@ -51,6 +51,11 @@ Vista guardar_equipo (views_equipos.py). Al registrar ofrece «Guardar y entrega
                     {% endif %}
                 {% endfor %}
             </div>
+            <datalist id="lista-placas-equipo">
+                {% for placa_sugerida in formulario.placas_opciones %}
+                    <option value="{{ placa_sugerida }}"></option>
+                {% endfor %}
+            </datalist>
 
             {% if detalle %}
             <hr class="ficha-divider">

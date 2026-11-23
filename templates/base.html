@@ -242,15 +242,31 @@ Variables que usa: permisos (permisos.py) y c (contadores del menú).
     const motivo = form.querySelector('[name="motivo_revision"]');
     const responsable = form.querySelector('[data-responsable-selector]');
     const cedula = form.querySelector('[data-responsable-cedula]');
-    if (!revision && !responsable) return;
+    const propiedad = form.querySelector('[data-propiedad-selector]');
+    const proveedor = form.querySelector('[data-proveedor-arrendamiento]');
+    if (!revision && !responsable && !propiedad) return;
     form.dataset.janoEquipoReady = "1";
 
     function actualizarMotivo() {
-      if (motivo && revision) motivo.disabled = !revision.checked;
+      const visible = !!(revision && revision.checked);
+      if (motivo) motivo.disabled = !visible;
+      const contenedorMotivo = motivo && motivo.closest("[data-motivo-revision-wrap]");
+      if (contenedorMotivo) contenedorMotivo.hidden = !visible;
     }
-    if (revision && motivo) {
+    if (motivo) {
       actualizarMotivo();
-      revision.addEventListener("change", actualizarMotivo);
+      if (revision) revision.addEventListener("change", actualizarMotivo);
+    }
+
+    if (propiedad && proveedor) {
+      function actualizarProveedor() {
+        const arrendado = propiedad.value === "ARRENDADO";
+        proveedor.disabled = !arrendado;
+        proveedor.required = arrendado;
+        if (!arrendado) proveedor.value = "";
+      }
+      actualizarProveedor();
+      propiedad.addEventListener("change", actualizarProveedor);
     }
 
     if (responsable && cedula) {

@@ -328,6 +328,7 @@ def ficha_modal(equipo, usuario):
             ("Marca", equipo.marca or radio.marca),
             ("Modelo", equipo.modelo or radio.modelo),
             ("Propiedad", equipo.propiedad),
+            ("Proveedor", equipo.proveedor_arrendamiento),
             ("Tipo de frecuencia", radio.tipo_frecuencia),
             ("Modalidad de servicio", radio.modalidad_servicio),
         ])))
@@ -432,6 +433,7 @@ def ficha_modal(equipo, usuario):
             ("Responsable", responsable),
             ("Ubicación", equipo.ubicacion),
             ("Propiedad", equipo.propiedad),
+            ("Proveedor", equipo.proveedor_arrendamiento),
         ])
         secciones.append(("General", limpiar([
             ("Fecha de compra", equipo.fecha_compra),
@@ -1107,13 +1109,13 @@ def _volver_a_pestanas(placa, pestana="resumen"):
 
 
 def grupos_detalle_formulario(detalle):
-    """Separa las caracterÃ­sticas del computador por Ã¡rea funcional."""
+    """Separa las características del computador por área funcional."""
     if detalle is None:
         return []
     campos = list(detalle)
     nombres = {campo.name for campo in campos}
     if "sistema_operativo" not in nombres:
-        return [{"titulo": "CaracterÃ­sticas", "campos": campos, "computador": False}]
+        return [{"titulo": "Características", "campos": campos, "computador": False}]
 
     software = {
         "sistema_operativo", "licencia_so", "antivirus", "licencia_antivirus",
@@ -1125,7 +1127,7 @@ def grupos_detalle_formulario(detalle):
         "linea_celular",
     }
     grupos = [
-        {"titulo": "CaracterÃ­sticas fÃ­sicas", "campos": [c for c in campos if c.name not in software | conectividad], "computador": True},
+        {"titulo": "Características físicas", "campos": [c for c in campos if c.name not in software | conectividad], "computador": True},
         {"titulo": "Software y licencias", "campos": [c for c in campos if c.name in software], "computador": True},
         {"titulo": "Red y conectividad", "campos": [c for c in campos if c.name in conectividad], "computador": True},
     ]
@@ -1142,7 +1144,8 @@ def pasos_formulario_equipo(formulario, detalle):
 
     campos_comunes = {
         "Identificación": (
-            "placa", "serial", "marca", "modelo", "propiedad", "fecha_compra",
+            "placa", "serial", "marca", "modelo", "propiedad",
+            "proveedor_arrendamiento", "fecha_compra",
         ),
         "Responsable y estado": (
             "estado_operativo", "responsable_nombre", "responsable_cedula",
@@ -1208,8 +1211,8 @@ def pasos_formulario_equipo(formulario, detalle):
     # 4. Observaciones y revisión: SIEMPRE EL ÚLTIMO PASO.
     grupos = grupos_detalle_formulario(detalle)
     if grupos and grupos[0]["computador"]:
-        # Reemplaza los bloques genÃ©ricos de seis campos por categorÃ­as claras.
-        pasos = [p for p in pasos if not p["titulo"].startswith("CaracterÃ­sticas ")]
+        # Reemplaza los bloques genéricos de seis campos por categorías claras.
+        pasos = [p for p in pasos if not p["titulo"].startswith("Características ")]
         for grupo in grupos:
             campos_detalle = grupo["campos"]
             tamano_paso = len(campos_detalle) if grupo["titulo"] == "Red y conectividad" else 6

@@ -16,6 +16,13 @@ Se incluye en radio_form.html (registrar) y en la pestaña «Editar» de radio_p
                 {% include "inventario/_campo.html" with field=formulario.tipo_frecuencia %}
                 {% include "inventario/_campo.html" with field=formulario.modalidad_servicio %}
             </div>
+            {% if formulario.placas_opciones %}
+            <datalist id="lista-placas-radio">
+                {% for placa_sugerida in formulario.placas_opciones %}
+                    <option value="{{ placa_sugerida }}"></option>
+                {% endfor %}
+            </datalist>
+            {% endif %}
             </fieldset>
 
             <fieldset class="ficha-paso" data-paso="2" data-titulo="Estado y accesorios">

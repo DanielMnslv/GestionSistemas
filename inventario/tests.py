@@ -12,6 +12,7 @@ from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from django.urls import reverse
 from django.db import transaction
+from django.template.loader import render_to_string
 
 from inventario.models import (
     Equipo,
@@ -23,12 +24,112 @@ from inventario.models import (
     Radio,
     TransferenciaComponentesRadio,
 )
+from inventario.forms import EquipoForm, MantenimientoEquipoForm, RadioForm
 
 
 COMANDO = (
     "inventario.management.commands."
     "procesar_alertas_mantenimiento"
 )
+
+
+class MantenimientoTipoIntervencionTests(TestCase):
+    def test_nueva_intervencion_ofrece_solo_tres_tipos_legibles(self):
+        formulario = MantenimientoEquipoForm()
+        opciones = [
+            (valor, etiqueta)
+            for valor, etiqueta in formulario.fields["tipo"].choices
+            if valor
+        ]
+
+        self.assertEqual(
+            [valor for valor, _ in opciones],
+            ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO"],
+        )
+        self.assertEqual(opciones[2][1], "Diagn\u00f3stico")
+
+
+class EquipoFormCatalogoYPropiedadTests(TestCase):
+    def test_motivo_de_revision_se_oculta_hasta_marcar_la_casilla(self):
+        formulario = EquipoForm(instance=Equipo(tipo=Equipo.Tipo.IMPRESORA))
+        html = render_to_string(
+            "inventario/_campo.html",
+            {"field": formulario["motivo_revision"]},
+        )
+        self.assertIn("data-motivo-revision-wrap", html)
+        self.assertIn("hidden", html)
+
+        formulario_marcado = EquipoForm(
+            data={"requiere_revision": "on"},
+            instance=Equipo(tipo=Equipo.Tipo.IMPRESORA),
+        )
+        html_marcado = render_to_string(
+            "inventario/_campo.html",
+            {"field": formulario_marcado["motivo_revision"]},
+        )
+        self.assertIn("data-motivo-revision-wrap", html_marcado)
+        self.assertNotIn("data-motivo-revision-wrap hidden", html_marcado)
+
+        formulario_radio = RadioForm()
+        html_radio = render_to_string(
+            "inventario/_campo.html",
+            {"field": formulario_radio["motivo_revision"]},
+        )
+        self.assertIn("data-motivo-revision-wrap", html_radio)
+        self.assertIn("hidden", html_radio)
+
+    def test_placa_sugiere_existentes_y_siguiente_consecutivo(self):
+        Equipo.objects.create(placa="IMP-01", tipo=Equipo.Tipo.IMPRESORA)
+        Equipo.objects.create(placa="IMP-03", tipo=Equipo.Tipo.IMPRESORA)
+        Equipo.objects.create(placa="IMP-10", tipo=Equipo.Tipo.ESCANER)
+
+        formulario = EquipoForm(instance=Equipo(tipo=Equipo.Tipo.IMPRESORA))
+
+        self.assertEqual(formulario["placa"].value(), "IMP-11")
+        self.assertIn("IMP-01", formulario.placas_opciones)
+        self.assertIn("IMP-03", formulario.placas_opciones)
+        self.assertIn("IMP-10", formulario.placas_opciones)
+        self.assertIn("IMP-11", formulario.placas_opciones)
+        self.assertEqual(
+            formulario.fields["placa"].widget.attrs["list"],
+            "lista-placas-equipo",
+        )
+
+        formulario_radio = RadioForm()
+        self.assertEqual(formulario_radio["placa"].value(), "RJ-001")
+        self.assertEqual(
+            formulario_radio.fields["placa"].widget.attrs["list"],
+            "lista-placas-radio",
+        )
+
+    def test_arrendamiento_pide_solo_nombre_del_proveedor(self):
+        base = Equipo(tipo=Equipo.Tipo.COMPUTADOR)
+        formulario = EquipoForm(instance=base)
+        valores_propiedad = [
+            valor for valor, _ in formulario.fields["propiedad"].choices if valor
+        ]
+        self.assertEqual(valores_propiedad, ["SEGURIDAD JANO", "ARRENDADO"])
+        self.assertTrue(formulario.fields["proveedor_arrendamiento"].disabled)
+
+        arrendado = EquipoForm(
+            data={
+                "placa": "PC-ARRENDADO-1",
+                "propiedad": "ARRENDADO",
+                "proveedor_arrendamiento": "Proveedor de prueba S.A.S.",
+            },
+            instance=base,
+        )
+        self.assertFalse(arrendado.fields["proveedor_arrendamiento"].disabled)
+        self.assertTrue(arrendado.is_valid(), arrendado.errors)
+        guardado = arrendado.save(commit=False)
+        self.assertEqual(guardado.proveedor_arrendamiento, "Proveedor de prueba S.A.S.")
+
+        sin_proveedor = EquipoForm(
+            data={"placa": "PC-ARRENDADO-2", "propiedad": "ARRENDADO"},
+            instance=Equipo(tipo=Equipo.Tipo.COMPUTADOR),
+        )
+        self.assertFalse(sin_proveedor.is_valid())
+        self.assertIn("proveedor_arrendamiento", sin_proveedor.errors)
 
 
 @override_settings(
@@ -2845,7 +2946,7 @@ class EntregasEquiposTests(TestCase):
         respuesta = self.client.post(
             reverse("inventario:equipo_crear") + "?tipo=IMPRESORA",
             {"placa": "IMP--99", "serial": "SN99", "marca": "Epson",
-             "propiedad": "PROPIO", "siguiente": "entregar"},
+             "propiedad": "SEGURIDAD JANO", "siguiente": "entregar"},
         )
         firma_url = reverse("inventario:equipo_entregar_firma", args=["IMP--99"])
         if respuesta.status_code != 302:
@@ -2883,7 +2984,7 @@ class EntregasEquiposTests(TestCase):
         """El botón normal guarda el equipo sin pedir firma."""
         respuesta = self.client.post(
             reverse("inventario:equipo_crear") + "?tipo=IMPRESORA",
-            {"placa": "IMP--98", "serial": "SN98", "propiedad": "PROPIO"},
+            {"placa": "IMP--98", "serial": "SN98", "propiedad": "SEGURIDAD JANO"},
         )
         self.assertRedirects(
             respuesta, reverse("inventario:equipo_detalle", args=["IMP--98"]),
@@ -4179,7 +4280,7 @@ class MantenimientoPorTipoDeEquipoTests(TestCase):
     def test_tipos_de_intervencion_del_formulario(self):
         from inventario.forms import MantenimientoEquipoForm
         valores = [v for v, _ in MantenimientoEquipoForm().fields["tipo"].choices if v]
-        self.assertEqual(valores, ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO", "CORRECCION"])
+        self.assertEqual(valores, ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO"])
 
     def test_programar_con_actividades_del_tipo(self):
         form = self._form_prog(tipo_equipo="UPS", equipo=self.ups.pk,
