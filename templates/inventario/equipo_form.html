@@ -42,10 +42,12 @@ Vista guardar_equipo (views_equipos.py). Al registrar ofrece «Guardar y entrega
             </h3>
             <div class="ficha-form-grid">
                 {% for field in formulario %}
-                    {% if field.widget_type == "textarea" %}
-                        {% include "inventario/_campo.html" with ancho_completo=True %}
-                    {% else %}
-                        {% include "inventario/_campo.html" %}
+                    {% if field.name != "observaciones" and field.name != "requiere_revision" and field.name != "motivo_revision" %}
+                        {% if field.widget_type == "textarea" %}
+                            {% include "inventario/_campo.html" with ancho_completo=True %}
+                        {% else %}
+                            {% include "inventario/_campo.html" %}
+                        {% endif %}
                     {% endif %}
                 {% endfor %}
             </div>
@@ -71,6 +73,21 @@ Vista guardar_equipo (views_equipos.py). Al registrar ofrece «Guardar y entrega
                 {% endif %}
             {% endif %}
             {% endif %}
+
+            <hr class="ficha-divider">
+            <h3 class="ficha-section-heading">
+                <span class="ficha-section-number">03</span>
+                Observaciones y revisión
+            </h3>
+            <div class="ficha-form-grid">
+                {% include "inventario/_campo.html" with field=formulario.observaciones ancho_completo=True %}
+                {% include "inventario/_campo.html" with field=formulario.requiere_revision %}
+                {% include "inventario/_campo.html" with field=formulario.motivo_revision %}
+            </div>
+
+            <datalist id="lista-sedes-equipo">
+                {% for sede in formulario.sedes_opciones %}<option value="{{ sede }}"></option>{% endfor %}
+            </datalist>
 
             <div class="ficha-form-actions">
                 <a class="ficha-form-button ficha-form-button-secondary"

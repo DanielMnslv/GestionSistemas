@@ -340,6 +340,7 @@
 /* Rejilla de 6 columnas: fecha / tipo / técnico en tres; textos en parejas; trabajo y observaciones a lo ancho. */
 .mant-modal .maintenance-form-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px 14px; }
 .mant-modal .maintenance-form-field { gap: 5px; grid-column: span 2; }
+.mant-modal [data-mant-field][hidden] { display: none !important; }
 .mant-modal .maintenance-form-field label { font-size: 12.5px; }
 .mant-modal .maintenance-form-field input,
 .mant-modal .maintenance-form-field select { min-height: 38px; padding: 8px 11px; }

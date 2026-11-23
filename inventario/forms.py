@@ -43,6 +43,7 @@ from .models import (
     Funcionario,
     Cliente,
     Puesto,
+    Sede,
     Radio,
     Ticket,
 )
@@ -793,9 +794,21 @@ class RadioForm(forms.ModelForm):
             self.fields["placa"].required = True
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
 
+        revision_activa = (
+            self.data.get("requiere_revision") in {"on", "true", "1", "yes"}
+            if self.is_bound else self.instance.requiere_revision
+        )
+        self.fields["motivo_revision"].disabled = not revision_activa
+
         for nombre, field in self.fields.items():
             if nombre != "requiere_revision":
                 field.widget.attrs["class"] = "form-control"
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("requiere_revision"):
+            cleaned["motivo_revision"] = ""
+        return cleaned
 
     def save(self, commit=True):
         """Guarda los selectores unificados en los campos históricos del modelo.
@@ -935,7 +948,11 @@ class EquipoForm(forms.ModelForm):
         if actual and actual != SEDE_PRINCIPAL and actual not in sedes:
             opciones.append((actual, actual))
         opciones += [(x, x) for x in sedes]
-        self.fields["ubicacion"].widget = forms.Select(choices=opciones)
+        self.sedes_opciones = [valor for valor, _ in opciones if valor]
+        self.fields["ubicacion"].widget = forms.TextInput(attrs={
+            "list": "lista-sedes-equipo",
+            "autocomplete": "off",
+        })
         self.fields["ubicacion"].help_text = "Con la sede, el equipo aparece en el mapa del inicio."
         asignacion_activa = None
         if self.instance.pk:
@@ -948,6 +965,8 @@ class EquipoForm(forms.ModelForm):
                 .order_by("-fecha_entrega", "-id")
                 .first()
             )
+        self._responsable_manual = asignacion_activa is None
+        self._responsables_por_valor = {}
         if asignacion_activa:
             funcionario = asignacion_activa.funcionario
             self.fields["responsable_nombre"].initial = (
@@ -958,15 +977,73 @@ class EquipoForm(forms.ModelForm):
                 funcionario.cedula if funcionario
                 else asignacion_activa.cedula_recibe
             )
-        self.fields["responsable_nombre"].disabled = True
+            self.fields["responsable_nombre"].disabled = True
+            self.fields["responsable_cedula"].disabled = True
+        else:
+            funcionarios = Funcionario.objects.filter(
+                activo=True,
+                estado_persona=Funcionario.EstadoPersona.ACTIVA,
+            ).order_by("nombre_completo", "cedula")
+            opciones_responsables = [("", "Seleccione una persona responsable")]
+            for persona in funcionarios:
+                opciones_responsables.append((
+                    persona.cedula,
+                    f"{persona.nombre_completo} · C.C. {persona.cedula}",
+                ))
+                self._responsables_por_valor[persona.cedula] = (
+                    persona.nombre_completo,
+                    persona.cedula,
+                )
+
+            cedula_actual = (self.instance.responsable_cedula or "").strip()
+            if (
+                cedula_actual
+                and cedula_actual not in self._responsables_por_valor
+                and self.instance.responsable_nombre
+            ):
+                clave_actual = f"actual:{cedula_actual}"
+                opciones_responsables.append((
+                    clave_actual,
+                    f"{self.instance.responsable_nombre} · registro actual",
+                ))
+                self._responsables_por_valor[clave_actual] = (
+                    self.instance.responsable_nombre,
+                    cedula_actual,
+                )
+                self.initial["responsable_nombre"] = clave_actual
+            elif cedula_actual:
+                self.initial["responsable_nombre"] = cedula_actual
+
+            self.fields["responsable_nombre"] = forms.ChoiceField(
+                label="Responsable",
+                choices=opciones_responsables,
+                required=False,
+                help_text="Al elegir una persona, se completa su cédula automáticamente.",
+            )
+            self.fields["responsable_nombre"].widget.attrs[
+                "data-responsable-selector"
+            ] = ""
+            self.fields["responsable_cedula"].disabled = True
+            self.fields["responsable_cedula"].widget.attrs[
+                "data-responsable-cedula"
+            ] = ""
         self.fields["responsable_cedula"].disabled = True
         self.fields["responsable_nombre"].help_text = (
             "Se muestra el responsable de la entrega activa. "
             "Los cambios se registran desde Entregas y actas."
+            if not self._responsable_manual else
+            "Seleccione una persona; su cédula se completa automáticamente."
         )
         self.fields["responsable_cedula"].help_text = (
+            "Se completa automáticamente con la persona seleccionada."
+            if self._responsable_manual else
             "La identificación se toma de la persona vinculada a la entrega activa."
         )
+        revision_activa = (
+            self.data.get("requiere_revision") in {"on", "true", "1", "yes"}
+            if self.is_bound else self.instance.requiere_revision
+        )
+        self.fields["motivo_revision"].disabled = not revision_activa
         for nombre, field in self.fields.items():
             if nombre != "requiere_revision":
                 field.widget.attrs["class"] = "form-control"
@@ -993,6 +1070,29 @@ class EquipoForm(forms.ModelForm):
                         f"Este serial ya está registrado en {otro.placa}."
                     )
         return serial
+
+    def clean_responsable_nombre(self):
+        valor = self.cleaned_data.get("responsable_nombre", "")
+        if not self._responsable_manual:
+            return valor
+        if not valor:
+            self._responsable_elegido = ("", "")
+            return ""
+        persona = self._responsables_por_valor.get(valor)
+        if not persona:
+            raise forms.ValidationError("Selecciona una persona del directorio.")
+        self._responsable_elegido = persona
+        return persona[0]
+
+    def clean(self):
+        cleaned = super().clean()
+        if self._responsable_manual:
+            nombre, cedula = getattr(self, "_responsable_elegido", ("", ""))
+            cleaned["responsable_nombre"] = nombre
+            cleaned["responsable_cedula"] = cedula
+        if not cleaned.get("requiere_revision"):
+            cleaned["motivo_revision"] = ""
+        return cleaned
 
 
 class DetalleForm(forms.ModelForm):
@@ -1022,11 +1122,36 @@ class DetalleComputadorForm(DetalleForm):
         ("Android", "Android"),
         ("Otro", "Otro"),
     ]
+    TIPOS_DISCO = [
+        ("HDD", "HDD (mecánico)"),
+        ("SSD SATA", "SSD SATA"),
+        ("SSD NVMe", "SSD NVMe"),
+        ("eMMC", "eMMC"),
+        ("Híbrido (HDD + SSD)", "Híbrido (HDD + SSD)"),
+    ]
+    TIPOS_RAM = [
+        ("DDR2", "DDR2"),
+        ("DDR3", "DDR3"),
+        ("DDR4", "DDR4"),
+        ("DDR5", "DDR5"),
+        ("LPDDR4", "LPDDR4"),
+        ("LPDDR5", "LPDDR5"),
+    ]
     clase = forms.ChoiceField(
         label="Clase",
         choices=[("", "Seleccione la clase"), *CLASES],
         required=False,
         help_text="Elija la clase que corresponda al equipo.",
+    )
+    tipo_disco = forms.ChoiceField(
+        label="Tipo de disco",
+        choices=[("", "Seleccione el tipo de disco"), *TIPOS_DISCO],
+        required=False,
+    )
+    tipo_ram = forms.ChoiceField(
+        label="Tipo de RAM",
+        choices=[("", "Seleccione el tipo de RAM"), *TIPOS_RAM],
+        required=False,
     )
     telefono_ip_asignado = forms.BooleanField(
         label="Tiene teléfono IP asignado",
@@ -1082,6 +1207,13 @@ class DetalleComputadorForm(DetalleForm):
         if actual and actual not in dict(opciones):
             opciones.append((actual, f"{actual} (valor actual)"))
         self.fields["clase"].choices = opciones
+
+        for campo in ("tipo_disco", "tipo_ram"):
+            actual = (getattr(self.instance, campo, "") or "").strip()
+            opciones = list(self.fields[campo].choices)
+            if actual and actual not in dict(opciones):
+                opciones.append((actual, f"{actual} (valor actual)"))
+            self.fields[campo].choices = opciones
 
         es_tableta = (
             getattr(getattr(self.instance, "equipo", None), "tipo", "")
@@ -1146,10 +1278,35 @@ class DetalleComputadorForm(DetalleForm):
 
 class DetalleImpresoraForm(DetalleForm):
     """Datos propios de una impresora o escáner."""
+    CLASES = [
+        ("L\u00e1ser", "L\u00e1ser"),
+        ("Inyecci\u00f3n de tinta", "Inyecci\u00f3n de tinta"),
+        ("Multifuncional l\u00e1ser", "Multifuncional l\u00e1ser"),
+        ("Multifuncional de tinta", "Multifuncional de tinta"),
+        ("Matricial", "Matricial"),
+        ("T\u00e9rmica", "T\u00e9rmica"),
+        ("Esc\u00e1ner", "Esc\u00e1ner"),
+        ("Otro", "Otro"),
+    ]
+    clase = forms.ChoiceField(
+        label="Tipo de impresora o esc\u00e1ner",
+        choices=[("", "Seleccione el tipo"), *CLASES],
+        required=False,
+        help_text="Elija la tecnolog\u00eda que corresponda.",
+    )
+
     class Meta:
         model = DetalleImpresora
         exclude = ["equipo"]
-        labels = {"clase": "Tipo (láser, tinta, multifuncional…)"}
+        labels = {"clase": "Tipo de impresora o escáner"}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        actual = (self.instance.clase or "").strip()
+        opciones = list(self.fields["clase"].choices)
+        if actual and actual not in dict(opciones):
+            opciones.append((actual, f"{actual} (valor actual)"))
+        self.fields["clase"].choices = opciones
 
 
 class DetalleGPSForm(DetalleForm):
@@ -1286,6 +1443,31 @@ class AsignacionEquipoForm(forms.ModelForm):
                 sugerido es «Nuevo» (el caso de un equipo recién comprado).
         """
         super().__init__(*args, **kwargs)
+        self.fields["area"].widget = forms.TextInput(attrs={
+            "class": "form-control",
+            "list": "lista-sedes-puestos-entrega",
+            "autocomplete": "off",
+            "placeholder": "Busca o escribe una sede, puesto o área",
+        })
+        # Los registros históricos de entrega guardan el área como texto.
+        # Ofrecemos sedes y puestos del catálogo, pero mantenemos entrada libre
+        # para áreas administrativas y ubicaciones que aún no estén catalogadas.
+        opciones = set(
+            Puesto.objects.filter(activo=True)
+            .exclude(sede__exact="")
+            .values_list("sede", flat=True)
+        )
+        opciones.update(
+            Puesto.objects.filter(activo=True)
+            .values_list("nombre", flat=True)
+        )
+        opciones.update(
+            Sede.objects.filter(activo=True).values_list("nombre", flat=True)
+        )
+        self.sedes_puestos_opciones = sorted(
+            {valor.strip() for valor in opciones if valor and valor.strip()},
+            key=str.casefold,
+        )
         self.fields["funcionario"].required = True
         estado = self.fields["estado_entrega"]
         estado.required = True

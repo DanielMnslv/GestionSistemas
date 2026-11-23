@@ -392,6 +392,9 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     </div>
                 </fieldset>
                 {% endfor %}
+                <datalist id="lista-sedes-equipo">
+                    {% for sede in formulario_edicion.sedes_opciones %}<option value="{{ sede }}"></option>{% endfor %}
+                </datalist>
                 {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
                     {% if not permisos.licencias %}
                     <p class="ficha-field-help">Las claves de licencia solo las ven y editan el técnico y el administrador.</p>

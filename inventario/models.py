@@ -101,7 +101,7 @@ class Equipo(models.Model):
     def estado_tono(self):
         """Color de la insignia de estado: green, amber, red o gray."""
         return {
-            "Operativo": "green", "Regular": "amber", "DaÃ±ado": "red",
+            "Operativo": "green", "Regular": "amber", Radio.ESTADO_DANADO: "red",
             "Baja": "red", "No operativo": "red",
         }.get(self.estado_texto, "gray")
 
@@ -268,12 +268,12 @@ class Radio(models.Model):
 
     ESTADO_OPERATIVO = "Operativo"
     ESTADO_REGULAR = "Regular"
-    ESTADO_DANADO = "DaÃ±ado"
+    ESTADO_DANADO = "Dañado"
     ESTADO_BAJA = "Baja"
     ESTADOS = [
         (ESTADO_OPERATIVO, "Operativo"),
         (ESTADO_REGULAR, "Regular"),
-        (ESTADO_DANADO, "DaÃ±ado"),
+        (ESTADO_DANADO, ESTADO_DANADO),
         (ESTADO_BAJA, "Baja"),
     ]
 
@@ -286,7 +286,7 @@ class Radio(models.Model):
             return ""
         if "baja" in t:
             return cls.ESTADO_BAJA
-        if any(p in t for p in ("daÃ±", "malo", "defect", "falla")):
+        if any(p in t for p in ("dañ", "dano", "malo", "defect", "falla")):
             return cls.ESTADO_DANADO
         if "regular" in t or "desgast" in t:
             return cls.ESTADO_REGULAR
@@ -1822,9 +1822,9 @@ class RegistroAuditoria(models.Model):
 
         CREAR = "CREAR", "Creó"
         EDITAR = "EDITAR", "Modificó"
-        ELIMINAR = "ELIMINAR", "EliminÃ³"
+        ELIMINAR = "ELIMINAR", "Eliminó"
         INGRESO = "INGRESO", "Ingresó"
-        SALIDA = "SALIDA", "CerrÃ³ sesiÃ³n"
+        SALIDA = "SALIDA", "Cerró sesión"
         INGRESO_FALLIDO = "INGRESO_FALLIDO", "Ingreso fallido"
 
     fecha = models.DateTimeField(auto_now_add=True, db_index=True)

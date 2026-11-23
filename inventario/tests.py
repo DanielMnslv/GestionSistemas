@@ -631,7 +631,10 @@ class AsignacionRadioVistasTests(TestCase):
                 "inventario:asignacion_devolver",
                 kwargs={"asignacion_id": asignacion.pk},
             ),
-            {"observaciones_devolucion": "Devolución de prueba"},
+            {
+                "fecha_devolucion": timezone.now().isoformat(),
+                "observaciones_devolucion": "Devolución de prueba",
+            },
         )
 
         self.assertRedirects(
@@ -1842,7 +1845,7 @@ class EquipoDeRadioTests(TestCase):
 
     def test_estado_unico_normaliza_y_sincroniza_el_equipo(self):
         self.assertEqual(Radio.normalizar_estado("Bueno"), "Operativo")
-        self.assertEqual(Radio.normalizar_estado("malo"), "Dañado")
+        self.assertEqual(Radio.normalizar_estado("malo"), "Da" + "\u00f1" + "ado")
         radio = Radio.objects.create(placa="RJ-20", estado_radio="Dañado")
         self.assertEqual(
             radio.equipo.estado_operativo,
@@ -3488,7 +3491,7 @@ class FichaRadioPestanasTests(TestCase):
         self.assertContains(respuesta, 'id="form-editar-radio"')
         self.assertContains(respuesta, 'data-p-total>5</strong>')
         self.assertContains(respuesta, 'data-titulo="Identificación"')
-        self.assertContains(respuesta, 'data-titulo="Accesorios"')
+        self.assertContains(respuesta, 'data-titulo="Estado y accesorios"')
 
     def test_entregas_muestra_acta_integrada_y_devolucion_en_modal(self):
         asignacion = AsignacionRadio.objects.create(
@@ -3627,13 +3630,27 @@ class EstadoDeComponentesDelRadioTests(TestCase):
     def test_el_estado_se_guarda_desde_el_formulario_del_radio(self):
         from inventario.forms import RadioForm
 
-        formulario = RadioForm(instance=self.radio)
-        for campo in ("estado_perilla_encendido", "estado_perilla_frecuencia", "estado_clip"):
-            self.assertIn(campo, formulario.fields)
-        self.assertEqual(formulario.fields["estado_clip"].initial, None)
-        self.assertEqual(
-            formulario["estado_perilla_encendido"].value(), "Bueno"
+        formulario = RadioForm(
+            data={
+                "placa": self.radio.placa,
+                "perilla_encendido_unificada": "Regular",
+                "perilla_frecuencia_unificada": "Bueno",
+                "clip_unificado": "No tiene",
+            },
+            instance=self.radio,
         )
+        for campo in (
+            "perilla_encendido_unificada",
+            "perilla_frecuencia_unificada",
+            "clip_unificado",
+        ):
+            self.assertIn(campo, formulario.fields)
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        radio = formulario.save()
+        self.assertEqual(radio.estado_perilla_encendido, "Regular")
+        self.assertEqual(radio.estado_perilla_frecuencia, "Bueno")
+        self.assertFalse(radio.clip)
+        self.assertEqual(radio.estado_clip, "No tiene")
 
 
 class TransferenciaComponentesRadioTests(TestCase):
@@ -3954,8 +3971,14 @@ class ModuloUsuariosPazYSalvoTests(TestCase):
         self.th = Usuario.objects.create_user(username="th", password="x")
         self.th.groups.add(Group.objects.create(name="Talento humano"))
 
-        self.ana = Funcionario.objects.create(cedula="111", nombre_completo="ANA RUIZ", cargo="Analista")
-        self.luis = Funcionario.objects.create(cedula="222", nombre_completo="LUIS PAZ")
+        self.ana = Funcionario.objects.create(
+            cedula="111", nombre_completo="ANA RUIZ", cargo="Analista",
+            estado_persona=Funcionario.EstadoPersona.ACTIVA,
+        )
+        self.luis = Funcionario.objects.create(
+            cedula="222", nombre_completo="LUIS PAZ",
+            estado_persona=Funcionario.EstadoPersona.ACTIVA,
+        )
 
         self.pc = Equipo.objects.create(
             placa="PC--70", tipo=Equipo.Tipo.COMPUTADOR, serial="S70",

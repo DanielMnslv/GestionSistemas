@@ -109,6 +109,8 @@
     gap: 8px;
 }
 
+.maintenance-form-field[hidden] { display: none !important; }
+
 .maintenance-form-field label {
     color: #30394b;
     font-size: 13px;

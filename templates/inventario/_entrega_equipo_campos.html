@@ -16,6 +16,11 @@
             </legend>
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario_entrega.area %}
+                <datalist id="lista-sedes-puestos-entrega">
+                    {% for opcion in formulario_entrega.sedes_puestos_opciones %}
+                        <option value="{{ opcion }}"></option>
+                    {% endfor %}
+                </datalist>
                 {% include "inventario/_campo.html" with field=formulario_entrega.estado_entrega %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.accesorios ancho_completo=True %}
                 {% include "inventario/_campo.html" with field=formulario_entrega.observaciones_entrega ancho_completo=True %}

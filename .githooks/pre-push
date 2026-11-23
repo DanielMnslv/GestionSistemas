@@ -1,0 +1,15 @@
+#!/bin/sh
+# Ejecuta todas las validaciones locales antes de permitir cualquier push.
+set -u
+
+if ! command -v powershell.exe >/dev/null 2>&1; then
+    echo "No se encontró powershell.exe; no se permite publicar sin validar."
+    exit 1
+fi
+
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File scripts/validar_local.ps1
+resultado=$?
+if [ "$resultado" -ne 0 ]; then
+    echo "Push bloqueado: las validaciones locales no finalizaron correctamente."
+    exit "$resultado"
+fi

@@ -1073,3 +1073,25 @@ html[data-tema="dark"] body .jx-content .btn-primary:hover, html[data-tema="dark
 td .mant-acciones { justify-content: flex-start; margin-top: 6px; }
 td .mant-accion { min-height: 26px; padding: 0 10px; font-size: 12px; }
 .ficha-cambio-tipo-fila input { flex: 1 1 200px; max-width: 280px; }
+.jx-autoguardado-aviso {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 10050;
+    max-width: min(360px, calc(100vw - 32px));
+    padding: 11px 15px;
+    border: 1px solid var(--jx-line-strong);
+    border-radius: 12px;
+    background: var(--jx-surface);
+    color: var(--jx-text);
+    box-shadow: 0 8px 28px rgba(12, 24, 55, .16);
+    font-size: 13px;
+}
+.jx-autoguardado-aviso[hidden] { display: none !important; }
+.ficha-field input:disabled,
+.ficha-field select:disabled,
+.ficha-field textarea:disabled {
+    background: var(--jx-surface-soft);
+    color: var(--jx-muted);
+    cursor: not-allowed;
+}

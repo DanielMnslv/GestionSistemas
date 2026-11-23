@@ -12,7 +12,7 @@ Variables que usa: permisos (permisos.py) y c (contadores del menú).
 <link rel="icon" href="{% static 'img/favicon-jano.svg' %}" type="image/svg+xml">
 {% include "_estilos.html" %}{% block extra_css %}{% endblock %}
 </head>
-<body class="jx {% block body_class %}{% endblock %}">
+<body class="jx {% block body_class %}{% endblock %}" data-draft-user="{{ request.user.pk|default:'anon' }}">
 {% include "_iconos.html" %}
 {% with n=request.resolver_match.url_name|default:'' c=menu_conteos %}
 <div class="jx-app">
@@ -232,6 +232,45 @@ Variables que usa: permisos (permisos.py) y c (contadores del menú).
   document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("[data-mant-form]").forEach(configurarFormularioMantenimiento));
   const observer = new MutationObserver(() => document.querySelectorAll("[data-mant-form]").forEach(configurarFormularioMantenimiento));
   observer.observe(document.body, {childList: true, subtree: true});
+})();
+</script>
+<script>
+(function () {
+  function configurarCamposEquipo(form) {
+    if (!form || form.dataset.janoEquipoReady === "1") return;
+    const revision = form.querySelector('[name="requiere_revision"]');
+    const motivo = form.querySelector('[name="motivo_revision"]');
+    const responsable = form.querySelector('[data-responsable-selector]');
+    const cedula = form.querySelector('[data-responsable-cedula]');
+    if (!revision && !responsable) return;
+    form.dataset.janoEquipoReady = "1";
+
+    function actualizarMotivo() {
+      if (motivo && revision) motivo.disabled = !revision.checked;
+    }
+    if (revision && motivo) {
+      actualizarMotivo();
+      revision.addEventListener("change", actualizarMotivo);
+    }
+
+    if (responsable && cedula) {
+      function actualizarCedula() {
+        const valor = responsable.value || "";
+        cedula.value = valor.indexOf("actual:") === 0 ? valor.slice(7) : valor;
+      }
+      actualizarCedula();
+      responsable.addEventListener("change", actualizarCedula);
+    }
+  }
+
+  function revisarFormulariosEquipo() {
+    document.querySelectorAll("form").forEach(configurarCamposEquipo);
+  }
+  document.addEventListener("DOMContentLoaded", revisarFormulariosEquipo);
+  new MutationObserver(revisarFormulariosEquipo).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 })();
 </script>
 </body>
