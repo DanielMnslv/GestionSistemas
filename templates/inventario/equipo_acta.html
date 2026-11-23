@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% comment %}
-Acta de entrega de un equipo a un funcionario: equipo, características, accesorios, estado en que se entrega, cláusula y firma.
+Acta de asignación de un equipo a una persona responsable: equipo, características, accesorios, estado físico, cláusula y recibido conforme.
 Vista equipo_acta (views_equipos.py). Nunca muestra claves de licencia. Con ?embed=1 se ve compacta dentro de la ficha.
 {% endcomment %}
 {% load static %}
 
-{% block title %}Acta de entrega {{ equipo.placa }} | JANO Inventario{% endblock %}
+{% block title %}Acta de asignación {{ equipo.placa }} | JANO Inventario{% endblock %}
 
 {% block body_class %}{% if request.GET.embed %}acta-embed{% endif %}{% endblock %}
 
@@ -20,9 +20,9 @@ Vista equipo_acta (views_equipos.py). Nunca muestra claves de licencia. Con ?emb
 </div>
 
 <article class="acta{% if request.GET.embed %} acta-compacta{% endif %}">
-    <h1>Acta de entrega de equipo</h1>
+    <h1>Acta de asignación de equipo</h1>
     <p class="acta-sub">Seguridad Jano
-        <span class="acta-chip">Entrega N.º E-{{ asignacion.pk }}</span>
+        <span class="acta-chip">Asignación N.º A-{{ asignacion.pk }}</span>
         <span class="acta-chip">{{ asignacion.fecha_entrega|date:"d/m/Y H:i" }}</span></p>
 
     <h2>Equipo</h2>
@@ -46,14 +46,14 @@ Vista equipo_acta (views_equipos.py). Nunca muestra claves de licencia. Con ?emb
         {% endif %}
     </table>
 
-    <h2>Entrega</h2>
+    <h2>Asignación y recibido conforme</h2>
     <table class="acta-tabla">
-        <tr><th>Recibe</th><td>{{ asignacion.nombre_recibe|default:"Sin dato" }} · C.C. {{ asignacion.cedula_recibe|default:"sin dato" }}{% if asignacion.funcionario.cargo %} · {{ asignacion.funcionario.cargo }}{% endif %}</td></tr>
+        <tr><th>Persona responsable</th><td>{{ asignacion.nombre_recibe|default:"Sin dato" }} · C.C. {{ asignacion.cedula_recibe|default:"sin dato" }}{% if asignacion.funcionario.cargo %} · {{ asignacion.funcionario.cargo }}{% endif %}</td></tr>
         <tr><th>Área o sede</th><td>{{ asignacion.area|default:"Sin dato" }}</td></tr>
         {% if asignacion.estado_entrega %}
         <tr><th>Estado en que se entrega</th><td><strong>{{ asignacion.get_estado_entrega_display }}</strong></td></tr>
         {% endif %}
-        <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}</td></tr>
+        <tr><th>Asignado por</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username }}</td></tr>
         {% if asignacion.observaciones_entrega %}
         <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega|linebreaksbr }}</td></tr>
         {% endif %}
@@ -69,7 +69,7 @@ Vista equipo_acta (views_equipos.py). Nunca muestra claves de licencia. Con ?emb
         {% else %}<span class="acta-sin-firma">No consta la aceptación de la cláusula.</span>{% endif %}
     </p>
 
-    <h2>Firma de quien recibe</h2>
+    <h2>Firma de recibido conforme</h2>
     <div class="acta-firma">
         {% if asignacion.firma %}
         <img src="{{ asignacion.firma }}" alt="Firma del funcionario">

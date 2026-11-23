@@ -40,7 +40,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
 
     <div class="rd-tabs" role="tablist" aria-label="Secciones de la ficha">
         <button type="button" class="rd-tab" role="tab" id="tab-resumen" aria-controls="panel-resumen" data-tab="resumen">Resumen</button>
-        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Entregas y actas <span class="rd-tab-count">{{ historial_asignaciones|length }}</span></button>
+        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Asignaciones y actas <span class="rd-tab-count">{{ historial_asignaciones|length }}</span></button>
         <button type="button" class="rd-tab" role="tab" id="tab-mantenimientos" aria-controls="panel-mantenimientos" data-tab="mantenimientos">Mantenimientos <span class="rd-tab-count">{{ historial_mantenimientos|length }}</span></button>
         {% if radio.equipo %}
         <button type="button" class="rd-tab" role="tab" id="tab-hoja-de-vida" aria-controls="panel-hoja-de-vida" data-tab="hoja-de-vida">Hoja de vida</button>
@@ -57,9 +57,9 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
             <h2>Resumen</h2>
             <p>
                 {% if asignacion_activa %}
-                Entregado desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y H:i" }}.
+                Asignado desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y H:i" }}.
                 {% else %}
-                Sin entrega activa: disponible para entregar.
+                Sin asignaci?n activa: disponible para asignar.
                 {% endif %}
             </p>
         </div>
@@ -135,8 +135,8 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
     <!-- ENTREGAS Y ACTAS -->
     <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregas" aria-labelledby="tab-entregas" hidden>
         <div class="rd-panel-heading">
-            <h2>Entregas y actas</h2>
-            <p>Elige una entrega de la lista para ver su acta completa al lado.</p>
+            <h2>Asignaciones y actas</h2>
+            <p>Elige una asignaci?n de la lista para ver su acta completa al lado.</p>
         </div>
         <div class="rd-panel-body">
             {% if asignacion_activa and radio.activo and permisos.entregas %}
@@ -171,7 +171,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
             {% endif %}
 
             {% if not asignacion_activa and radio.activo and permisos.entregas %}
-            <p class="rd-devolver rd-entregar"><button type="button" data-ir="entregar">Registrar entrega</button></p>
+            <p class="rd-devolver rd-entregar"><button type="button" data-ir="entregar">Asignar radio</button></p>
             {% endif %}
 
             {% if historial_asignaciones %}
@@ -198,7 +198,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                     {% endfor %}
                 </ul>
                 <div class="rd-visor">
-                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una entrega para ver su acta.</p>
+                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una asignaci?n para ver su acta.</p>
                     {% for asignacion in historial_asignaciones %}
                     <div class="acta-embed rd-acta" id="acta-{{ asignacion.pk }}" hidden>
                         {% include "inventario/_acta_radio.html" %}
@@ -207,7 +207,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                 </div>
             </div>
             {% else %}
-            <div class="rd-empty">Este radio no tiene entregas registradas.</div>
+            <div class="rd-empty">Este radio no tiene asignaciones registradas.</div>
             {% endif %}
         </div>
     </section>
@@ -307,11 +307,11 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
 
     {% if permisos.radios %}
     <!-- EDITAR -->
-    <!-- REGISTRAR ENTREGA (se abre con el botón de la pestaña Entregas y actas) -->
+    <!-- REGISTRAR ENTREGA (se abre con el botón de la pestaña Asignaciones y actas) -->
     {% if formulario_entrega %}
-    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregar" aria-label="Registrar entrega" hidden>
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregar" aria-label="Asignar radio" hidden>
         <div class="rd-panel-heading">
-            <h2>Registrar entrega</h2>
+            <h2>Asignar radio</h2>
             <p>Los campos marcados con * son obligatorios.</p>
         </div>
         <div class="rd-panel-body">
@@ -345,7 +345,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                     <div class="ficha-acciones-der">
                         <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
                         <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
-                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Registrar entrega →</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Registrar asignaci?n →</button>
                     </div>
                 </div>
             </form>

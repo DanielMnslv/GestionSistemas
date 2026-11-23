@@ -188,6 +188,14 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         required=False,
         widget=forms.HiddenInput,
     )
+    firma_archivo = forms.FileField(
+        label="Adjuntar firma digital",
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            "accept": "image/png,image/jpeg,.png,.jpg,.jpeg",
+        }),
+        help_text="Imagen PNG o JPG, máximo 2 MB.",
+    )
     actividades_preventivas = forms.MultipleChoiceField(
         label="Actividades realizadas", required=False,
         choices=act.CHOICES_PREVENTIVAS,
@@ -324,6 +332,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         mínimos de cada clase de intervención.
         """
         cleaned = super().clean()
+        firma_adjunta = cleaned.get("firma_archivo")
+        if firma_adjunta:
+            cleaned["firma_recibido"] = firma_adjunta
+            self.data = self.data.copy()
+            self.data[self.add_prefix("firma_recibido")] = firma_adjunta
         firma = cleaned.get("firma_recibido") or ""
         nombre_recibe = (cleaned.get("recibido_por_nombre") or "").strip()
         if not self.instance.pk and not firma:
@@ -361,6 +374,9 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         """Valida que la firma almacenada sea una imagen PNG dibujada."""
         firma = self.cleaned_data.get("firma_recibido") or ""
         return validar_firma(firma) if firma else ""
+
+    def clean_firma_archivo(self):
+        return firma_archivo_a_data_url(self.cleaned_data.get("firma_archivo"))
 
 
 class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
@@ -468,18 +484,44 @@ ESTADOS_COMPONENTE = [
     ("No tiene", "No tiene"),
 ]
 
-# Una firma dibujada pesa unos pocos KB; el límite evita cargas abusivas.
-FIRMA_MAX_CARACTERES = 300_000
+# Las firmas se guardan en los campos de texto existentes como data URL. Se
+# permiten archivos PNG/JPEG de hasta 2 MB para firma digital adjunta.
+FIRMA_MAX_ARCHIVO_BYTES = 2 * 1024 * 1024
+FIRMA_MAX_CARACTERES = 3_000_000
+
+
+def firma_archivo_a_data_url(archivo):
+    """Valida un PNG/JPEG adjunto y lo convierte a data URL para almacenarlo."""
+    if not archivo:
+        return ""
+    if archivo.size > FIRMA_MAX_ARCHIVO_BYTES:
+        raise forms.ValidationError("La firma adjunta no puede superar 2 MB.")
+    contenido = archivo.read(FIRMA_MAX_ARCHIVO_BYTES + 1)
+    if contenido.startswith(b"\x89PNG\r\n\x1a\n"):
+        mime = "image/png"
+    elif contenido.startswith(b"\xff\xd8\xff"):
+        mime = "image/jpeg"
+    else:
+        raise forms.ValidationError("Adjunta una imagen PNG o JPG válida.")
+    return f"data:{mime};base64,{base64.b64encode(contenido).decode('ascii')}"
 
 
 def validar_firma(firma):
-    """La firma debe ser una imagen PNG en data URL de tamaño razonable."""
-    prefijo = "data:image/png;base64,"
-    if not firma.startswith(prefijo) or len(firma) > FIRMA_MAX_CARACTERES:
+    """La firma debe ser PNG o JPEG en data URL y tener contenido válido."""
+    prefijos = ("data:image/png;base64,", "data:image/jpeg;base64,")
+    prefijo = next((p for p in prefijos if firma.startswith(p)), None)
+    if not prefijo or len(firma) > FIRMA_MAX_CARACTERES:
         raise forms.ValidationError("La firma no es válida.")
     try:
-        base64.b64decode(firma[len(prefijo):], validate=True)
+        contenido = base64.b64decode(firma[len(prefijo):], validate=True)
     except (binascii.Error, ValueError):
+        raise forms.ValidationError("La firma no es válida.")
+    firma_correcta = (
+        contenido.startswith(b"\x89PNG\r\n\x1a\n")
+        if prefijo.endswith("png;base64,")
+        else contenido.startswith(b"\xff\xd8\xff")
+    )
+    if not firma_correcta:
         raise forms.ValidationError("La firma no es válida.")
     return firma
 
@@ -1196,15 +1238,15 @@ class EquipoForm(forms.ModelForm):
             ] = ""
         self.fields["responsable_cedula"].disabled = True
         self.fields["responsable_nombre"].help_text = (
-            "Se muestra el responsable de la entrega activa. "
-            "Los cambios se registran desde Entregas y actas."
+            "Se muestra la persona responsable de la asignación activa. "
+            "Los cambios se registran desde Asignaciones y actas."
             if not self._responsable_manual else
             "Seleccione una persona; su cédula se completa automáticamente."
         )
         self.fields["responsable_cedula"].help_text = (
             "Se completa automáticamente con la persona seleccionada."
             if self._responsable_manual else
-            "La identificación se toma de la persona vinculada a la entrega activa."
+            "La identificación se toma de la persona vinculada a la asignación activa."
         )
         revision_activa = (
             self.data.get("requiere_revision") in {"on", "true", "1", "yes"}
@@ -1632,6 +1674,15 @@ class AsignacionEquipoForm(forms.ModelForm):
 
     Exige funcionario activo, aceptación de la cláusula y firma dibujada.
     """
+    firma_archivo = forms.FileField(
+        label="Adjuntar firma digital",
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            "accept": "image/png,image/jpeg,.png,.jpg,.jpeg",
+        }),
+        help_text="Imagen PNG o JPG, máximo 2 MB.",
+    )
+
     class Meta:
         model = AsignacionEquipo
         fields = [
@@ -1639,11 +1690,11 @@ class AsignacionEquipoForm(forms.ModelForm):
             "observaciones_entrega", "clausula_aceptada", "firma",
         ]
         labels = {
-            "funcionario": "Funcionario que recibe",
+            "funcionario": "Persona responsable",
             "area": "Área o sede",
             "estado_entrega": "Estado en que se entrega",
-            "accesorios": "Accesorios entregados",
-            "observaciones_entrega": "Observaciones de entrega",
+            "accesorios": "Accesorios asignados",
+            "observaciones_entrega": "Observaciones de asignación",
             "clausula_aceptada": "El funcionario acepta la cláusula",
         }
         widgets = {
@@ -1711,7 +1762,7 @@ class AsignacionEquipoForm(forms.ModelForm):
         )
         self.fields["firma"] = forms.CharField(
             widget=forms.HiddenInput,
-            error_messages={"required": "Falta la firma del funcionario."},
+            required=False,
         )
         for nombre, field in self.fields.items():
             if nombre not in ("clausula_aceptada", "firma"):
@@ -1719,11 +1770,22 @@ class AsignacionEquipoForm(forms.ModelForm):
 
     def clean_firma(self):
         """Valida que la firma sea una imagen PNG dibujada."""
-        return validar_firma(self.cleaned_data["firma"])
+        firma = self.cleaned_data.get("firma") or ""
+        return validar_firma(firma) if firma else ""
+
+    def clean_firma_archivo(self):
+        return firma_archivo_a_data_url(self.cleaned_data.get("firma_archivo"))
 
     def clean(self):
         """Si el equipo se entrega con detalles, exige describirlos."""
         datos = super().clean()
+        firma_adjunta = datos.get("firma_archivo")
+        if firma_adjunta:
+            datos["firma"] = firma_adjunta
+            self.data = self.data.copy()
+            self.data[self.add_prefix("firma")] = firma_adjunta
+        if not datos.get("firma"):
+            self.add_error("firma", "Dibuja la firma o adjunta una imagen.")
         if (
             datos.get("estado_entrega") == AsignacionEquipo.EstadoEntrega.DETALLES
             and not (datos.get("observaciones_entrega") or "").strip()
@@ -1742,6 +1804,14 @@ class FirmaEntregaForm(forms.ModelForm):
     o ninguna firma: el funcionario confirma el estado del equipo, acepta la
     cláusula y firma. El enlace anterior se conserva.
     """
+    firma_archivo = forms.FileField(
+        label="Adjuntar firma digital",
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            "accept": "image/png,image/jpeg,.png,.jpg,.jpeg",
+        }),
+        help_text="Imagen PNG o JPG, máximo 2 MB.",
+    )
 
     class Meta:
         model = AsignacionEquipo
@@ -1766,12 +1836,27 @@ class FirmaEntregaForm(forms.ModelForm):
         )
         self.fields["firma"] = forms.CharField(
             widget=forms.HiddenInput,
-            error_messages={"required": "Falta la firma del funcionario."},
+            required=False,
         )
 
     def clean_firma(self):
         """Valida que la firma sea una imagen PNG dibujada."""
-        return validar_firma(self.cleaned_data["firma"])
+        firma = self.cleaned_data.get("firma") or ""
+        return validar_firma(firma) if firma else ""
+
+    def clean_firma_archivo(self):
+        return firma_archivo_a_data_url(self.cleaned_data.get("firma_archivo"))
+
+    def clean(self):
+        datos = super().clean()
+        firma_adjunta = datos.get("firma_archivo")
+        if firma_adjunta:
+            datos["firma"] = firma_adjunta
+            self.data = self.data.copy()
+            self.data[self.add_prefix("firma")] = firma_adjunta
+        if not datos.get("firma"):
+            self.add_error("firma", "Dibuja la firma o adjunta una imagen.")
+        return datos
 
 
 class CorreoFuncionarioForm(forms.Form):

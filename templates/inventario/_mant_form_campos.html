@@ -11,6 +11,8 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
     {% for field in formulario %}
         {% if field.name == "firma_recibido" %}
             {{ field }}
+        {% elif field.name == "firma_archivo" %}
+            {# Se presenta junto al lienzo, debajo de Observaciones. #}
         {% elif field.name == "recibido_por_nombre" and ocultar_firma %}
             {{ field.as_hidden }}
         {% elif field.name == "recibido_por_nombre" and variante != "programar" %}
@@ -71,6 +73,14 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
     <div class="mant-firma-dibujo">
         <label for="mant-firma-canvas">Firma de quien recibe <span class="maintenance-form-required" aria-hidden="true">*</span></label>
         <canvas id="mant-firma-canvas" data-mant-firma-canvas data-field-id="{{ formulario.firma_recibido.id_for_label }}" width="900" height="240" aria-label="Firme aquí con el dedo o con el mouse"></canvas>
+        <p class="maintenance-form-help">Dibuja la firma o adjunta una imagen de firma digital (PNG o JPG, máximo 2 MB).</p>
+        <div class="maintenance-form-field">
+            <label for="{{ formulario.firma_archivo.id_for_label }}">Adjuntar firma digital</label>
+            {{ formulario.firma_archivo }}
+            {% for error in formulario.firma_archivo.errors %}
+                <span class="maintenance-form-errors" role="alert">{{ error }}</span>
+            {% endfor %}
+        </div>
         <div class="mant-firma-pie">
             <span class="maintenance-form-help">Firme con el dedo o el mouse.</span>
             <button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-mant-firma-borrar>Borrar firma</button>

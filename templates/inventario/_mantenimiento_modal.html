@@ -9,7 +9,7 @@
         <button type="button" class="mant-modal-cerrar" data-cerrar aria-label="Cerrar">&times;</button>
     </header>
 
-    <form method="post" action="{{ accion }}" data-mant-form>
+    <form method="post" enctype="multipart/form-data" action="{{ accion }}" data-mant-form>
         {% csrf_token %}
         {% if equipo_fijo %}<input type="hidden" name="equipo_fijo" value="1">{% endif %}
         <div class="mant-modal-cuerpo">

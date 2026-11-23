@@ -546,7 +546,7 @@ def mantenimiento_crear(request):
     equipo_fijo = equipo_fijo_de(request)
 
     if request.method == "POST":
-        formulario = MantenimientoEquipoForm(request.POST)
+        formulario = MantenimientoEquipoForm(request.POST, request.FILES)
 
         if formulario.is_valid():
             with transaction.atomic():
@@ -597,7 +597,9 @@ def mantenimiento_editar(request, mantenimiento_id):
         return redirect("inventario:mantenimientos_lista")
 
     formulario = MantenimientoEquipoForm(
-        request.POST if request.method == "POST" else None, instance=mantenimiento
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+        instance=mantenimiento,
     )
     if request.method == "POST" and formulario.is_valid():
         formulario.save()
@@ -822,6 +824,7 @@ def mantenimiento_programado_completar(request, programacion_id):
         if request.method == "POST":
             formulario = MantenimientoEquipoForm(
                 request.POST,
+                request.FILES,
                 initial=datos_iniciales,
             )
         else:
@@ -919,7 +922,7 @@ def asignacion_crear(request):
             )
             return render(request, "inventario/asignacion_form.html", {
                 "formulario": formulario,
-                "titulo": "Registrar entrega de radio",
+                "titulo": "Registrar asignación de radio",
                 "clausula": CLAUSULA_CONFIDENCIALIDAD,
             })
         return redirect("inventario:equipos_lista")
@@ -982,10 +985,10 @@ def asignacion_crear(request):
     if request.POST.get("pestanas_radio") == "1":
         return render(request, "inventario/asignacion_form.html", {
             "formulario": formulario,
-            "titulo": "Registrar entrega de radio",
+            "titulo": "Registrar asignación de radio",
             "clausula": CLAUSULA_CONFIDENCIALIDAD,
         })
-    messages.error(request, "No se pudo registrar la entrega. "
+    messages.error(request, "No se pudo registrar la asignación. "
                   + formulario.errors.as_text().replace("\n", " "))
     return _volver_a_equipos(radio.pk)
 

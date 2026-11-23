@@ -194,6 +194,15 @@
 
 .hoja-nota b { color: #334155; font-weight: 600; }
 
+.hoja-firma-mini {
+    display: block;
+    max-width: 132px;
+    max-height: 52px;
+    margin-top: 4px;
+    object-fit: contain;
+    object-position: left center;
+}
+
 .hoja-vacio-bloque {
     margin: 0;
     padding: 14px;

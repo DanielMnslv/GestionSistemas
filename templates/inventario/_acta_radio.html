@@ -1,10 +1,10 @@
 {% comment %}
-Acta de entrega de un radio a un puesto (supervisor, estado de cada pieza, cláusula y firma).
+Acta de asignación de un radio a un puesto (supervisor, estado de cada pieza, cláusula y firma).
 Se incluye en la pestaña «Entregas» de radio_pestanas.html. Espera "asignacion".
 {% endcomment %}
 <article class="acta acta-compacta">
     <button class="ficha-form-button acta-imprimir" type="button" onclick="window.print()">Imprimir o guardar PDF</button>
-    <h1>Acta de entrega de radio</h1>
+    <h1>Acta de asignación de radio</h1>
     <p class="acta-sub">
         Seguridad Jano
         <span class="acta-chip">Entrega N.º {{ asignacion.pk }}</span>
@@ -19,7 +19,7 @@ Se incluye en la pestaña «Entregas» de radio_pestanas.html. Espera "asignacio
         <tr><th>Marca y modelo</th><td>{% if radio.marca or radio.modelo %}{{ radio.marca }} {{ radio.modelo }}{% else %}-{% endif %}</td></tr>
     </table>
 
-    <h2>Estado al entregar</h2>
+    <h2>Estado físico al asignar</h2>
     <table class="acta-tabla">
         {% for fila in asignacion.estados_entrega %}
         <tr><th>{{ fila.nombre }}</th><td>{% if fila.valor %}<span class="acta-estado acta-estado-{{ fila.tono }}">{{ fila.valor }}</span>{% else %}-{% endif %}</td></tr>
@@ -30,7 +30,7 @@ Se incluye en la pestaña «Entregas» de radio_pestanas.html. Espera "asignacio
     <table class="acta-tabla">
         <tr><th>Cliente</th><td>{{ asignacion.cliente_asignado|default:"-" }}</td></tr>
         <tr><th>Puesto</th><td>{{ asignacion.puesto_asignado|default:"-" }}</td></tr>
-        <tr><th>Supervisor que recibe</th><td>{{ asignacion.coordinador_zona|default:"-" }}{% if asignacion.cedula_funcionario %} · C.C. {{ asignacion.cedula_funcionario }}{% endif %}</td></tr>
+        <tr><th>Responsable asignado</th><td>{{ asignacion.coordinador_zona|default:"-" }}{% if asignacion.cedula_funcionario %} · C.C. {{ asignacion.cedula_funcionario }}{% endif %}</td></tr>
         <tr><th>Entregó</th><td>{{ asignacion.entregado_por.get_full_name|default:asignacion.entregado_por.username|default:"-" }}</td></tr>
         {% if asignacion.observaciones_entrega_limpias %}
         <tr><th>Observaciones</th><td>{{ asignacion.observaciones_entrega_limpias|linebreaksbr }}</td></tr>
@@ -50,7 +50,7 @@ Se incluye en la pestaña «Entregas» de radio_pestanas.html. Espera "asignacio
         {% endif %}
     </p>
 
-    <h2>Firma de quien recibe</h2>
+    <h2>Firma de recibido conforme</h2>
     <div class="acta-firma">
         {% if asignacion.firma %}
         <img src="{{ asignacion.firma }}" alt="Firma de quien recibe">

@@ -1760,7 +1760,7 @@ def equipo_entregar(request, placa):
         )
         return _volver_a_pestanas(placa, "entregas")
 
-    formulario = AsignacionEquipoForm(request.POST)
+    formulario = AsignacionEquipoForm(request.POST, request.FILES)
     if _registrar_entrega(request, equipo, formulario):
         messages.success(request, "La entrega del equipo quedó registrada.")
         return _volver_a_pestanas(placa, "entregas")
@@ -1832,7 +1832,7 @@ def equipo_entregar_firma(request, placa):
     regularizar = request.GET.get("regularizar") == "1"
     primera_entrega = not regularizar and not equipo.asignaciones.exists()
     if request.method == "POST":
-        formulario = AsignacionEquipoForm(request.POST)
+        formulario = AsignacionEquipoForm(request.POST, request.FILES)
         asignacion = _registrar_entrega(request, equipo, formulario)
         if asignacion is not None:
             messages.success(

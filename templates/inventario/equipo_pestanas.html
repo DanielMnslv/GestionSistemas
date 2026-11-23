@@ -31,7 +31,7 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
     <div class="rd-tabs" role="tablist" aria-label="Secciones de la ficha">
         <button type="button" class="rd-tab" role="tab" id="tab-resumen" aria-controls="panel-resumen" data-tab="resumen">Resumen</button>
         {% if equipo.tipo != "RADIO" %}
-        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Entregas y actas <span class="rd-tab-count">{{ asignaciones|length }}</span></button>
+        <button type="button" class="rd-tab" role="tab" id="tab-entregas" aria-controls="panel-entregas" data-tab="entregas">Asignaciones y actas <span class="rd-tab-count">{{ asignaciones|length }}</span></button>
         {% endif %}
         <button type="button" class="rd-tab" role="tab" id="tab-mantenimientos" aria-controls="panel-mantenimientos" data-tab="mantenimientos">Mantenimientos <span class="rd-tab-count">{{ mantenimientos|length }}</span></button>
         <button type="button" class="rd-tab" role="tab" id="tab-hoja-de-vida" aria-controls="panel-hoja-de-vida" data-tab="hoja-de-vida">Hoja de vida</button>
@@ -104,10 +104,10 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
     {% if equipo.tipo != "RADIO" %}
     <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregas" aria-labelledby="tab-entregas" hidden>
         <div class="rd-panel-heading">
-            <h2>Entregas y actas</h2>
+            <h2>Asignaciones y actas</h2>
             <p>
-                {% if asignacion_activa %}Entregado a {{ asignacion_activa.nombre_recibe }} desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y" }}.
-                {% else %}Sin entrega activa.{% endif %}
+                {% if asignacion_activa %}Asignado a {{ asignacion_activa.nombre_recibe }} desde el {{ asignacion_activa.fecha_entrega|date:"d/m/Y" }}.
+                {% else %}Sin asignación activa.{% endif %}
             </p>
         </div>
         <div class="rd-panel-body">
@@ -134,7 +134,7 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     </div>
                 </dialog>
                 {% else %}
-                <p class="rd-devolver rd-entregar"><button type="button" data-ir="entregar">Registrar entrega</button></p>
+                <p class="rd-devolver rd-entregar"><button type="button" data-ir="entregar">Asignar equipo</button></p>
                 {% endif %}
             {% endif %}
 
@@ -162,12 +162,12 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     {% endfor %}
                 </ul>
                 <div class="rd-visor">
-                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una entrega para ver su acta.</p>
-                    <iframe id="visor-acta" title="Acta de entrega" class="rd-iframe" hidden></iframe>
+                    <p class="rd-visor-vacio" id="visor-vacio">Haz clic en una asignación para ver su acta.</p>
+                    <iframe id="visor-acta" title="Acta de asignación" class="rd-iframe" hidden></iframe>
                 </div>
             </div>
             {% elif not permisos.entregas %}
-            <div class="rd-empty">Este equipo no tiene entregas registradas.</div>
+            <div class="rd-empty">Este equipo no tiene asignaciones registradas.</div>
             {% endif %}
         </div>
     </section>
@@ -306,14 +306,14 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
     {% endif %}
 
     {% if equipo.tipo != "RADIO" and formulario_entrega %}
-    <!-- REGISTRAR ENTREGA (se abre con el botón de la pestaña Entregas y actas) -->
-    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregar" aria-label="Registrar entrega" hidden>
+    <!-- ASIGNAR EQUIPO (se abre desde la pestaña Asignaciones y actas) -->
+    <section class="rd-panel rd-tabpanel" role="tabpanel" id="panel-entregar" aria-label="Asignar equipo" hidden>
         <div class="rd-panel-heading">
-            <h2>Registrar entrega</h2>
+            <h2>Asignar equipo</h2>
             <p>Los campos marcados con * son obligatorios.</p>
         </div>
         <div class="rd-panel-body">
-            <form method="post" action="{% url 'inventario:equipo_entregar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-entregar-equipo" novalidate data-con-errores="{% if formulario_entrega.errors %}1{% endif %}">
+            <form method="post" enctype="multipart/form-data" action="{% url 'inventario:equipo_entregar' equipo.placa %}" class="ficha-form-content ficha-pasos" id="form-entregar-equipo" novalidate data-con-errores="{% if formulario_entrega.errors %}1{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="embed" value="1">
                 {% if formulario_entrega.errors %}
@@ -341,7 +341,7 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     <div class="ficha-acciones-der">
                         <button class="ficha-form-button ficha-form-button-secondary" type="button" data-p-anterior hidden>Anterior</button>
                         <button class="ficha-form-button" type="button" data-p-siguiente>Siguiente</button>
-                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Registrar entrega →</button>
+                        <button class="ficha-form-button" type="submit" data-p-guardar hidden>Registrar asignación →</button>
                     </div>
                 </div>
             </form>

@@ -24,7 +24,7 @@ ninguna firma. Espera "asignacion", "equipo", "formulario" y "clausula".
     </header>
 
     <section class="ficha-form-card">
-        <form method="post" class="ficha-form-content" novalidate>
+        <form method="post" enctype="multipart/form-data" class="ficha-form-content" novalidate>
             {% csrf_token %}
             {% if formulario.errors %}
             <div class="ficha-form-errors" role="alert">
@@ -49,7 +49,7 @@ ninguna firma. Espera "asignacion", "equipo", "formulario" y "clausula".
                 {% endfor %}
             </div>
 
-            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma del funcionario" %}
+            {% include "inventario/_firma.html" with campo=formulario.firma archivo_campo=formulario.firma_archivo etiqueta="Firma del funcionario" %}
 
             <div class="ficha-form-actions">
                 <a class="ficha-form-button ficha-form-button-secondary" href="{% url 'inventario:calidad_datos' %}?seccion=firmas">Cancelar</a>

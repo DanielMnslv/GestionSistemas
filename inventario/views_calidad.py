@@ -97,7 +97,11 @@ def entrega_firmar(request, asignacion_id):
         messages.info(request, "Esta entrega ya está firmada.")
         return redirect("inventario:equipo_acta", asignacion.pk)
 
-    formulario = FirmaEntregaForm(request.POST or None, instance=asignacion)
+    formulario = FirmaEntregaForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=asignacion,
+    )
     if request.method == "POST" and formulario.is_valid():
         formulario.save()
         messages.success(

@@ -79,6 +79,7 @@
         var firma = form && form.querySelector("#" + canvas.dataset.fieldId);
         var error = raiz.querySelector("[data-mant-firma-error]");
         var borrar = raiz.querySelector("[data-mant-firma-borrar]");
+        var archivo = form && form.querySelector('[name="firma_archivo"]');
         if (!form || !firma) return;
         canvas.dataset.inicializada = "1";
         var contexto = canvas.getContext("2d");
@@ -124,13 +125,14 @@
         if (borrar) borrar.addEventListener("click", function () {
             contexto.clearRect(0, 0, canvas.width, canvas.height);
             firma.value = "";
+            if (archivo) archivo.value = "";
             if (error) error.hidden = false;
         });
         form.addEventListener("submit", function (evento) {
-            if (firma.value) return;
+            if (firma.value || (archivo && archivo.files.length)) return;
             evento.preventDefault();
             if (error) {
-                error.textContent = "Falta la firma de quien recibe.";
+                error.textContent = "Dibuja la firma o adjunta una imagen.";
                 error.hidden = false;
             }
             canvas.scrollIntoView({ behavior: "smooth", block: "center" });

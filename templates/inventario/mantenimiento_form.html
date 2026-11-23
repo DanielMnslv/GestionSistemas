@@ -45,7 +45,7 @@ SIN USO: el registro de mantenimiento se hace en la ventana emergente (_mantenim
         </div>
 
         <div class="maintenance-form-body">
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 {% include "inventario/_mant_form_campos.html" %}

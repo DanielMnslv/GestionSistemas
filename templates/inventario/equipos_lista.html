@@ -70,7 +70,7 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
             <select form="eq-form" name="disponibilidad">
                 <option value="">Todas</option>
                 <option value="en_inventario" {% if disponibilidad_seleccionada == "en_inventario" %}selected{% endif %}>En bodega</option>
-                <option value="entregado" {% if disponibilidad_seleccionada == "entregado" %}selected{% endif %}>Entregados</option>
+                <option value="entregado" {% if disponibilidad_seleccionada == "entregado" %}selected{% endif %}>Asignados</option>
             </select>
         </label>
         <label class="jx-select"><span>Responsable</span>
@@ -201,9 +201,9 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
                 <div class="pf-tabs" role="tablist" aria-label="Secciones de la ficha de {{ equipo.placa }}">
                     <button type="button" class="pf-tab is-activa" role="tab" id="pf-tab-{{ equipo.pk }}-resumen" aria-selected="true" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="0" data-pf-tab="resumen">Resumen</button>
                     {% if equipo.tipo == "RADIO" and equipo.radio %}
-                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#entregas">Entregas y actas <span class="rd-tab-count">{{ equipo.entregas_radio_count }}</span></button>
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#entregas">Asignaciones y actas <span class="rd-tab-count">{{ equipo.entregas_radio_count }}</span></button>
                     {% else %}
-                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1#entregas">Entregas y actas</button>
+                    <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-entregas" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="entregas" data-src="{{ ficha_url }}?embed=1#entregas">Asignaciones y actas</button>
                     {% endif %}
                     {% if equipo.tipo == "RADIO" and equipo.radio %}
                     <button type="button" class="pf-tab" role="tab" id="pf-tab-{{ equipo.pk }}-mantenimientos" aria-selected="false" aria-controls="pf-panel-{{ equipo.pk }}" tabindex="-1" data-pf-tab="mantenimientos" data-src="{{ ficha_url }}?embed=1&amp;pestanas_radio=1#mantenimientos">Mantenimientos <span class="rd-tab-count">{{ equipo.mantenimientos_radio_count }}</span></button>
@@ -246,7 +246,7 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
                 {% if equipo.entregas is not None %}
                 <section class="pf-card pf-c2 pf-ent" id="entregas-{{ equipo.pk }}" hidden>
                     <div class="pf-ent-cab">
-                        <h3>Entregas y actas</h3>
+                        <h3>Asignaciones y actas</h3>
                         <button type="button" class="pf-ent-cerrar" data-cerrar-entregas>Cerrar ✕</button>
                     </div>
                     {% if equipo.entregas %}
@@ -277,7 +277,7 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="pf-ent-vacio">Este equipo no tiene entregas registradas.</p>
+                    <p class="pf-ent-vacio">Este equipo no tiene asignaciones registradas.</p>
                     {% endif %}
                 </section>
                 {% endif %}
@@ -375,10 +375,10 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
 <div class="acta-modal" id="acta-modal" hidden role="dialog" aria-modal="true" aria-labelledby="acta-modal-tit">
     <div class="acta-modal-caja">
         <div class="acta-modal-cab">
-            <strong id="acta-modal-tit">Acta de entrega</strong>
+            <strong id="acta-modal-tit">Acta de asignación</strong>
             <button type="button" id="acta-modal-cerrar">Cerrar ✕</button>
         </div>
-        <iframe id="acta-modal-marco" title="Acta de entrega"></iframe>
+        <iframe id="acta-modal-marco" title="Acta de asignación"></iframe>
     </div>
 </div>
 {# Ventana «Transferir componentes» de los radios (botón [data-abrir-transferencia]). #}
@@ -405,7 +405,7 @@ Vista equipos_lista (views_equipos.py). Los filtros que acepta están documentad
         if (cerrar) { cerrar.closest(".pf-ent").hidden = true; return; }
         var acta = e.target.closest("[data-acta]");
         if (acta) {
-            titulo.textContent = "Acta de entrega · " + (acta.getAttribute("data-titulo") || "");
+            titulo.textContent = "Acta de asignación · " + (acta.getAttribute("data-titulo") || "");
             marco.src = acta.getAttribute("data-acta") + "?embed=1";
             modal.hidden = false;
             document.body.style.overflow = "hidden";

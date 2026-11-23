@@ -1,18 +1,18 @@
-{% comment %}Pasos del registro de entrega de un equipo (pestaña «Entregar» de la ficha). Espera "formulario_entrega" y "clausula".{% endcomment %}
+{% comment %}Pasos para asignar un equipo a una persona. Espera "formulario_entrega" y "clausula".{% endcomment %}
             <fieldset class="ficha-paso" data-paso="1" data-titulo="Funcionario">
             <legend class="ficha-section-heading">
                 <span class="ficha-section-number">01</span>
-                Funcionario que recibe
+                Persona responsable
             </legend>
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario_entrega.funcionario %}
             </div>
             </fieldset>
 
-            <fieldset class="ficha-paso" data-paso="2" data-titulo="Área y entrega">
+            <fieldset class="ficha-paso" data-paso="2" data-titulo="Área y asignación">
             <legend class="ficha-section-heading">
                 <span class="ficha-section-number">02</span>
-                Datos del área y de la entrega
+                Datos del área y de la asignación
             </legend>
             <div class="ficha-form-grid">
                 {% include "inventario/_campo.html" with field=formulario_entrega.area %}
@@ -46,14 +46,14 @@
                 {% endfor %}
             </div>
 
-            {% include "inventario/_firma.html" with campo=formulario_entrega.firma etiqueta="Firma del funcionario" %}
+            {% include "inventario/_firma.html" with campo=formulario_entrega.firma archivo_campo=formulario_entrega.firma_archivo etiqueta="Firma del funcionario" %}
 
             <aside class="ficha-responsibility-note">
                 <span aria-hidden="true">ⓘ</span>
                 <div>
                     <strong>Control y trazabilidad.</strong>
-                    El sistema registra al usuario autenticado como responsable de la entrega.
-                    Verifica el funcionario y el área antes de guardar.
+                    La persona seleccionada queda como responsable del equipo. El sistema registra quién realizó la asignación.
+                    Verifica la persona y el área antes de guardar.
                 </div>
             </aside>
             </fieldset>

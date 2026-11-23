@@ -9,7 +9,7 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
 {% block body_class %}{% if request.GET.embed %}acta-embed{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/paginas/hoja-vida.css' %}?v=20261030a">
+<link rel="stylesheet" href="{% static 'css/paginas/hoja-vida.css' %}?v=20261123a">
 {% endblock %}
 
 {% block content %}
@@ -60,8 +60,8 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
             <dd class="hoja-cifra">{{ mantenimientos|length }}{% if mantenimientos %}<small>Último: {{ mantenimientos.0.fecha_intervencion|date:"d/m/Y" }}</small>{% endif %}</dd>
         </div>
         <div>
-            <dt>Entregas</dt>
-            <dd class="hoja-cifra">{{ asignaciones|length }}{% if asignaciones %}<small>{% if asignaciones.0.fecha_devolucion %}Sin entrega vigente{% else %}Vigente desde {{ asignaciones.0.fecha_entrega|date:"d/m/Y" }}{% endif %}</small>{% endif %}</dd>
+            <dt>Asignaciones</dt>
+            <dd class="hoja-cifra">{{ asignaciones|length }}{% if asignaciones %}<small>{% if asignaciones.0.fecha_devolucion %}Sin asignación vigente{% else %}Vigente desde {{ asignaciones.0.fecha_entrega|date:"d/m/Y" }}{% endif %}</small>{% endif %}</dd>
         </div>
     </dl>
 
@@ -115,6 +115,8 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
                         <span class="hoja-trabajo">{{ m.trabajo_realizado }}</span>
                         {% if m.motivo %}<span class="hoja-nota"><b>Motivo:</b> {{ m.motivo }}</span>{% endif %}
                         {% if m.repuestos_utilizados %}<span class="hoja-nota"><b>Repuestos:</b> {{ m.repuestos_utilizados }}</span>{% endif %}
+                        {% if m.recibido_por_nombre %}<span class="hoja-nota"><b>Recibido por:</b> {{ m.recibido_por_nombre }}</span>{% endif %}
+                        {% if m.firma_recibido %}<img class="hoja-firma-mini" src="{{ m.firma_recibido }}" alt="Firma de {{ m.recibido_por_nombre|default:'quien recibe' }}">{% endif %}
                     </td>
                     <td class="col-tecnico">{{ m.tecnico_responsable }}</td>
                     <td class="col-estado">{% if m.estado_final %}<span class="hoja-estado hoja-estado-{% if m.estado_final == 'OPERATIVO' %}green{% elif m.estado_final == 'NO_OPERATIVO' %}red{% else %}amber{% endif %}">{{ m.get_estado_final_display }}</span>{% else %}<span class="hoja-vacio">—</span>{% endif %}</td>
@@ -127,13 +129,13 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
         {% endif %}
     </section>
 
-    {# ---------- Entregas ---------- #}
+    {# ---------- Asignaciones ---------- #}
     {% if asignaciones %}
     <section class="hoja-seccion">
-        <h2>Entregas <span class="hoja-conteo">{{ asignaciones|length }}</span></h2>
+        <h2>Asignaciones <span class="hoja-conteo">{{ asignaciones|length }}</span></h2>
         <table class="hoja-tabla">
             <thead>
-                <tr><th class="col-fecha">Entrega</th><th>Recibe</th><th>Área</th><th class="col-estado">Devolución</th></tr>
+                <tr><th class="col-fecha">Asignación</th><th>Persona responsable</th><th>Firma de recibido</th><th>Área</th><th class="col-estado">Devolución</th></tr>
             </thead>
             <tbody>
                 {% for a in asignaciones %}
@@ -143,6 +145,11 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
                         <strong>{{ a.nombre_recibe }}</strong>
                         {% if a.cedula_recibe %}<span class="hoja-nota">C.C. {{ a.cedula_recibe }}</span>{% endif %}
                         {% if a.accesorios %}<span class="hoja-nota"><b>Accesorios:</b> {{ a.accesorios }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if a.firma %}<img class="hoja-firma-mini" src="{{ a.firma }}" alt="Firma de {{ a.nombre_recibe|default:'quien recibe' }}">
+                        {% elif a.enlace_firma %}<a href="{{ a.enlace_firma }}" target="_blank" rel="noopener">Ver firma adjunta</a>
+                        {% else %}<span class="hoja-vacio">Sin firma</span>{% endif %}
                     </td>
                     <td>{{ a.area|default:"-" }}</td>
                     <td class="col-estado">{% if a.fecha_devolucion %}{{ a.fecha_devolucion|date:"d/m/Y" }}{% else %}<span class="hoja-estado hoja-estado-green">Vigente</span>{% endif %}</td>

@@ -25,8 +25,8 @@ para corregirla. Espera "seccion", "secciones", "conteos" y "filas".
 {% if seccion == "entregas" %}
 <section class="jx-card jx-card-flush">
     <div class="jx-card-head"><div>
-        <h2>Equipos con responsable pero sin acta de entrega</h2>
-        <p class="jx-sub">Se sabe quién tiene el equipo (normalmente porque venía del Sheet), pero no hay entrega registrada ni firma. Regulariza la entrega cuando el funcionario pase por TIC.</p>
+        <h2>Equipos con responsable pero sin acta de asignación</h2>
+        <p class="jx-sub">Se sabe quién tiene el equipo, pero no hay una asignación registrada con firma de recibido. Regulariza la asignación cuando la persona pase por TIC.</p>
     </div></div>
     <div class="jx-table-wrap">
         <table class="jx-table">
@@ -37,11 +37,11 @@ para corregirla. Espera "seccion", "secciones", "conteos" y "filas".
                 <td><strong>{{ e.placa }}</strong><small class="muted" style="display:block">{{ e.get_tipo_display }} · {{ e.marca }} {{ e.modelo }}</small></td>
                 <td>{{ e.responsable_nombre }}<small class="muted" style="display:block">{% if e.responsable_cedula %}C.C. {{ e.responsable_cedula }}{% else %}Sin cédula{% endif %}</small></td>
                 <td>{{ e.ubicacion|default:"—" }}</td>
-                <td>{% if e.dice_baja %}<span class="jx-badge jx-badge-bad" title="El responsable escrito dice baja o robo">¿Dar de baja?</span>{% elif e.funcionario_encontrado %}<span class="jx-badge jx-badge-ok">Encontrado</span>{% else %}<span class="jx-badge jx-badge-warn">Elegir al entregar</span>{% endif %}</td>
-                <td style="text-align:right;white-space:nowrap">{% if e.dice_baja %}<a class="jx-btn jx-btn-sm" href="{% url 'inventario:equipo_detalle' e.placa %}" title="Abre la ficha; la baja está en su pestaña «Dar de baja»">Revisar ficha</a> {% endif %}<a class="jx-btn {% if e.dice_baja %}jx-btn-sm{% else %}jx-btn-primary jx-btn-sm{% endif %}" href="{% url 'inventario:equipo_entregar_firma' e.placa %}?regularizar=1">Entregar con firma</a></td>
+                <td>{% if e.dice_baja %}<span class="jx-badge jx-badge-bad" title="El responsable escrito dice baja o robo">¿Dar de baja?</span>{% elif e.funcionario_encontrado %}<span class="jx-badge jx-badge-ok">Encontrado</span>{% else %}<span class="jx-badge jx-badge-warn">Elegir responsable</span>{% endif %}</td>
+                <td style="text-align:right;white-space:nowrap">{% if e.dice_baja %}<a class="jx-btn jx-btn-sm" href="{% url 'inventario:equipo_detalle' e.placa %}" title="Abre la ficha; la baja está en su pestaña «Dar de baja»">Revisar ficha</a> {% endif %}<a class="jx-btn {% if e.dice_baja %}jx-btn-sm{% else %}jx-btn-primary jx-btn-sm{% endif %}" href="{% url 'inventario:equipo_entregar_firma' e.placa %}?regularizar=1">Asignar con firma</a></td>
             </tr>
             {% empty %}
-            <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>Todos los equipos con responsable tienen su entrega registrada.</p></div></td></tr>
+            <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>Todos los equipos con responsable tienen su asignación registrada.</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -51,12 +51,12 @@ para corregirla. Espera "seccion", "secciones", "conteos" y "filas".
 {% elif seccion == "firmas" %}
 <section class="jx-card jx-card-flush">
     <div class="jx-card-head"><div>
-        <h2>Entregas vigentes sin firma en JANO</h2>
+        <h2>Asignaciones vigentes sin firma en JANO</h2>
         <p class="jx-sub">La mayoría se firmaron en el formulario de Google: la firma depende de ese archivo. Cuando el funcionario pase por TIC, que firme aquí; el enlace anterior se conserva.</p>
     </div></div>
     <div class="jx-table-wrap">
         <table class="jx-table">
-            <thead><tr><th>Equipo</th><th>Recibe</th><th>Entregado</th><th>Firma actual</th><th></th></tr></thead>
+            <thead><tr><th>Equipo</th><th>Persona responsable</th><th>Asignado</th><th>Firma actual</th><th></th></tr></thead>
             <tbody>
             {% for a in filas %}
             <tr>
@@ -67,7 +67,7 @@ para corregirla. Espera "seccion", "secciones", "conteos" y "filas".
                 <td style="text-align:right"><a class="jx-btn jx-btn-primary jx-btn-sm" href="{% url 'inventario:entrega_firmar' a.pk %}">Firmar en JANO</a></td>
             </tr>
             {% empty %}
-            <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>Todas las entregas vigentes están firmadas en JANO.</p></div></td></tr>
+            <tr><td colspan="5"><div class="jx-empty"><svg class="jx-i"><use href="#i-check"/></svg><p>Todas las asignaciones vigentes tienen firma de recibido en JANO.</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -77,7 +77,7 @@ para corregirla. Espera "seccion", "secciones", "conteos" y "filas".
 {% elif seccion == "puestos" %}
 <section class="jx-card jx-card-flush">
     <div class="jx-card-head"><div>
-        <h2>Radios entregados a un puesto escrito a mano</h2>
+        <h2>Radios asignados a un puesto escrito a mano</h2>
         <p class="jx-sub">Agrupados por cliente y puesto tal como se escribieron. Al vincular un grupo con el puesto del catálogo, todos sus radios quedan con el nombre oficial y los informes por cliente cuadran.</p>
     </div></div>
     <div class="jx-table-wrap">

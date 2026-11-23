@@ -4,6 +4,14 @@
     <canvas id="firma-lienzo" width="600" height="200"
             aria-label="Espacio para firmar con el dedo o el mouse"></canvas>
     {{ campo }}
+    {% if archivo_campo %}
+    <div class="ficha-field ficha-firma-adjunta">
+        <label for="{{ archivo_campo.id_for_label }}">O adjunta una firma digital</label>
+        {{ archivo_campo }}
+        {% if archivo_campo.help_text %}<small class="ficha-field-help">{{ archivo_campo.help_text }}</small>{% endif %}
+        {% for error in archivo_campo.errors %}<p class="ficha-field-error" role="alert">{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
     <div class="ficha-firma-acciones">
         <small class="ficha-field-help">Firma con el dedo (celular) o con el mouse.</small>
         <button type="button" class="ficha-form-button ficha-form-button-secondary" id="firma-limpiar">
@@ -21,6 +29,7 @@
     var lienzo = document.getElementById("firma-lienzo");
     var campo = document.getElementById("{{ campo.auto_id }}");
     var error = document.getElementById("firma-error");
+    var archivo = {% if archivo_campo %}document.getElementById("{{ archivo_campo.auto_id }}"){% else %}null{% endif %};
     var ctx = lienzo.getContext("2d");
     var dibujando = false;
 
@@ -68,12 +77,13 @@ y: (evento.clientY - caja.top) * lienzo.height / caja.height
     document.getElementById("firma-limpiar").addEventListener("click", function () {
         ctx.clearRect(0, 0, lienzo.width, lienzo.height);
         campo.value = "";
+        if (archivo) archivo.value = "";
     });
 
     lienzo.closest("form").addEventListener("submit", function (evento) {
-        if (!campo.value && {{ opcional|yesno:"false,true" }}) {
+        if (!campo.value && !(archivo && archivo.files.length) && {{ opcional|yesno:"false,true" }}) {
 evento.preventDefault();
-error.textContent = "Falta la firma.";
+error.textContent = "Dibuja la firma o adjunta una imagen.";
 error.hidden = false;
 lienzo.scrollIntoView({ behavior: "smooth", block: "center" });
         }

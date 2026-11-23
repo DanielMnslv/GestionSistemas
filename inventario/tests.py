@@ -87,6 +87,46 @@ class MantenimientoTipoIntervencionTests(TestCase):
         self.assertIn("Tableta Android", clases)
         self.assertNotIn("Escritorio torre", clases)
 
+    def test_mantenimiento_acepta_firma_jpeg_adjunta(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from inventario.forms import firma_archivo_a_data_url
+
+        firma_jpeg = b"\xff\xd8\xff\xe0firma-digital"
+        url = firma_archivo_a_data_url(
+            SimpleUploadedFile(
+                "firma.jpg", firma_jpeg, content_type="image/jpeg",
+            )
+        )
+
+        self.assertTrue(url.startswith("data:image/jpeg;base64,"))
+
+    def test_entrega_acepta_imagen_adjunta_en_lugar_de_dibujar(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from inventario.forms import AsignacionEquipoForm
+        from inventario.models import Funcionario
+
+        persona = Funcionario.objects.create(
+            cedula="90003", nombre_completo="Firma Digital Receptor",
+        )
+        firma_png = b"\x89PNG\r\n\x1a\nfirma-digital"
+        formulario = AsignacionEquipoForm(
+            data={
+                "funcionario": str(persona.pk),
+                "area": "Sistemas",
+                "estado_entrega": "NUEVO",
+                "clausula_aceptada": "on",
+            },
+            files={
+                "firma_archivo": SimpleUploadedFile(
+                    "firma.png", firma_png, content_type="image/png",
+                ),
+            },
+        )
+
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        asignacion = formulario.save(commit=False)
+        self.assertTrue(asignacion.firma.startswith("data:image/png;base64,"))
+
     def test_clases_de_impresora_y_escaner_son_independientes(self):
         from inventario.models import DetalleImpresora
 
@@ -2015,7 +2055,7 @@ class EntregaCompletaTests(TestCase):
             reverse("inventario:asignacion_acta", args=[asignacion.pk])
         )
 
-        self.assertContains(respuesta, "Acta de entrega de radio")
+        self.assertContains(respuesta, "Acta de asignación de radio")
         self.assertContains(respuesta, f'src="{FIRMA_PRUEBA}"')
 
     def test_exige_estados_clausula_y_firma(self):
@@ -3763,11 +3803,11 @@ class FichaRadioPestanasTests(TestCase):
         respuesta = self.client.get(
             url, {"embed": "1", "pestanas_radio": "1"}
         )
-        self.assertContains(respuesta, "Entregas y actas")
+        self.assertContains(respuesta, "Asignaciones y actas")
         self.assertContains(respuesta, "Mantenimientos")
         self.assertContains(respuesta, "Editar datos")
         self.assertContains(respuesta, "Dar de baja")
-        self.assertContains(respuesta, "Este radio no tiene entregas registradas.")
+        self.assertContains(respuesta, "Este radio no tiene asignaciones registradas.")
         self.assertContains(respuesta, 'id="form-editar-radio"')
         self.assertContains(respuesta, 'data-p-total>5</strong>')
         self.assertContains(respuesta, 'data-titulo="Identificación"')
@@ -3795,7 +3835,7 @@ class FichaRadioPestanasTests(TestCase):
         self.assertContains(
             respuesta, f'data-radio-acta="acta-radio-{asignacion.pk}"'
         )
-        self.assertContains(respuesta, "Acta de entrega de radio")
+        self.assertContains(respuesta, "Acta de asignación de radio")
         self.assertContains(respuesta, "Registrar devolución del radio")
         self.assertNotContains(respuesta, "Ver acta</span>")
 
@@ -3837,7 +3877,7 @@ class FichaRadioPestanasTests(TestCase):
                 "pestanas_radio": "1",
             },
         )
-        self.assertContains(respuesta, "Registrar entrega de radio")
+        self.assertContains(respuesta, "Registrar asignación de radio")
         self.assertEqual(
             respuesta.context["formulario"]["radio"].value(),
             self.radio.pk,

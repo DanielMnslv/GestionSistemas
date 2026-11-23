@@ -22,8 +22,8 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
         <span class="eyebrow">GESTIÓN DE EQUIPOS</span>
         <h1>{{ titulo }}</h1>
         <p>
-            Registra la entrega del radio, indica el cliente y el puesto de servicio
-            y el supervisor que lo recibe.
+            Asigna el radio al cliente y puesto de servicio,
+            y registra el supervisor que queda como responsable.
         </p>
     </header>
 
@@ -40,7 +40,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
         <div class="ficha-form-card-header">
             <div class="ficha-form-icon" aria-hidden="true">▣</div>
             <div>
-                <h2 id="ficha-card-title">Datos de la entrega</h2>
+                <h2 id="ficha-card-title">Datos de la asignación</h2>
                 <p>Los campos marcados con * son obligatorios.</p>
             </div>
         </div>
@@ -53,7 +53,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
 
             {% if formulario.non_field_errors %}
                 <div class="ficha-form-errors" role="alert">
-                    <strong>No fue posible registrar la entrega.</strong>
+                    <strong>No fue posible registrar la asignación.</strong>
                     {{ formulario.non_field_errors }}
                 </div>
             {% endif %}
@@ -96,7 +96,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
 
             <h3 class="ficha-section-heading">
                 <span class="ficha-section-number">02</span>
-                Datos del servicio y entrega
+                Datos del servicio y de la asignación
             </h3>
 
             <div class="ficha-form-grid">
@@ -151,7 +151,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
                 <div>
                     <strong>Control y trazabilidad.</strong>
                     El sistema registra al usuario autenticado como responsable
-                    de la entrega. Verifica el radio, el supervisor, el cliente
+                    de la asignación. Verifica el radio, el supervisor, el cliente
                     y el puesto antes de guardar. Si el radio ya tiene una
                     asignación activa, primero deberá registrarse su devolución.
                 </div>
@@ -164,7 +164,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
                 </a>
 
                 <button class="ficha-form-button" type="submit">
-                    Registrar entrega →
+                    Registrar asignación →
                 </button>
             </div>
         </form>

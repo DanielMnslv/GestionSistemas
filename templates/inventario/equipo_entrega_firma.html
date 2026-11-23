@@ -6,7 +6,7 @@ Muestra en una sola página: funcionario que recibe, estado del equipo,
 accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
 {% endcomment %}
 
-{% block title %}Entregar {{ equipo.placa }} | JANO Inventario{% endblock %}
+{% block title %}Asignar {{ equipo.placa }} | JANO Inventario{% endblock %}
 
 {% block content %}
 <section class="ficha-form-page">
@@ -15,18 +15,18 @@ accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
         <span aria-hidden="true">/</span>
         <a href="{% url 'inventario:equipo_detalle' equipo.placa %}">{{ equipo.placa }}</a>
         <span aria-hidden="true">/</span>
-        <span>Entrega con firma</span>
+        <span>Asignación con firma</span>
     </nav>
 
     <header class="ficha-form-heading">
         <span class="eyebrow">{{ equipo.get_tipo_display|upper }} · {{ equipo.placa }}</span>
-        <h1>{% if regularizar %}Regularizar la entrega con firma{% else %}Entrega del equipo con firma{% endif %}</h1>
+        <h1>{% if regularizar %}Regularizar la asignación con firma{% else %}Asignar equipo y registrar recibido{% endif %}</h1>
         <p>{{ equipo.marca }} {{ equipo.modelo }}{% if equipo.serial %} · Serial {{ equipo.serial }}{% endif %}.
-           Quien recibe firma aquí y queda constancia en el acta del estado en que lo recibió.</p>
+           La persona asignada queda responsable del equipo y firma el recibido conforme. El acta conserva el estado físico en que lo recibió.</p>
     </header>
 
     <section class="ficha-form-card">
-        <form method="post" class="ficha-form-content" novalidate>
+        <form method="post" enctype="multipart/form-data" class="ficha-form-content" novalidate>
             {% csrf_token %}
             {% if formulario_entrega.errors %}
             <div class="ficha-form-errors" role="alert">
@@ -39,8 +39,8 @@ accesorios, cláusula y lienzo de firma. Al guardar se abre el acta.
 
             <div class="ficha-form-actions">
                 <a class="ficha-form-button ficha-form-button-secondary"
-                   href="{% if regularizar %}{% url 'inventario:calidad_datos' %}{% else %}{% url 'inventario:equipo_detalle' equipo.placa %}{% endif %}">{% if regularizar %}Cancelar{% else %}Entregar después{% endif %}</a>
-                <button class="ficha-form-button" type="submit">Registrar entrega firmada →</button>
+                   href="{% if regularizar %}{% url 'inventario:calidad_datos' %}{% else %}{% url 'inventario:equipo_detalle' equipo.placa %}{% endif %}">{% if regularizar %}Cancelar{% else %}Asignar después{% endif %}</a>
+                <button class="ficha-form-button" type="submit">Registrar asignación →</button>
             </div>
         </form>
     </section>
