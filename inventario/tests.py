@@ -24,7 +24,9 @@ from inventario.models import (
     Radio,
     TransferenciaComponentesRadio,
 )
-from inventario.forms import EquipoForm, MantenimientoEquipoForm, RadioForm
+from inventario.forms import (
+    DetalleComputadorForm, EquipoForm, MantenimientoEquipoForm, RadioForm,
+)
 
 
 COMANDO = (
@@ -47,6 +49,42 @@ class MantenimientoTipoIntervencionTests(TestCase):
             ["PREVENTIVO", "CORRECTIVO", "DIAGNOSTICO"],
         )
         self.assertEqual(opciones[2][1], "Diagn\u00f3stico")
+
+    def test_nombre_de_recibe_se_muestra_una_vez_con_sugerencias_de_personas(self):
+        from inventario.models import Funcionario
+
+        Funcionario.objects.create(
+            cedula="90001", nombre_completo="Daniel Felipe Jimenez",
+        )
+        formulario = MantenimientoEquipoForm()
+        html = render_to_string(
+            "inventario/_mant_form_campos.html",
+            {"formulario": formulario, "variante": "registrar"},
+        )
+
+        self.assertEqual(html.count("Nombre de quien recibe"), 1)
+        self.assertIn('list="mant-personas-sugeridas"', html)
+        self.assertIn('<option value="Daniel Felipe Jimenez"></option>', html)
+        self.assertLess(html.index("Observaciones"), html.index("Nombre de quien recibe"))
+        self.assertLess(html.index("Nombre de quien recibe"), html.index("Firma de quien recibe"))
+
+    def test_formulario_de_tableta_no_pide_perifericos_ni_campos_de_pc(self):
+        from inventario.models import DetalleComputador
+
+        tableta = Equipo.objects.create(placa="TAB-MT1", tipo=Equipo.Tipo.TABLETA)
+        detalle = DetalleComputador(equipo=tableta)
+        formulario = DetalleComputadorForm(instance=detalle)
+
+        no_aplican = {
+            "mouse", "teclado", "monitor_serial", "monitor_modelo",
+            "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
+            "telefono_ip_serial", "telefono_ip_modelo", "velocidad_procesador",
+            "tipo_disco", "tipo_ram",
+        }
+        self.assertTrue(no_aplican.isdisjoint(formulario.fields))
+        clases = dict(formulario.fields["clase"].choices)
+        self.assertIn("Tableta Android", clases)
+        self.assertNotIn("Escritorio torre", clases)
 
     def test_login_usa_identidad_visual_estandar_jano(self):
         respuesta = self.client.get(reverse("login"))

@@ -197,8 +197,8 @@ GRUPOS_DETALLE = {
     ],
 }
 GRUPOS_DETALLE["TABLETA"] = [
-    ("Hardware", ["clase", "procesador", "velocidad_procesador", "tipo_disco",
-                   "capacidad_disco", "tipo_ram", "capacidad_ram"]),
+    ("Características de la tableta", ["clase", "procesador",
+                   "capacidad_disco", "capacidad_ram"]),
     ("Accesorios de tableta", ["regulador", "parlantes", "webcam"]),
     ("Sistema y licencias", ["sistema_operativo", "licencia_so", "antivirus",
                               "licencia_antivirus", "vencimiento_antivirus",
@@ -212,6 +212,7 @@ DETALLE_NO_APLICA_TABLETA = {
     "mouse", "teclado", "monitor_serial", "monitor_modelo",
     "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
     "telefono_ip_serial", "telefono_ip_modelo",
+    "velocidad_procesador", "tipo_disco", "tipo_ram",
 }
 
 # Pares modelo + serial que se muestran en una sola fila: (clave, etiqueta, campo modelo, campo serial).

@@ -13,6 +13,8 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
             {{ field }}
         {% elif field.name == "recibido_por_nombre" and ocultar_firma %}
             {{ field.as_hidden }}
+        {% elif field.name == "recibido_por_nombre" and variante != "programar" %}
+            {# Se muestra una sola vez, dentro del bloque de recibido conforme, debajo de Observaciones. #}
         {% elif equipo_fijo and field.name == "equipo" or equipo_fijo and field.name == "tipo_equipo" %}
             {{ field.as_hidden }}
             {% for error in field.errors %}
@@ -57,6 +59,11 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
             Nombre de quien recibe <span class="maintenance-form-required" aria-hidden="true">*</span>
         </label>
         {{ formulario.recibido_por_nombre }}
+        <datalist id="mant-personas-sugeridas">
+            {% for nombre_persona in formulario.personas_sugeridas %}
+                <option value="{{ nombre_persona }}"></option>
+            {% endfor %}
+        </datalist>
         {% for error in formulario.recibido_por_nombre.errors %}
             <span class="maintenance-form-errors" role="alert">{{ error }}</span>
         {% endfor %}

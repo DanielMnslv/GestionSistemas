@@ -250,7 +250,15 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         self.fields["recibido_por_nombre"].widget.attrs.update({
             "autocomplete": "name",
             "placeholder": "Nombre completo de quien recibe el equipo",
+            "list": "mant-personas-sugeridas",
         })
+        self.personas_sugeridas = list(
+            Funcionario.objects.filter(activo=True)
+            .exclude(nombre_completo="")
+            .order_by("nombre_completo")
+            .values_list("nombre_completo", flat=True)
+            .distinct()
+        )
         self._preparar_tipos()
         if not self.instance.pk:
             tipos_permitidos = {
@@ -1283,6 +1291,13 @@ class DetalleComputadorForm(DetalleForm):
         ("Android", "Android"),
         ("Otro", "Otro"),
     ]
+    CLASES_TABLETA = [
+        ("Tableta Android", "Tableta Android"),
+        ("Tableta iPadOS", "Tableta iPadOS"),
+        ("Tableta Windows", "Tableta Windows"),
+        ("Tableta otro sistema", "Tableta otro sistema"),
+        ("Otro", "Otro"),
+    ]
     TIPOS_DISCO = [
         ("HDD", "HDD (mecánico)"),
         ("SSD SATA", "SSD SATA"),
@@ -1389,8 +1404,16 @@ class DetalleComputadorForm(DetalleForm):
                 "monitor2_serial", "monitor2_modelo", "ups_serial",
                 "ups_modelo", "telefono_ip_asignado",
                 "telefono_ip_serial", "telefono_ip_modelo",
+                "velocidad_procesador", "tipo_disco", "tipo_ram",
             ):
                 self.fields.pop(campo, None)
+            # El mismo modelo técnico sirve para computadores y tabletas,
+            # pero las opciones de clase deben describir el dispositivo real.
+            actual_clase = (getattr(self.instance, "clase", "") or "").strip()
+            opciones_tableta = [("", "Seleccione la clase"), *self.CLASES_TABLETA]
+            if actual_clase and actual_clase not in dict(opciones_tableta):
+                opciones_tableta.append((actual_clase, f"{actual_clase} (valor actual)"))
+            self.fields["clase"].choices = opciones_tableta
         else:
             telefono_actual = bool(
                 getattr(self.instance, "telefono_ip_serial", "")
