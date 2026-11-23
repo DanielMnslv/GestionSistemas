@@ -79,7 +79,9 @@ def firma_asignacion_visible(asignacion):
             coincidencia = re.search(r"/file/d/([A-Za-z0-9_-]+)", partes.path)
             identificador = coincidencia.group(1) if coincidencia else ""
         if identificador:
-            return f"https://drive.google.com/uc?export=view&id={identificador}"
+            # Drive's thumbnail endpoint serves the actual image bytes. The
+            # older uc?export=view endpoint may return an HTML viewer instead.
+            return f"https://drive.google.com/thumbnail?id={identificador}&sz=w1200"
     # Algunos orígenes guardan la URL de la imagen directamente.
     return enlace
 

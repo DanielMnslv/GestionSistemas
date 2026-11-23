@@ -123,7 +123,7 @@ class MantenimientoTipoIntervencionTests(TestCase):
         )
         self.assertEqual(
             firma_asignacion_visible(asignacion),
-            "https://drive.google.com/uc?export=view&id=archivo_firma_123",
+            "https://drive.google.com/thumbnail?id=archivo_firma_123&sz=w1200",
         )
 
         asignacion.firma = "data:image/png;base64,abc"
