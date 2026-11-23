@@ -1,0 +1,9 @@
+{% if mantenimiento.firma_recibido %}
+<div class="rd-maintenance-signature">
+    <div>
+        <strong>Recibido por</strong>
+        <p>{{ mantenimiento.recibido_por_nombre|default:"-" }}</p>
+    </div>
+    <img src="{{ mantenimiento.firma_recibido }}" alt="Firma de {{ mantenimiento.recibido_por_nombre|default:'quien recibe' }}">
+</div>
+{% endif %}

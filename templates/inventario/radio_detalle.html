@@ -258,6 +258,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                     <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_realizado|default:"Sin información"|linebreaksbr }}</p></div>
                     <div class="rd-maintenance-field"><strong>Repuestos utilizados</strong><p>{{ mantenimiento.repuestos_utilizados|default:"Sin información"|linebreaksbr }}</p></div>
                 </div>
+                {% include "inventario/_mant_firma_detalle.html" with mantenimiento=mantenimiento %}
 
                 {% if mantenimiento.observaciones or mantenimiento.origen_archivo or mantenimiento.origen_hoja or mantenimiento.fila_origen %}
                 <details class="rd-trace">

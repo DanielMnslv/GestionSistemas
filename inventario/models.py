@@ -121,6 +121,9 @@ class Equipo(models.Model):
     ubicacion = models.CharField(max_length=200, blank=True)
 
     observaciones = models.TextField(blank=True)
+
+    # Aceptación de quien recibe el equipo tras la intervención. Las
+    # intervenciones históricas pueden permanecer sin firma.
     requiere_revision = models.BooleanField(default=False)
     motivo_revision = models.CharField(max_length=255, blank=True)
 
@@ -496,6 +499,11 @@ class MantenimientoEquipo(models.Model):
     )
 
     observaciones = models.TextField(blank=True)
+
+    # Aceptación de quien recibe el equipo tras la intervención. Las
+    # intervenciones históricas pueden permanecer sin firma.
+    recibido_por_nombre = models.CharField(max_length=200, blank=True)
+    firma_recibido = models.TextField(blank=True)
 
     # Solicitud (ticket) que originó la intervención, si la hay.
     ticket = models.ForeignKey(

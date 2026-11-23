@@ -51,6 +51,7 @@
     function mostrar(html) {
         contenido.innerHTML = html;
         carga.hidden = true;
+        inicializarFirmaMantenimiento(contenido);
         Array.prototype.forEach.call(contenido.querySelectorAll("textarea"), function (a) {
             a.dataset.min = a.offsetHeight;
             crecer(a);
@@ -69,6 +70,71 @@
                 }
             }
         });
+    }
+
+    function inicializarFirmaMantenimiento(raiz) {
+        var canvas = raiz.querySelector("[data-mant-firma-canvas]");
+        if (!canvas || canvas.dataset.inicializada) return;
+        var form = canvas.closest("form");
+        var firma = form && form.querySelector("#" + canvas.dataset.fieldId);
+        var error = raiz.querySelector("[data-mant-firma-error]");
+        var borrar = raiz.querySelector("[data-mant-firma-borrar]");
+        if (!form || !firma) return;
+        canvas.dataset.inicializada = "1";
+        var contexto = canvas.getContext("2d");
+        var dibujando = false;
+        contexto.lineWidth = 3;
+        contexto.lineCap = "round";
+        contexto.lineJoin = "round";
+        contexto.strokeStyle = "#080D79";
+        function punto(evento) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: (evento.clientX - rect.left) * canvas.width / rect.width,
+                y: (evento.clientY - rect.top) * canvas.height / rect.height
+            };
+        }
+        if (firma.value) {
+            var imagen = new Image();
+            imagen.onload = function () { contexto.drawImage(imagen, 0, 0); };
+            imagen.src = firma.value;
+        }
+        canvas.addEventListener("pointerdown", function (evento) {
+            evento.preventDefault();
+            dibujando = true;
+            canvas.setPointerCapture(evento.pointerId);
+            var p = punto(evento);
+            contexto.beginPath();
+            contexto.moveTo(p.x, p.y);
+        });
+        canvas.addEventListener("pointermove", function (evento) {
+            if (!dibujando) return;
+            var p = punto(evento);
+            contexto.lineTo(p.x, p.y);
+            contexto.stroke();
+        });
+        function terminar() {
+            if (!dibujando) return;
+            dibujando = false;
+            firma.value = canvas.toDataURL("image/png");
+            if (error) error.hidden = true;
+        }
+        canvas.addEventListener("pointerup", terminar);
+        canvas.addEventListener("pointercancel", terminar);
+        if (borrar) borrar.addEventListener("click", function () {
+            contexto.clearRect(0, 0, canvas.width, canvas.height);
+            firma.value = "";
+            if (error) error.hidden = false;
+        });
+        form.addEventListener("submit", function (evento) {
+            if (firma.value) return;
+            evento.preventDefault();
+            if (error) {
+                error.textContent = "Falta la firma de quien recibe.";
+                error.hidden = false;
+            }
+            canvas.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, true);
     }
 
     function abrir(enlace) {
@@ -129,6 +195,7 @@
     });
 
     dialogo.addEventListener("submit", function (e) {
+        if (e.defaultPrevented) return;
         var form = e.target.closest("form[data-mant-form]");
         if (!form) return;
         e.preventDefault();

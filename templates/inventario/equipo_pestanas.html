@@ -217,6 +217,7 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                         <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_realizado|default:"-"|linebreaksbr }}</p></div>
                         <div class="rd-maintenance-field"><strong>Repuestos utilizados</strong><p>{{ mantenimiento.repuestos_utilizados|default:"-"|linebreaksbr }}</p></div>
                     </div>
+                    {% include "inventario/_mant_firma_detalle.html" with mantenimiento=mantenimiento %}
                     {% if mantenimiento.observaciones or mantenimiento.origen_archivo or mantenimiento.origen_hoja or mantenimiento.fila_origen %}
                     <details class="rd-trace">
                         <summary>Ver observaciones y trazabilidad</summary>

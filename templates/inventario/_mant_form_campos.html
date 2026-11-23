@@ -9,7 +9,11 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
 
 <div class="maintenance-form-grid">
     {% for field in formulario %}
-        {% if equipo_fijo and field.name == "equipo" or equipo_fijo and field.name == "tipo_equipo" %}
+        {% if field.name == "firma_recibido" %}
+            {{ field }}
+        {% elif field.name == "recibido_por_nombre" and ocultar_firma %}
+            {{ field.as_hidden }}
+        {% elif equipo_fijo and field.name == "equipo" or equipo_fijo and field.name == "tipo_equipo" %}
             {{ field.as_hidden }}
             {% for error in field.errors %}
                 <div class="maintenance-form-errors maintenance-form-field-wide" role="alert">{{ error }}</div>
@@ -42,3 +46,31 @@ Con "equipo_fijo" (ventana abierta desde la fila de un equipo) el equipo va ocul
         {% endif %}
     {% endfor %}
 </div>
+{% if variante != "programar" and not ocultar_firma %}
+<section class="mant-firma-recibido" data-mant-firma>
+    <div class="mant-firma-encabezado">
+        <h3>Recibido conforme</h3>
+        <p>Quien recibe confirma con su firma la entrega del equipo después de la intervención.</p>
+    </div>
+    <div class="maintenance-form-field">
+        <label for="{{ formulario.recibido_por_nombre.id_for_label }}">
+            Nombre de quien recibe <span class="maintenance-form-required" aria-hidden="true">*</span>
+        </label>
+        {{ formulario.recibido_por_nombre }}
+        {% for error in formulario.recibido_por_nombre.errors %}
+            <span class="maintenance-form-errors" role="alert">{{ error }}</span>
+        {% endfor %}
+    </div>
+    <div class="mant-firma-dibujo">
+        <label for="mant-firma-canvas">Firma de quien recibe <span class="maintenance-form-required" aria-hidden="true">*</span></label>
+        <canvas id="mant-firma-canvas" data-mant-firma-canvas data-field-id="{{ formulario.firma_recibido.id_for_label }}" width="900" height="240" aria-label="Firme aquí con el dedo o con el mouse"></canvas>
+        <div class="mant-firma-pie">
+            <span class="maintenance-form-help">Firme con el dedo o el mouse.</span>
+            <button type="button" class="maintenance-form-button maintenance-form-button-secondary" data-mant-firma-borrar>Borrar firma</button>
+        </div>
+        <span class="maintenance-form-errors" data-mant-firma-error role="alert" {% if not formulario.firma_recibido.errors %}hidden{% endif %}>
+            {% for error in formulario.firma_recibido.errors %}{{ error }}{% empty %}Falta la firma de quien recibe.{% endfor %}
+        </span>
+    </div>
+</section>
+{% endif %}

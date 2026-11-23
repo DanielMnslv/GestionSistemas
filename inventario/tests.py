@@ -48,6 +48,16 @@ class MantenimientoTipoIntervencionTests(TestCase):
         )
         self.assertEqual(opciones[2][1], "Diagn\u00f3stico")
 
+    def test_login_usa_identidad_visual_estandar_jano(self):
+        respuesta = self.client.get(reverse("login"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Protegemos con Propósito")
+        self.assertContains(respuesta, "Número de cédula")
+        self.assertContains(respuesta, "¿Olvidaste tu contraseña?")
+        self.assertContains(respuesta, "login-password-toggle")
+        self.assertNotContains(respuesta, "JANO INVENTARIO</span>")
+
 
 class EquipoFormCatalogoYPropiedadTests(TestCase):
     def test_motivo_de_revision_se_oculta_hasta_marcar_la_casilla(self):
@@ -941,6 +951,8 @@ class MantenimientoProgramadoVistasTests(TestCase):
                 "resultado": MantenimientoEquipo.Resultado.SOLUCIONADO,
                 "estado_final": MantenimientoEquipo.EstadoFinal.OPERATIVO,
                 "observaciones": "Prueba automatizada",
+                "recibido_por_nombre": "Persona que recibe",
+                "firma_recibido": FIRMA_PRUEBA,
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -2756,6 +2768,8 @@ class MantenimientosTodosLosEquiposTests(TestCase):
                 "trabajo_realizado": "Limpieza",
                 "estado_final": MantenimientoEquipo.EstadoFinal.OPERATIVO,
                 "resultado": MantenimientoEquipo.Resultado.SOLUCIONADO,
+                "recibido_por_nombre": "Persona que recibe",
+                "firma_recibido": FIRMA_PRUEBA,
             },
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
@@ -3119,7 +3133,24 @@ class MantenimientoSinTicketsTests(TestCase):
         self.client.force_login(self.tecnico)
 
     def test_intervencion_directa_se_registra(self):
-        self.client.post(reverse("inventario:mantenimiento_crear"), {
+        respuesta = self.client.post(reverse("inventario:mantenimiento_crear"), {
+            "equipo": self.pc.pk,
+            "fecha_intervencion": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
+            "tipo": "PREVENTIVO", "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
+            "motivo": "Rutina semestral", "trabajo_realizado": "Limpieza",
+            "actividades_preventivas": ["limpieza_computador"],
+            "resultado": "SOLUCIONADO", "estado_final": "OPERATIVO",
+            "recibido_por_nombre": "Persona que recibe",
+            "firma_recibido": FIRMA_PRUEBA,
+        }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+
+        self.assertEqual(MantenimientoEquipo.objects.get().equipo, self.pc)
+        mantenimiento = MantenimientoEquipo.objects.get()
+        self.assertEqual(mantenimiento.recibido_por_nombre, "Persona que recibe")
+        self.assertEqual(mantenimiento.firma_recibido, FIRMA_PRUEBA)
+
+    def test_intervencion_no_se_guarda_sin_firma_de_quien_recibe(self):
+        respuesta = self.client.post(reverse("inventario:mantenimiento_crear"), {
             "equipo": self.pc.pk,
             "fecha_intervencion": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
             "tipo": "PREVENTIVO", "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
@@ -3128,7 +3159,9 @@ class MantenimientoSinTicketsTests(TestCase):
             "resultado": "SOLUCIONADO", "estado_final": "OPERATIVO",
         }, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
 
-        self.assertEqual(MantenimientoEquipo.objects.get().equipo, self.pc)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(MantenimientoEquipo.objects.exists())
+        self.assertContains(respuesta, "Se requiere la firma de quien recibe")
 
     def test_programar_crea_mantenimiento_programado(self):
         fecha = timezone.localdate() + timedelta(days=7)
@@ -4305,7 +4338,8 @@ class MantenimientoPorTipoDeEquipoTests(TestCase):
         base = {"equipo": self.pc.pk, "tipo": "CORRECTIVO",
                 "fecha_intervencion": "2026-11-13T10:00",
                 "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
-                "trabajo_realizado": "Cambio", "causa_dano": "Golpe", "resultado": "SOLUCIONADO"}
+                "trabajo_realizado": "Cambio", "causa_dano": "Golpe", "resultado": "SOLUCIONADO",
+                "recibido_por_nombre": "Persona que recibe", "firma_recibido": FIRMA_PRUEBA}
         form = MantenimientoEquipoForm(data=base)
         self.assertFalse(form.is_valid())
         self.assertIn("componentes_intervenidos", form.errors)

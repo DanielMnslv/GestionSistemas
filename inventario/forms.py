@@ -183,6 +183,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             ("Daniel Felipe Jiménez Loaiza", "Daniel Felipe Jiménez Loaiza"),
         ],
     )
+    firma_recibido = forms.CharField(
+        label="Firma de quien recibe",
+        required=False,
+        widget=forms.HiddenInput,
+    )
     actividades_preventivas = forms.MultipleChoiceField(
         label="Actividades realizadas", required=False,
         choices=act.CHOICES_PREVENTIVAS,
@@ -208,7 +213,7 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             "actividades_preventivas", "actividad_preventiva_otros", "componentes_intervenidos",
             "trabajo_realizado",
             "repuestos_utilizados", "resultado", "estado_final", "estados_entrega",
-            "observaciones",
+            "observaciones", "recibido_por_nombre", "firma_recibido",
         ]
         labels = {
             "tecnico_responsable": "Especialista asignado",
@@ -217,6 +222,7 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             "causa_dano": "Posible causa del daño presentado",
             "trabajo_realizado": "Descripción de la actividad realizada",
             "actividad_preventiva_otros": "Describa otras actividades",
+            "recibido_por_nombre": "Nombre de quien recibe",
         }
         widgets = {
             "fecha_intervencion": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -240,6 +246,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         self.fields["motivo"].required = False
         self.fields["trabajo_realizado"].required = False
         self.fields["causa_dano"].required = False
+        self.fields["recibido_por_nombre"].required = not bool(self.instance.pk)
+        self.fields["recibido_por_nombre"].widget.attrs.update({
+            "autocomplete": "name",
+            "placeholder": "Nombre completo de quien recibe el equipo",
+        })
         self._preparar_tipos()
         if not self.instance.pk:
             tipos_permitidos = {
@@ -305,6 +316,12 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         mínimos de cada clase de intervención.
         """
         cleaned = super().clean()
+        firma = cleaned.get("firma_recibido") or ""
+        nombre_recibe = (cleaned.get("recibido_por_nombre") or "").strip()
+        if not self.instance.pk and not firma:
+            self.add_error("firma_recibido", "Se requiere la firma de quien recibe.")
+        if firma and not nombre_recibe:
+            self.add_error("recibido_por_nombre", "Indica quién recibe el equipo.")
         tipo = cleaned.get("tipo")
         tipo_equipo = self._validar_tipo_equipo(cleaned)
         if tipo != MantenimientoEquipo.Tipo.PREVENTIVO:
@@ -331,6 +348,11 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             if "otros" in (cleaned.get("actividades_preventivas") or []) and not cleaned.get("actividad_preventiva_otros"):
                 self.add_error("actividad_preventiva_otros", "Describa las otras actividades realizadas.")
         return cleaned
+
+    def clean_firma_recibido(self):
+        """Valida que la firma almacenada sea una imagen PNG dibujada."""
+        firma = self.cleaned_data.get("firma_recibido") or ""
+        return validar_firma(firma) if firma else ""
 
 
 class MantenimientoProgramadoForm(MantenimientoPorTipoMixin, forms.ModelForm):
@@ -1905,9 +1927,11 @@ class AtencionTicketForm(forms.Form):
     )
     firma = forms.CharField(widget=forms.HiddenInput, required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, exigir_firma=False, **kwargs):
         """Aplica el estilo de la plataforma (salvo al campo oculto de la firma)."""
         super().__init__(*args, **kwargs)
+        self.fields["firma_nombre"].required = exigir_firma
+        self.fields["firma"].required = exigir_firma
         for nombre, field in self.fields.items():
             if nombre != "firma":
                 field.widget.attrs["class"] = "form-control"

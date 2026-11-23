@@ -1,0 +1,216 @@
+/* Pantalla de acceso alineada con el estándar del portal Seguridad JANO. */
+.login-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0;
+    background: #f6f7f9;
+}
+
+.login-screen .login-container {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #f6f7f9;
+    box-shadow: none;
+}
+
+.login-screen .login-brand {
+    background: #30358f;
+    padding: 48px;
+}
+
+.login-brand-lockup {
+    display: grid;
+    justify-items: center;
+    width: min(100%, 290px);
+    text-align: center;
+}
+
+.login-screen .login-logo {
+    width: 82px;
+    height: 82px;
+    margin: 0 0 -5px;
+}
+
+.login-brand-seguridad {
+    margin-top: -3px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.login-brand-jano {
+    color: #fff;
+    font-size: clamp(54px, 5vw, 76px);
+    font-weight: 800;
+    letter-spacing: -5px;
+    line-height: 1.05;
+}
+
+.login-brand-lockup p {
+    margin: 24px 0 0;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.login-screen .login-form-container {
+    justify-content: center;
+    align-items: center;
+    padding: 48px clamp(36px, 7vw, 110px);
+    background: #f6f7f9;
+}
+
+.login-form-inner {
+    width: min(100%, 448px);
+}
+
+.login-screen .login-heading h1 {
+    margin: 0 0 5px;
+    color: #202638;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.login-screen .login-heading p {
+    margin: 0 0 24px;
+    color: #687184;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.login-screen .login-form {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+
+.login-screen .login-form label {
+    margin: 0 0 6px;
+    color: #293142;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.login-screen .login-form input {
+    width: 100%;
+    min-height: 40px;
+    margin: 0;
+    padding: 9px 12px;
+    border: 1px solid #dce2ed;
+    border-radius: 7px;
+    background: #e8effc;
+    color: #202638;
+    font: inherit;
+    font-size: 13px;
+    box-shadow: none;
+}
+
+.login-screen .login-form input:focus {
+    outline: 2px solid #c8d32b;
+    outline-offset: 1px;
+    border-color: #30358f;
+}
+
+.login-field-help {
+    margin: 6px 0 18px;
+    color: #687184;
+    font-size: 12px;
+}
+
+.login-password-wrap {
+    position: relative;
+}
+
+.login-screen .login-password-wrap input {
+    padding-right: 44px;
+}
+
+.login-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    padding: 3px;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: #687184;
+    cursor: pointer;
+}
+
+.login-password-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.login-forgot {
+    align-self: flex-start;
+    margin-top: 7px;
+    color: #30358f;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.login-forgot:hover { text-decoration: underline; }
+
+.login-screen .login-button {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 21px;
+    border: 0;
+    border-radius: 7px;
+    background: #30358f;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.login-screen .login-button:hover { background: #252a7b; }
+
+.login-first-time {
+    margin: 24px 8px 0;
+    color: #687184;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.login-first-time strong { color: #293142; }
+
+.login-alert {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border: 1px solid #f1c5c5;
+    border-radius: 7px;
+    background: #fff0f0;
+    color: #9b2424;
+    font-size: 13px;
+}
+
+@media (max-width: 760px) {
+    .login-screen .login-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(190px, 30vh) 1fr;
+    }
+
+    .login-screen .login-brand { padding: 24px; }
+    .login-screen .login-logo { width: 54px; height: 54px; }
+    .login-brand-seguridad { font-size: 13px; }
+    .login-brand-jano { font-size: 43px; letter-spacing: -3px; }
+    .login-brand-lockup p { margin-top: 9px; font-size: 13px; }
+    .login-screen .login-form-container { padding: 32px 24px 48px; }
+}

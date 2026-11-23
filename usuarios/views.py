@@ -63,7 +63,11 @@ def login_view(request):
             "Usuario o contraseña incorrectos."
         )
 
-    return render(request, "usuarios/login.html")
+    return render(
+        request,
+        "usuarios/login.html",
+        {"username": request.POST.get("username", "")},
+    )
 
 
 @login_required

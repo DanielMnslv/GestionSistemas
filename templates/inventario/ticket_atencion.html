@@ -7,7 +7,7 @@ Cierre técnico de una solicitud: solución, intervención de mantenimiento opci
 {% block title %}Atender {{ ticket.numero }} | JANO Inventario{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/paginas/mantenimiento-form.css' %}?v=20261029c">
+<link rel="stylesheet" href="{% static 'css/paginas/mantenimiento-form.css' %}?v=20261123b">
 {% endblock %}
 
 {% block content %}
@@ -30,7 +30,7 @@ Cierre técnico de una solicitud: solución, intervención de mantenimiento opci
     <section class="jx-card">
         <div class="jx-card-head"><div><h2>1 · Intervención en {{ ticket.equipo.placa }}</h2><p>{{ ticket.equipo.get_tipo_display }} {{ ticket.equipo.marca }} {{ ticket.equipo.modelo }}. Queda en la hoja de vida del equipo.</p></div></div>
         <div class="jx-card-body">
-            {% include "inventario/_mant_form_campos.html" with formulario=intervencion %}
+            {% include "inventario/_mant_form_campos.html" with formulario=intervencion ocultar_firma=True %}
         </div>
     </section>
     {% endif %}
@@ -47,7 +47,11 @@ Cierre técnico de una solicitud: solución, intervención de mantenimiento opci
                 </div>
                 {% include "inventario/_jx_campo.html" with field=formulario.firma_nombre ancho=True %}
             </div>
-            {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el servicio" opcional=True %}
+            {% if ticket.equipo_id %}
+                {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el equipo" %}
+            {% else %}
+                {% include "inventario/_firma.html" with campo=formulario.firma etiqueta="Firma de quien recibe el servicio" opcional=True %}
+            {% endif %}
         </div>
     </section>
 

@@ -142,6 +142,8 @@ class ColaTicTests(TestCase):
             "resultado": MantenimientoEquipo._meta.get_field("resultado").choices[0][0],
             "estado_final": "OPERATIVO",
             "solucion": "Se cambió la memoria",
+            "firma_nombre": "Ana Prueba",
+            "firma": "data:image/png;base64,iVBORw0KGgo=",
         })
         if r.status_code != 302:
             self.fail(r.context["intervencion"].errors.as_text() + r.context["formulario"].errors.as_text())
@@ -149,6 +151,8 @@ class ColaTicTests(TestCase):
         self.assertEqual(self.ticket.estado, Ticket.Estado.RESUELTO)
         intervencion = self.ticket.intervenciones.get()
         self.assertEqual(intervencion.equipo, self.pc)
+        self.assertEqual(intervencion.recibido_por_nombre, "Ana Prueba")
+        self.assertEqual(intervencion.firma_recibido, "data:image/png;base64,iVBORw0KGgo=")
 
 
 class AgendaTests(TestCase):

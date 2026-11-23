@@ -1,83 +1,75 @@
-{% comment %}
-Pantalla de ingreso con usuario y contraseña (vista login_view). No extiende base.html.
-{% endcomment %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>Iniciar sesión | JANO Inventario</title>
     {% include "_estilos.html" %}
 </head>
-<body class="login-body">
-
+<body class="login-body login-screen">
     <main class="login-container">
-        <section class="login-brand">
-            <img src="{% static 'img/logo-jano-simbolo-color.svg' %}"
-                 alt="Seguridad JANO"
-                 class="login-logo">
-
-            <h1>JANO <span>INVENTARIO</span></h1>
-            <p> Control de equipos y comunicaciones </p>
-
-            <div class="brand-decoration"></div>
+        <section class="login-brand" aria-label="Seguridad JANO">
+            <div class="login-brand-lockup">
+                <img src="{% static 'img/logo-jano-simbolo-color.svg' %}" alt="" class="login-logo">
+                <span class="login-brand-seguridad">Seguridad</span>
+                <span class="login-brand-jano">JANO</span>
+                <p>Protegemos con Propósito</p>
+            </div>
         </section>
 
         <section class="login-form-container">
-            <div class="login-heading">
-                <span class="eyebrow">PLATAFORMA INTERNA</span>
-                <h2>Bienvenido</h2>
-                <p>Ingresa tus credenciales para continuar.</p>
+            <div class="login-form-inner">
+                <div class="login-heading">
+                    <h1>Iniciar sesión</h1>
+                    <p>Tu usuario es tu número de cédula. Escribe la contraseña que creaste al activar tu cuenta.</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="login-alert" role="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" class="login-form">
+                    {% csrf_token %}
+                    <label for="username">Número de cédula</label>
+                    <input type="text" id="username" name="username" inputmode="numeric"
+                           autocomplete="username" pattern="[0-9]+" maxlength="30"
+                           aria-describedby="cedula-ayuda" value="{{ username }}" required autofocus>
+                    <small id="cedula-ayuda" class="login-field-help">Solo números, sin puntos ni espacios.</small>
+
+                    <label for="password">Contraseña</label>
+                    <div class="login-password-wrap">
+                        <input type="password" id="password" name="password"
+                               autocomplete="current-password" required>
+                        <button class="login-password-toggle" type="button" aria-label="Mostrar contraseña"
+                                aria-pressed="false" data-login-password-toggle>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <a class="login-forgot" href="{% url 'cuenta_recuperar' %}">¿Olvidaste tu contraseña?</a>
+
+                    <button type="submit" class="login-button">Iniciar sesión</button>
+                </form>
+
+                <p class="login-first-time"><strong>¿Primera vez?</strong> Activa tu cuenta con el enlace que llegó a tu correo personal; allí creas tu contraseña. Si no lo encuentras, revisa la carpeta de spam o pide a Talento Humano que te lo reenvíe.</p>
             </div>
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-error">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-
-            <form method="post" class="login-form">
-                {% csrf_token %}
-
-                <label for="username">Usuario</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    placeholder="Tu usuario o número de cédula"
-                    autocomplete="username"
-                    required
-                    autofocus
-                >
-
-                <label for="password">Contraseña</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Ingresa tu contraseña"
-                    autocomplete="current-password"
-                    required
-                >
-
-                <button type="submit" class="login-button">
-                    Iniciar sesión
-                </button>
-            </form>
-
-            <p class="login-security"><a href="{% url 'cuenta_recuperar' %}">¿Primer ingreso u olvidaste tu contraseña?</a></p>
-
-            <p class="login-security">
-                Acceso exclusivo para personal autorizado.
-            </p>
         </section>
     </main>
-
-    <footer class="login-footer">
-        SEGURIDAD JANO · SISTEMA DE INVENTARIO
-    </footer>
-
+    <script>
+    (function () {
+        var boton = document.querySelector("[data-login-password-toggle]");
+        var campo = document.getElementById("password");
+        if (!boton || !campo) return;
+        boton.addEventListener("click", function () {
+            var mostrar = campo.type === "password";
+            campo.type = mostrar ? "text" : "password";
+            boton.setAttribute("aria-pressed", mostrar ? "true" : "false");
+            boton.setAttribute("aria-label", mostrar ? "Ocultar contraseña" : "Mostrar contraseña");
+        });
+    })();
+    </script>
 </body>
 </html>
-```

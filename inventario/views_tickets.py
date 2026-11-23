@@ -226,14 +226,20 @@ def ticket_atender(request, numero):
         return redirect("inventario:ticket_detalle", numero)
 
     datos = request.POST if request.method == "POST" else None
-    formulario = AtencionTicketForm(datos)
+    formulario = AtencionTicketForm(datos, exigir_firma=bool(ticket.equipo_id))
     intervencion = None
     if ticket.equipo_id:
+        datos_intervencion = datos.copy() if datos is not None else None
+        if datos_intervencion is not None:
+            # Un único acto de recibido conforme firma el cierre del ticket y
+            # la intervención técnica asociada.
+            datos_intervencion["recibido_por_nombre"] = datos_intervencion.get("firma_nombre", "")
+            datos_intervencion["firma_recibido"] = datos_intervencion.get("firma", "")
         tipo = {
             Ticket.Tipo.PREVENTIVO: "PREVENTIVO",
             Ticket.Tipo.SOPORTE: "DIAGNOSTICO",
         }.get(ticket.tipo, "CORRECTIVO")
-        intervencion = IntervencionTicketForm(datos, equipo=ticket.equipo, initial={
+        intervencion = IntervencionTicketForm(datos_intervencion, equipo=ticket.equipo, initial={
             "fecha_intervencion": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
             "tipo": tipo,
             "tecnico_responsable": request.user.get_full_name() or request.user.username,
