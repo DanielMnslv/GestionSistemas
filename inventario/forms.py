@@ -1059,13 +1059,25 @@ class EquipoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["fecha_compra"].input_formats = ["%Y-%m-%d"]
         propiedad_actual = (self.instance.propiedad or "").strip()
-        self.propiedad_original = propiedad_actual
         opciones_propiedad = [
             ("", "Seleccione la propiedad"),
             *Equipo.Propiedad.choices,
         ]
-        if propiedad_actual and propiedad_actual not in dict(opciones_propiedad):
+        canonica = next(
+            (
+                valor for valor, _ in opciones_propiedad if valor
+                and valor.strip().casefold() == propiedad_actual.casefold()
+            ),
+            None,
+        )
+        if canonica:
+            # Valores históricos como "Seguridad Jano" deben seleccionar la
+            # opción oficial existente, sin crear una alternativa duplicada.
+            self.initial["propiedad"] = canonica
+            propiedad_actual = canonica
+        elif propiedad_actual:
             opciones_propiedad.append((propiedad_actual, f"{propiedad_actual} (valor actual)"))
+        self.propiedad_original = propiedad_actual
         self.fields["propiedad"].choices = opciones_propiedad
         self.fields["propiedad"].widget.attrs["data-propiedad-selector"] = ""
         self.fields["proveedor_arrendamiento"].label = "Nombre o razón social del proveedor"
@@ -1462,21 +1474,29 @@ class DetalleComputadorForm(DetalleForm):
 
 class DetalleImpresoraForm(DetalleForm):
     """Datos propios de una impresora o escáner."""
-    CLASES = [
+    CLASES_IMPRESORA = [
         ("L\u00e1ser", "L\u00e1ser"),
         ("Inyecci\u00f3n de tinta", "Inyecci\u00f3n de tinta"),
         ("Multifuncional l\u00e1ser", "Multifuncional l\u00e1ser"),
         ("Multifuncional de tinta", "Multifuncional de tinta"),
         ("Matricial", "Matricial"),
         ("T\u00e9rmica", "T\u00e9rmica"),
-        ("Esc\u00e1ner", "Esc\u00e1ner"),
+        ("Otro", "Otro"),
+    ]
+    CLASES_ESCANER = [
+        ("Plano", "Plano"),
+        ("Alimentador autom\u00e1tico (ADF)", "Alimentador autom\u00e1tico (ADF)"),
+        ("Plano con ADF", "Plano con ADF"),
+        ("Port\u00e1til", "Port\u00e1til"),
+        ("Gran formato", "Gran formato"),
+        ("C\u00f3digos de barras", "C\u00f3digos de barras"),
         ("Otro", "Otro"),
     ]
     clase = forms.ChoiceField(
-        label="Tipo de impresora o esc\u00e1ner",
-        choices=[("", "Seleccione el tipo"), *CLASES],
+        label="Tipo de impresora",
+        choices=[("", "Seleccione el tipo de impresora"), *CLASES_IMPRESORA],
         required=False,
-        help_text="Elija la tecnolog\u00eda que corresponda.",
+        help_text="Elija la tecnolog\u00eda de impresi\u00f3n.",
     )
 
     class Meta:
@@ -1486,10 +1506,22 @@ class DetalleImpresoraForm(DetalleForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        tipo_equipo = getattr(getattr(self.instance, "equipo", None), "tipo", "")
+        es_escaner = tipo_equipo == Equipo.Tipo.ESCANER
+        clases = self.CLASES_ESCANER if es_escaner else self.CLASES_IMPRESORA
+        self.fields["clase"].label = "Tipo de esc\u00e1ner" if es_escaner else "Tipo de impresora"
+        self.fields["clase"].help_text = (
+            "Elija la tecnolog\u00eda de digitalizaci\u00f3n."
+            if es_escaner else "Elija la tecnolog\u00eda de impresi\u00f3n."
+        )
+        self.fields["clase"].choices = [
+            ("", "Seleccione el tipo de esc\u00e1ner" if es_escaner else "Seleccione el tipo de impresora"),
+            *clases,
+        ]
         actual = (self.instance.clase or "").strip()
         opciones = list(self.fields["clase"].choices)
         if actual and actual not in dict(opciones):
-            opciones.append((actual, f"{actual} (valor actual)"))
+            opciones.append((actual, f"{actual} (valor hist\u00f3rico)"))
         self.fields["clase"].choices = opciones
 
 

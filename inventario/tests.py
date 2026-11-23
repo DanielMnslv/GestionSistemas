@@ -25,7 +25,8 @@ from inventario.models import (
     TransferenciaComponentesRadio,
 )
 from inventario.forms import (
-    DetalleComputadorForm, EquipoForm, MantenimientoEquipoForm, RadioForm,
+    DetalleComputadorForm, DetalleImpresoraForm, EquipoForm,
+    MantenimientoEquipoForm, RadioForm,
 )
 
 
@@ -85,6 +86,30 @@ class MantenimientoTipoIntervencionTests(TestCase):
         clases = dict(formulario.fields["clase"].choices)
         self.assertIn("Tableta Android", clases)
         self.assertNotIn("Escritorio torre", clases)
+
+    def test_clases_de_impresora_y_escaner_son_independientes(self):
+        from inventario.models import DetalleImpresora
+
+        impresora = DetalleImpresoraForm(
+            instance=DetalleImpresora(
+                equipo=Equipo(placa="IMP-CLASE", tipo=Equipo.Tipo.IMPRESORA),
+            ),
+        )
+        escaner = DetalleImpresoraForm(
+            instance=DetalleImpresora(
+                equipo=Equipo(placa="ESC-CLASE", tipo=Equipo.Tipo.ESCANER),
+            ),
+        )
+
+        opciones_impresora = dict(impresora.fields["clase"].choices)
+        opciones_escaner = dict(escaner.fields["clase"].choices)
+        self.assertIn("Láser", opciones_impresora)
+        self.assertNotIn("Plano", opciones_impresora)
+        self.assertEqual(impresora.fields["clase"].label, "Tipo de impresora")
+        self.assertIn("Plano", opciones_escaner)
+        self.assertIn("Códigos de barras", opciones_escaner)
+        self.assertNotIn("Láser", opciones_escaner)
+        self.assertEqual(escaner.fields["clase"].label, "Tipo de escáner")
 
     def test_login_usa_identidad_visual_estandar_jano(self):
         respuesta = self.client.get(reverse("login"))
@@ -247,6 +272,20 @@ class EquipoFormCatalogoYPropiedadTests(TestCase):
         )
         self.assertFalse(sin_proveedor.is_valid())
         self.assertIn("proveedor_arrendamiento", sin_proveedor.errors)
+
+    def test_edicion_normaliza_propiedad_historica_sin_opcion_duplicada(self):
+        equipo = Equipo(
+            placa="IMP-PROP-LEGADO", tipo=Equipo.Tipo.IMPRESORA,
+            propiedad="Seguridad Jano",
+        )
+
+        formulario = EquipoForm(instance=equipo)
+
+        valores = [
+            valor for valor, _ in formulario.fields["propiedad"].choices if valor
+        ]
+        self.assertEqual(valores, ["SEGURIDAD JANO", "ARRENDADO"])
+        self.assertEqual(formulario["propiedad"].value(), "SEGURIDAD JANO")
 
 
 @override_settings(
