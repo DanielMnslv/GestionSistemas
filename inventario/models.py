@@ -1820,10 +1820,10 @@ class RegistroAuditoria(models.Model):
     class Accion(models.TextChoices):
         """QuÃ© hizo el usuario."""
 
-        CREAR = "CREAR", "CreÃ³"
-        EDITAR = "EDITAR", "ModificÃ³"
+        CREAR = "CREAR", "Creó"
+        EDITAR = "EDITAR", "Modificó"
         ELIMINAR = "ELIMINAR", "EliminÃ³"
-        INGRESO = "INGRESO", "IngresÃ³"
+        INGRESO = "INGRESO", "Ingresó"
         SALIDA = "SALIDA", "CerrÃ³ sesiÃ³n"
         INGRESO_FALLIDO = "INGRESO_FALLIDO", "Ingreso fallido"
 
