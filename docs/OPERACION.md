@@ -62,13 +62,46 @@ En Plesk se programan en **Herramientas › Tareas programadas** con el Python d
 
 ## 5. Actualizar la plataforma
 
-1. Respalda la base de datos.
-2. Trae el código nuevo con `git pull`.
-3. Instala las dependencias con `pip install -r requirements.txt`.
-4. Aplica las migraciones con `python manage.py migrate`. **No se aplican solas.**
-5. En Plesk, ejecuta `python manage.py collectstatic --noinput`. En Windows lo hace el script de inicio.
-6. Reinicia la plataforma.
-7. Revisa el ingreso, el tablero, una lista de equipos y un informe en PDF.
+El código se cambia **solo en el equipo local**; el servidor únicamente lo baja de GitHub:
+
+1. **Local:** hacer el cambio y probarlo (`python manage.py test` y una revisión en el navegador).
+2. **Local:** commit y `git push` a la rama `main`.
+3. **Servidor:** actualizar con el script `actualizar.sh` o con la publicación automática de Plesk (abajo).
+4. Revisar el ingreso, el tablero, una lista de equipos y un informe en PDF.
+
+En el servidor solo se editan a mano el `.env` y `passenger_wsgi.py`. Los datos (`db.sqlite3`, `media/`) viven en el servidor y **no** viajan por GitHub.
+
+### Con el script (por SSH)
+
+```bash
+cd /ruta/de/la/plataforma && ./actualizar.sh
+```
+
+En orden: respalda la base en `respaldos/antes_de_actualizar/` (conserva 30 copias), baja los cambios con `git pull --ff-only`, instala dependencias si el sitio tiene entorno virtual, aplica las migraciones, ejecuta `collectstatic` y `check`, y reinicia Passenger (`tmp/restart.txt`). Si un paso falla, se detiene ahí.
+
+- Si encuentra cambios hechos a mano en el servidor, `git pull` se detiene para no pisarlos: revísalos con `git status`.
+- Para usar un Python distinto: `PY=/ruta/python ./actualizar.sh`.
+- La primera vez puede hacer falta darle permiso: `chmod +x actualizar.sh` (o correrlo con `bash actualizar.sh`).
+
+### Publicación automática (Plesk Git)
+
+Igual que en la plataforma de tickets, cada `git push` a `main` puede publicarse solo:
+
+1. En Plesk › **Git**, agrega el repositorio `GestionSistemas` apuntando a la carpeta de la aplicación, rama `main`, modo de implementación **automático**.
+2. En GitHub › *Settings › Webhooks*, pega el *webhook* que muestra Plesk (evento *push*).
+3. En **Acciones de implementación adicionales**, con el Python del sitio:
+
+   ```bash
+   PY=<python del sitio>
+   $PY manage.py respaldar_bd --destino respaldos/antes_de_actualizar --conservar 30
+   $PY manage.py migrate --noinput
+   $PY manage.py collectstatic --noinput -v 0
+   mkdir -p tmp && touch tmp/restart.txt
+   ```
+
+Si un cambio no aparece, en Plesk › Git › **Extraer actualizaciones** se baja a mano; `actualizar.sh` queda como respaldo.
+
+**Cuidado con las migraciones:** con la publicación automática se aplican apenas llega el `push`. Antes de subir una migración que cambie o borre datos, revísala en local con una copia de la base del servidor.
 
 ## 6. Cuentas de usuario
 
