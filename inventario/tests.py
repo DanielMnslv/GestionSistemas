@@ -37,6 +37,32 @@ COMANDO = (
 
 
 class MantenimientoTipoIntervencionTests(TestCase):
+    def test_computador_guarda_modelo_procesador_y_modulos_de_ram(self):
+        from inventario.models import DetalleComputador
+
+        equipo = Equipo.objects.create(
+            placa="PC-CPU1", tipo=Equipo.Tipo.COMPUTADOR,
+        )
+        formulario = DetalleComputadorForm(
+            data={
+                "familia_procesador": "Intel Core i5",
+                "procesador": "Intel Core i5-12400",
+                "tipo_disco": "SSD NVMe",
+                "capacidad_disco": "512 GB",
+                "tipo_ram": "DDR4",
+                "capacidad_ram": "16 GB",
+                "cantidad_modulos_ram": "2",
+            },
+            instance=DetalleComputador(equipo=equipo),
+        )
+
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        detalle = formulario.save()
+        self.assertEqual(detalle.familia_procesador, "Intel Core i5")
+        self.assertEqual(detalle.procesador, "Intel Core i5-12400")
+        self.assertEqual(detalle.capacidad_ram, "16 GB")
+        self.assertEqual(detalle.cantidad_modulos_ram, 2)
+
     def test_nueva_intervencion_ofrece_solo_tres_tipos_legibles(self):
         formulario = MantenimientoEquipoForm()
         opciones = [
@@ -78,6 +104,7 @@ class MantenimientoTipoIntervencionTests(TestCase):
         formulario = DetalleComputadorForm(instance=detalle)
 
         no_aplican = {
+            "familia_procesador", "cantidad_modulos_ram",
             "mouse", "teclado", "monitor_serial", "monitor_modelo",
             "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
             "telefono_ip_serial", "telefono_ip_modelo", "velocidad_procesador",

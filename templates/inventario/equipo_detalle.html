@@ -356,6 +356,9 @@ SIN USO: la vista equipo_detalle redirige a la lista de equipos y la ficha vive 
                     </div>
                 </fieldset>
                 {% endfor %}
+                {% if equipo.tipo == "COMPUTADOR" %}
+                    {% include "inventario/_datalists_computador.html" %}
+                {% endif %}
                 {% if equipo.tipo == "COMPUTADOR" or equipo.tipo == "TABLETA" %}
                     {% if not permisos.licencias %}
                     <p class="ficha-field-help">Las claves de licencia solo las ven y editan el técnico y el administrador.</p>

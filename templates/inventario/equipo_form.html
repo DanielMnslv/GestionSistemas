@@ -94,6 +94,10 @@ Vista guardar_equipo (views_equipos.py). Al registrar ofrece «Guardar y entrega
             {% endif %}
             {% endif %}
 
+            {% if detalle and equipo.tipo == "COMPUTADOR" %}
+                {% include "inventario/_datalists_computador.html" %}
+            {% endif %}
+
             <hr class="ficha-divider">
             <h3 class="ficha-section-heading">
                 <span class="ficha-section-number">03</span>

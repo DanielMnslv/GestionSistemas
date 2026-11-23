@@ -396,6 +396,9 @@ El script del final maneja las pestañas, los formularios por pasos (iniciarPaso
                     </div>
                 </fieldset>
                 {% endfor %}
+                {% if equipo.tipo == "COMPUTADOR" %}
+                    {% include "inventario/_datalists_computador.html" %}
+                {% endif %}
                 <datalist id="lista-sedes-equipo">
                     {% for sede in formulario_edicion.sedes_opciones %}<option value="{{ sede }}"></option>{% endfor %}
                 </datalist>

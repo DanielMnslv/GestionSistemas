@@ -203,8 +203,9 @@ def filas_detalle(equipo, usuario, incluir_vacios=False):
 # Cómo se agrupan en la ventana las características de cada tipo de equipo.
 GRUPOS_DETALLE = {
     "COMPUTADOR": [
-        ("Hardware", ["clase", "procesador", "velocidad_procesador", "tipo_disco",
-                      "capacidad_disco", "tipo_ram", "capacidad_ram"]),
+        ("Hardware", ["clase", "familia_procesador", "procesador",
+                      "velocidad_procesador", "tipo_disco", "capacidad_disco",
+                      "tipo_ram", "capacidad_ram", "cantidad_modulos_ram"]),
         ("Periféricos", ["mouse", "teclado", "regulador", "parlantes", "webcam"]),
         ("Equipos conectados", ["@monitor", "@monitor2", "@ups", "@telefono_ip"]),
         ("Sistema y licencias", ["sistema_operativo", "licencia_so", "antivirus",
@@ -228,6 +229,7 @@ GRUPOS_DETALLE["TABLETA"] = [
 ]
 
 DETALLE_NO_APLICA_TABLETA = {
+    "familia_procesador", "cantidad_modulos_ram",
     "mouse", "teclado", "monitor_serial", "monitor_modelo",
     "monitor2_serial", "monitor2_modelo", "ups_serial", "ups_modelo",
     "telefono_ip_serial", "telefono_ip_modelo",

@@ -1352,36 +1352,63 @@ class DetalleComputadorForm(DetalleForm):
         ("Tableta otro sistema", "Tableta otro sistema"),
         ("Otro", "Otro"),
     ]
-    TIPOS_DISCO = [
-        ("HDD", "HDD (mecánico)"),
-        ("SSD SATA", "SSD SATA"),
-        ("SSD NVMe", "SSD NVMe"),
-        ("eMMC", "eMMC"),
-        ("Híbrido (HDD + SSD)", "Híbrido (HDD + SSD)"),
+    FAMILIAS_PROCESADOR = [
+        ("Intel Celeron", "Intel Celeron"),
+        ("Intel Pentium", "Intel Pentium"),
+        ("Intel Core i3", "Intel Core i3"),
+        ("Intel Core i5", "Intel Core i5"),
+        ("Intel Core i7", "Intel Core i7"),
+        ("Intel Core i9", "Intel Core i9"),
+        ("Intel Xeon", "Intel Xeon"),
+        ("Intel Ultra 5", "Intel Ultra 5"),
+        ("Intel Ultra 7", "Intel Ultra 7"),
+        ("Intel Ultra 9", "Intel Ultra 9"),
+        ("AMD Athlon", "AMD Athlon"),
+        ("AMD Ryzen 3", "AMD Ryzen 3"),
+        ("AMD Ryzen 5", "AMD Ryzen 5"),
+        ("AMD Ryzen 7", "AMD Ryzen 7"),
+        ("AMD Ryzen 9", "AMD Ryzen 9"),
+        ("Otro", "Otro"),
     ]
-    TIPOS_RAM = [
-        ("DDR2", "DDR2"),
-        ("DDR3", "DDR3"),
-        ("DDR4", "DDR4"),
-        ("DDR5", "DDR5"),
-        ("LPDDR4", "LPDDR4"),
-        ("LPDDR5", "LPDDR5"),
-    ]
+    familia_procesador = forms.ChoiceField(
+        label="Familia del procesador",
+        choices=[("", "Seleccione la familia"), *FAMILIAS_PROCESADOR],
+        required=False,
+    )
+    cantidad_modulos_ram = forms.TypedChoiceField(
+        label="Cantidad de módulos de RAM",
+        choices=[("", "Seleccione la cantidad"), (1, "1"), (2, "2"), (3, "3"), (4, "4")],
+        coerce=int,
+        empty_value=None,
+        required=False,
+        help_text="Déjelo vacío si no conoce el dato o la memoria está soldada.",
+    )
+    procesador = forms.CharField(
+        label="Modelo exacto del procesador",
+        required=False,
+        help_text="Ejemplo: Intel Core i5-12400 o AMD Ryzen 5 5600G.",
+    )
     clase = forms.ChoiceField(
         label="Clase",
         choices=[("", "Seleccione la clase"), *CLASES],
         required=False,
         help_text="Elija la clase que corresponda al equipo.",
     )
-    tipo_disco = forms.ChoiceField(
+    tipo_disco = forms.CharField(
         label="Tipo de disco",
-        choices=[("", "Seleccione el tipo de disco"), *TIPOS_DISCO],
         required=False,
+        widget=forms.TextInput(attrs={
+            "list": "opciones-tipo-disco",
+            "placeholder": "Seleccione o escriba el tipo de disco",
+        }),
     )
-    tipo_ram = forms.ChoiceField(
+    tipo_ram = forms.CharField(
         label="Tipo de RAM",
-        choices=[("", "Seleccione el tipo de RAM"), *TIPOS_RAM],
         required=False,
+        widget=forms.TextInput(attrs={
+            "list": "opciones-tipo-ram",
+            "placeholder": "Seleccione o escriba el tipo de RAM",
+        }),
     )
     telefono_ip_asignado = forms.BooleanField(
         label="Tiene teléfono IP asignado",
@@ -1394,11 +1421,14 @@ class DetalleComputadorForm(DetalleForm):
         model = DetalleComputador
         exclude = ["equipo"]
         labels = {
+            "familia_procesador": "Familia del procesador",
+            "procesador": "Modelo exacto del procesador",
             "velocidad_procesador": "Velocidad del procesador",
             "tipo_disco": "Tipo de disco",
             "capacidad_disco": "Capacidad del disco",
             "tipo_ram": "Tipo de RAM",
-            "capacidad_ram": "Capacidad de RAM",
+            "capacidad_ram": "Capacidad total de RAM instalada",
+            "cantidad_modulos_ram": "Cantidad de módulos de RAM",
             "monitor_serial": "Serial del monitor",
             "monitor_modelo": "Marca y modelo del monitor",
             "monitor2_serial": "Serial del monitor 2",
@@ -1422,6 +1452,14 @@ class DetalleComputadorForm(DetalleForm):
             "linea_celular": "Línea celular",
         }
         widgets = {
+            "capacidad_disco": forms.TextInput(attrs={
+                "list": "opciones-capacidad-disco",
+                "placeholder": "Ej. 512 GB o 1 TB",
+            }),
+            "capacidad_ram": forms.TextInput(attrs={
+                "list": "opciones-capacidad-ram",
+                "placeholder": "Ej. 16 GB",
+            }),
             "vencimiento_antivirus": forms.DateInput(
                 attrs={"type": "date"}, format="%Y-%m-%d"
             ),
@@ -1438,12 +1476,20 @@ class DetalleComputadorForm(DetalleForm):
             opciones.append((actual, f"{actual} (valor actual)"))
         self.fields["clase"].choices = opciones
 
-        for campo in ("tipo_disco", "tipo_ram"):
-            actual = (getattr(self.instance, campo, "") or "").strip()
-            opciones = list(self.fields[campo].choices)
-            if actual and actual not in dict(opciones):
-                opciones.append((actual, f"{actual} (valor actual)"))
-            self.fields[campo].choices = opciones
+        familia_actual = (getattr(self.instance, "familia_procesador", "") or "").strip()
+        opciones_familia = list(self.fields["familia_procesador"].choices)
+        if familia_actual and familia_actual not in dict(opciones_familia):
+            opciones_familia.append((familia_actual, f"{familia_actual} (valor actual)"))
+        self.fields["familia_procesador"].choices = opciones_familia
+        self.fields["capacidad_disco"].help_text = (
+            "Capacidad instalada. Puede elegir una sugerencia o escribir otra."
+        )
+        self.fields["capacidad_ram"].help_text = (
+            "Registre la capacidad total instalada, no la capacidad por módulo."
+        )
+        self.fields["cantidad_modulos_ram"].help_text = (
+            "Seleccione de 1 a 4. Déjelo vacío si no conoce el dato o la memoria está soldada."
+        )
 
         es_tableta = (
             getattr(getattr(self.instance, "equipo", None), "tipo", "")
@@ -1454,6 +1500,7 @@ class DetalleComputadorForm(DetalleForm):
             # computador ni campos de licenciamiento propios de escritorio.
             # Los datos históricos quedan intactos en la base de datos.
             for campo in (
+                "familia_procesador", "cantidad_modulos_ram",
                 "mouse", "teclado", "monitor_serial", "monitor_modelo",
                 "monitor2_serial", "monitor2_modelo", "ups_serial",
                 "ups_modelo", "telefono_ip_asignado",
@@ -1491,17 +1538,35 @@ class DetalleComputadorForm(DetalleForm):
                 else:
                     widget.attrs["disabled"] = "disabled"
 
-            # El check aparece inmediatamente antes de los datos del teléfono.
-            orden = list(self.fields)
-            orden.remove("telefono_ip_asignado")
-            indice = orden.index("telefono_ip_serial")
-            orden.insert(indice, "telefono_ip_asignado")
-            self.order_fields(orden)
-
         if not ver_licencias:
             # Sin el permiso, las claves ni se muestran ni se modifican.
             for campo in self.LICENCIAS:
                 self.fields.pop(campo, None)
+
+        if es_tableta:
+            orden_preferido = [
+                "clase", "procesador", "capacidad_disco", "capacidad_ram",
+                "sistema_operativo", "software_licenciado", "software_libre",
+                "mac_wifi", "ip_wifi", "imei", "linea_celular",
+            ]
+        else:
+            orden_preferido = [
+                "clase", "familia_procesador", "procesador",
+                "velocidad_procesador", "tipo_disco", "capacidad_disco",
+                "tipo_ram", "capacidad_ram", "cantidad_modulos_ram",
+                "mouse", "teclado", "regulador", "parlantes", "webcam",
+                "monitor_serial", "monitor_modelo", "monitor2_serial",
+                "monitor2_modelo", "ups_serial", "ups_modelo",
+                "sistema_operativo", "licencia_so", "antivirus",
+                "licencia_antivirus", "vencimiento_antivirus", "office",
+                "licencia_office", "software_licenciado", "software_libre",
+                "mac_ethernet", "mac_wifi", "ip_ethernet", "ip_wifi",
+                "imei", "linea_celular", "telefono_ip_asignado",
+                "telefono_ip_serial", "telefono_ip_modelo",
+            ]
+        orden = [campo for campo in orden_preferido if campo in self.fields]
+        orden.extend(campo for campo in self.fields if campo not in orden)
+        self.order_fields(orden)
 
     def save(self, commit=True):
         instancia = super().save(commit=False)

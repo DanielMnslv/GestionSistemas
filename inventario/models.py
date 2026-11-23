@@ -938,12 +938,18 @@ class DetalleComputador(models.Model):
         max_length=100, blank=True,
         help_text="Portátil, escritorio, todo en uno, servidor, Android…",
     )
+    familia_procesador = models.CharField(
+        "Familia del procesador", max_length=50, blank=True,
+    )
     procesador = models.CharField(max_length=150, blank=True)
     velocidad_procesador = models.CharField(max_length=50, blank=True)
     tipo_disco = models.CharField(max_length=50, blank=True)
     capacidad_disco = models.CharField(max_length=100, blank=True)
     tipo_ram = models.CharField(max_length=50, blank=True)
     capacidad_ram = models.CharField(max_length=50, blank=True)
+    cantidad_modulos_ram = models.PositiveSmallIntegerField(
+        "Cantidad de módulos de RAM", null=True, blank=True,
+    )
 
     mouse = models.CharField(max_length=100, blank=True)
     teclado = models.CharField(max_length=100, blank=True)
