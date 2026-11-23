@@ -114,6 +114,23 @@ class MantenimientoTipoIntervencionTests(TestCase):
 
         self.assertTrue(url.startswith("data:image/jpeg;base64,"))
 
+    def test_firma_de_asignacion_drive_se_prepara_para_mostrarse_como_imagen(self):
+        from inventario.views_equipos import firma_asignacion_visible
+
+        asignacion = SimpleNamespace(
+            firma="",
+            enlace_firma="https://drive.google.com/open?id=archivo_firma_123",
+        )
+        self.assertEqual(
+            firma_asignacion_visible(asignacion),
+            "https://drive.google.com/uc?export=view&id=archivo_firma_123",
+        )
+
+        asignacion.firma = "data:image/png;base64,abc"
+        self.assertEqual(
+            firma_asignacion_visible(asignacion), "data:image/png;base64,abc",
+        )
+
     def test_entrega_acepta_imagen_adjunta_en_lugar_de_dibujar(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
         from inventario.forms import AsignacionEquipoForm

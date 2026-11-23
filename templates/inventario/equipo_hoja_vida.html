@@ -147,8 +147,7 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
                         {% if a.accesorios %}<span class="hoja-nota"><b>Accesorios:</b> {{ a.accesorios }}</span>{% endif %}
                     </td>
                     <td>
-                        {% if a.firma %}<img class="hoja-firma-mini" src="{{ a.firma }}" alt="Firma de {{ a.nombre_recibe|default:'quien recibe' }}">
-                        {% elif a.enlace_firma %}<a href="{{ a.enlace_firma }}" target="_blank" rel="noopener">Ver firma adjunta</a>
+                        {% if a.firma_visible %}<img class="hoja-firma-mini" src="{{ a.firma_visible }}" alt="Firma de {{ a.nombre_recibe|default:'quien recibe' }}">
                         {% else %}<span class="hoja-vacio">Sin firma</span>{% endif %}
                     </td>
                     <td>{{ a.area|default:"-" }}</td>

@@ -71,10 +71,8 @@ Vista equipo_acta (views_equipos.py). Nunca muestra claves de licencia. Con ?emb
 
     <h2>Firma de recibido conforme</h2>
     <div class="acta-firma">
-        {% if asignacion.firma %}
-        <img src="{{ asignacion.firma }}" alt="Firma del funcionario">
-        {% elif asignacion.enlace_firma %}
-        <a href="{{ asignacion.enlace_firma }}" target="_blank" rel="noopener">Ver la firma adjunta en el formulario de Google</a>
+        {% if asignacion.firma_visible %}
+        <img src="{{ asignacion.firma_visible }}" alt="Firma del funcionario">
         {% else %}
         <span class="acta-sin-firma">Sin firma registrada.</span>
         {% endif %}

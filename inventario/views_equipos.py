@@ -4,7 +4,8 @@ Los radios tienen sus propias pantallas (views.py); aquí se redirige a
 ellas cuando el equipo es un radio.
 """
 from datetime import date
-from urllib.parse import urlencode
+import re
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -61,6 +62,26 @@ def detalle_de(equipo):
         "equipo"
     ).remote_field.related_name
     return getattr(equipo, nombre, None)
+
+
+def firma_asignacion_visible(asignacion):
+    """Devuelve una fuente de imagen para firmas guardadas o adjuntas en Drive."""
+    if asignacion.firma:
+        return asignacion.firma
+    enlace = (asignacion.enlace_firma or "").strip()
+    if not enlace:
+        return ""
+
+    partes = urlparse(enlace)
+    if (partes.hostname or "").lower() == "drive.google.com":
+        identificador = (parse_qs(partes.query).get("id") or [""])[0]
+        if not identificador:
+            coincidencia = re.search(r"/file/d/([A-Za-z0-9_-]+)", partes.path)
+            identificador = coincidencia.group(1) if coincidencia else ""
+        if identificador:
+            return f"https://drive.google.com/uc?export=view&id={identificador}"
+    # Algunos orígenes guardan la URL de la imagen directamente.
+    return enlace
 
 
 # Tipos a los que se puede cambiar un equipo. Los radios no entran: tienen
@@ -1312,6 +1333,11 @@ def render_equipo_pestanas(
     asignacion_activa = equipo.asignaciones.filter(
         estado=AsignacionEquipo.Estado.ASIGNADO
     ).first()
+    asignaciones = list(
+        equipo.asignaciones.select_related("entregado_por", "funcionario")
+    )
+    for asignacion in asignaciones:
+        asignacion.firma_visible = firma_asignacion_visible(asignacion)
     # El registro de entrega vive en su propia pestaña de la ficha.
     if (
         formulario_entrega is None
@@ -1342,7 +1368,7 @@ def render_equipo_pestanas(
         "cambios_gps": equipo.cambios_gps.all(),
         "verificaciones": equipo.verificaciones_politica.all()[:5],
         "renovaciones": equipo.renovaciones_antivirus.all()[:5],
-        "asignaciones": equipo.asignaciones.select_related("entregado_por"),
+        "asignaciones": asignaciones,
         "asignacion_activa": asignacion_activa,
         "formulario_baja": RadioBajaForm(),
         "tipos_cambio": opciones_cambio_tipo(equipo),
@@ -1354,6 +1380,9 @@ def render_equipo_pestanas(
 def equipo_hoja_vida(request, placa):
     """Hoja de vida imprimible del equipo: datos, características, entregas y mantenimientos."""
     equipo = get_object_or_404(Equipo, placa=placa)
+    asignaciones = list(equipo.asignaciones.all())
+    for asignacion in asignaciones:
+        asignacion.firma_visible = firma_asignacion_visible(asignacion)
     # Características agrupadas (Hardware, Red, Licencias…), solo con datos.
     secciones_detalle = [
         (titulo, filas)
@@ -1373,7 +1402,7 @@ def equipo_hoja_vida(request, placa):
             equipo=equipo
         ).order_by("-fecha_intervencion"),
         "cambios_gps": equipo.cambios_gps.all(),
-        "asignaciones": equipo.asignaciones.all(),
+        "asignaciones": asignaciones,
         "generado": timezone.localtime(),
     })
 
@@ -1936,6 +1965,7 @@ def equipo_acta(request, asignacion_id):
         ),
         pk=asignacion_id,
     )
+    asignacion.firma_visible = firma_asignacion_visible(asignacion)
     return render(request, "inventario/equipo_acta.html", {
         "asignacion": asignacion,
         "equipo": asignacion.equipo,
