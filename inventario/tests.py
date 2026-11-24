@@ -4622,6 +4622,35 @@ class MantenimientoPorTipoDeEquipoTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["tipo_equipo"], "COMPUTADOR")
 
+    def test_preventivo_guarda_en_trabajo_las_actividades_seleccionadas(self):
+        from inventario.forms import MantenimientoEquipoForm
+
+        form = MantenimientoEquipoForm(data={
+            "equipo": self.pc.pk,
+            "tipo_equipo": "COMPUTADOR",
+            "fecha_intervencion": "2026-11-24T10:00",
+            "tipo": "PREVENTIVO",
+            "tecnico_responsable": "Yeiver Arcenio Prada Fierro",
+            "actividades_preventivas": ["componentes_internos", "fuente_adaptador"],
+            "resultado": "SOLUCIONADO",
+            "estado_final": "OPERATIVO",
+            "recibido_por_nombre": "Persona que recibe",
+            "firma_recibido": FIRMA_PRUEBA,
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        mantenimiento = form.save(commit=False)
+        self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_realizado)
+        self.assertIn("Verificación de fuente o adaptador de energía", mantenimiento.trabajo_realizado)
+
+    def test_estado_operativo_no_se_duplica_en_casillas_de_entrega(self):
+        from inventario.forms import MantenimientoEquipoForm
+
+        form = MantenimientoEquipoForm()
+        opciones = dict(form.fields["estados_entrega"].choices)
+        self.assertNotIn("OPERATIVO", opciones)
+        self.assertIn("SEGUNDO_NIVEL", opciones)
+
     def test_ventana_de_programar_muestra_tipos_y_casillas(self):
         resp = self.client.get(reverse("inventario:mantenimiento_programado_crear"),
                                HTTP_X_REQUESTED_WITH="XMLHttpRequest")

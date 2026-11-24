@@ -231,6 +231,8 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             "trabajo_realizado": "Descripción de la actividad realizada",
             "actividad_preventiva_otros": "Describa otras actividades",
             "recibido_por_nombre": "Nombre de quien recibe",
+            "resultado": "Resultado de la intervención",
+            "estado_final": "Condición del equipo al finalizar",
         }
         widgets = {
             "fecha_intervencion": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -254,6 +256,14 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
         self.fields["motivo"].required = False
         self.fields["trabajo_realizado"].required = False
         self.fields["causa_dano"].required = False
+        # La condición final se registra una sola vez en estado_final. El
+        # checkbox equivalente "Equipo queda operativo" era una segunda
+        # entrada para el mismo dato.
+        self.fields["estados_entrega"].choices = [
+            (valor, etiqueta)
+            for valor, etiqueta in MantenimientoEquipo.EstadoEntrega.choices
+            if valor != MantenimientoEquipo.EstadoEntrega.OPERATIVO
+        ]
         self.fields["recibido_por_nombre"].required = not bool(self.instance.pk)
         self.fields["recibido_por_nombre"].widget.attrs.update({
             "autocomplete": "name",
@@ -368,6 +378,17 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             self._casillas_ajenas(cleaned, "actividades_preventivas", act.PREVENTIVAS, tipo_equipo)
             if "otros" in (cleaned.get("actividades_preventivas") or []) and not cleaned.get("actividad_preventiva_otros"):
                 self.add_error("actividad_preventiva_otros", "Describa las otras actividades realizadas.")
+
+        # La tabla histórica muestra trabajo_realizado. En preventivos, las
+        # actividades se seleccionan mediante casillas y el campo libre queda
+        # oculto; construir aquí el texto mantiene ambos datos sincronizados.
+        if tipo == MantenimientoEquipo.Tipo.PREVENTIVO:
+            claves = cleaned.get("actividades_preventivas") or []
+            etiquetas = act.textos(claves)
+            otras = (cleaned.get("actividad_preventiva_otros") or "").strip()
+            if "otros" in claves and otras:
+                etiquetas = [texto for texto in etiquetas if texto != "Otros"] + [f"Otros: {otras}"]
+            cleaned["trabajo_realizado"] = ", ".join(etiquetas)
         return cleaned
 
     def clean_firma_recibido(self):
