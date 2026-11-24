@@ -567,17 +567,36 @@ class MantenimientoEquipo(models.Model):
         Si esta es la intervención más reciente, el equipo queda «Operativo»
         o «No operativo» según su estado final.
         """
-        if self.tipo == self.Tipo.PREVENTIVO and not self.trabajo_realizado:
-            from .actividades_mantenimiento import textos
-
-            actividades = textos(self.actividades_preventivas)
-            otras = (self.actividad_preventiva_otros or "").strip()
-            if "Otros" in actividades and otras:
-                actividades = [texto for texto in actividades if texto != "Otros"]
-                actividades.append(f"Otros: {otras}")
-            self.trabajo_realizado = ", ".join(actividades)
+        # Las casillas son la fuente de verdad de las actividades estructuradas.
+        # Sincronizarlas siempre evita que un texto anterior o vacío oculte lo
+        # que se marcó en el formulario.
+        if self.tipo == self.Tipo.PREVENTIVO and self.actividades_preventivas:
+            self.trabajo_realizado = self._consolidar_trabajo(
+                self.trabajo_realizado, self.actividades_preventivas
+            )
+        elif self.tipo == self.Tipo.CORRECTIVO and self.componentes_intervenidos:
+            self.trabajo_realizado = self._consolidar_trabajo(
+                self.trabajo_realizado, self.componentes_intervenidos
+            )
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
+
+    def _consolidar_trabajo(self, texto, claves):
+        """Añade al trabajo las etiquetas legibles de las casillas marcadas."""
+        from .actividades_mantenimiento import textos
+
+        etiquetas = textos(claves)
+        otras = (self.actividad_preventiva_otros or "").strip()
+        if "Otros" in etiquetas and otras:
+            etiquetas = [etiqueta for etiqueta in etiquetas if etiqueta != "Otros"]
+            etiquetas.append(f"Otros: {otras}")
+        trabajo = (texto or "").strip()
+        faltantes = [
+            etiqueta for etiqueta in etiquetas
+            if etiqueta.casefold() not in trabajo.casefold()
+        ]
+        adicionales = ", ".join(faltantes)
+        return f"{trabajo}, {adicionales}" if trabajo and adicionales else trabajo or adicionales
 
     @property
     def trabajo_visible(self):
@@ -587,18 +606,14 @@ class MantenimientoEquipo(models.Model):
         JSON, pero dejaron vacío ``trabajo_realizado``. Construir el texto al
         mostrarlo recupera esas actividades sin alterar el registro original.
         """
-        if self.trabajo_realizado:
-            return self.trabajo_realizado
-        if self.tipo != self.Tipo.PREVENTIVO:
-            return ""
-        from .actividades_mantenimiento import textos
-
-        actividades = textos(self.actividades_preventivas)
-        otras = (self.actividad_preventiva_otros or "").strip()
-        if "Otros" in actividades and otras:
-            actividades = [texto for texto in actividades if texto != "Otros"]
-            actividades.append(f"Otros: {otras}")
-        return ", ".join(actividades)
+        trabajo = (self.trabajo_realizado or "").strip()
+        if self.tipo == self.Tipo.PREVENTIVO and self.actividades_preventivas:
+            # Refleja siempre todas las casillas, incluso en registros antiguos
+            # cuyo campo de texto se guardó vacío o desactualizado.
+            return self._consolidar_trabajo(trabajo, self.actividades_preventivas)
+        if self.tipo == self.Tipo.CORRECTIVO and self.componentes_intervenidos:
+            return self._consolidar_trabajo(trabajo, self.componentes_intervenidos)
+        return trabajo
 
     def __str__(self):
         """Placa, tipo de intervención y fecha."""
