@@ -567,6 +567,15 @@ class MantenimientoEquipo(models.Model):
         Si esta es la intervención más reciente, el equipo queda «Operativo»
         o «No operativo» según su estado final.
         """
+        if self.tipo == self.Tipo.PREVENTIVO and not self.trabajo_realizado:
+            from .actividades_mantenimiento import textos
+
+            actividades = textos(self.actividades_preventivas)
+            otras = (self.actividad_preventiva_otros or "").strip()
+            if "Otros" in actividades and otras:
+                actividades = [texto for texto in actividades if texto != "Otros"]
+                actividades.append(f"Otros: {otras}")
+            self.trabajo_realizado = ", ".join(actividades)
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
 

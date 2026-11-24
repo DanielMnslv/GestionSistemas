@@ -4645,6 +4645,10 @@ class MantenimientoPorTipoDeEquipoTests(TestCase):
         mantenimiento.trabajo_realizado = ""
         self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_visible)
         self.assertIn("Verificación de fuente o adaptador de energía", mantenimiento.trabajo_visible)
+        mantenimiento.registrado_por = self.usuario
+        mantenimiento.save()
+        mantenimiento.refresh_from_db()
+        self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_realizado)
 
     def test_estado_operativo_no_se_duplica_en_casillas_de_entrega(self):
         from inventario.forms import MantenimientoEquipoForm
