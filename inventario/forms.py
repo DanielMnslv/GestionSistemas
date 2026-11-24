@@ -368,6 +368,29 @@ class MantenimientoEquipoForm(MantenimientoPorTipoMixin, forms.ModelForm):
             self._casillas_ajenas(cleaned, "actividades_preventivas", act.PREVENTIVAS, tipo_equipo)
             if "otros" in (cleaned.get("actividades_preventivas") or []) and not cleaned.get("actividad_preventiva_otros"):
                 self.add_error("actividad_preventiva_otros", "Describa las otras actividades realizadas.")
+
+        # Persistir las casillas en el campo que se muestra como "Trabajo
+        # realizado". Antes solo se guardaban en JSON y la tabla quedaba vacía.
+        if tipo == MantenimientoEquipo.Tipo.PREVENTIVO:
+            claves = cleaned.get("actividades_preventivas") or []
+            etiquetas = act.textos(claves)
+            if "otros" in claves:
+                etiquetas = [texto for texto in etiquetas if texto.casefold() != "otros"]
+                detalle_otros = (cleaned.get("actividad_preventiva_otros") or "").strip()
+                if detalle_otros:
+                    etiquetas.append(f"Otros: {detalle_otros}")
+            descripcion = (cleaned.get("trabajo_realizado") or "").strip()
+            if etiquetas and not all(texto.casefold() in descripcion.casefold() for texto in etiquetas):
+                cleaned["trabajo_realizado"] = "; ".join(
+                    ["; ".join(etiquetas), descripcion] if descripcion else etiquetas
+                )
+        elif tipo == MantenimientoEquipo.Tipo.CORRECTIVO:
+            etiquetas = act.textos(cleaned.get("componentes_intervenidos") or [])
+            descripcion = (cleaned.get("trabajo_realizado") or "").strip()
+            if etiquetas and not all(texto.casefold() in descripcion.casefold() for texto in etiquetas):
+                cleaned["trabajo_realizado"] = "; ".join(
+                    ["; ".join(etiquetas), descripcion] if descripcion else etiquetas
+                )
         return cleaned
 
     def clean_firma_recibido(self):

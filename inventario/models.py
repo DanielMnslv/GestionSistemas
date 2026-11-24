@@ -570,6 +570,37 @@ class MantenimientoEquipo(models.Model):
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
 
+    @property
+    def trabajo_realizado_completo(self):
+        """Descripción más actividades o partes seleccionadas.
+
+        Algunos registros JANO antiguos guardaron las casillas en sus campos
+        JSON, pero dejaron vacío ``trabajo_realizado``. En esos casos se arma
+        el texto para el historial y la hoja de vida.
+        """
+        from .actividades_mantenimiento import textos
+
+        claves = []
+        if self.tipo == self.Tipo.PREVENTIVO:
+            claves = self.actividades_preventivas or []
+        elif self.tipo == self.Tipo.CORRECTIVO:
+            claves = self.componentes_intervenidos or []
+
+        etiquetas = textos(claves)
+        otros = (self.actividad_preventiva_otros or "").strip()
+        if self.tipo == self.Tipo.PREVENTIVO and "otros" in claves:
+            etiquetas = [e for e in etiquetas if e.casefold() != "otros"]
+            if otros:
+                etiquetas.append(f"Otros: {otros}")
+
+        descripcion = (self.trabajo_realizado or "").strip()
+        if etiquetas:
+            etiquetas_texto = "; ".join(etiquetas)
+            if descripcion and all(e.casefold() in descripcion.casefold() for e in etiquetas):
+                return descripcion
+            return "; ".join([etiquetas_texto, descripcion]) if descripcion else etiquetas_texto
+        return descripcion
+
     def __str__(self):
         """Placa, tipo de intervención y fecha."""
         return (

@@ -112,7 +112,7 @@ Hoja de vida imprimible del equipo: datos, características, entregas y mantenim
                     <td class="col-fecha">{{ m.fecha_intervencion|date:"d/m/Y" }}</td>
                     <td>
                         <strong class="hoja-tipo-mant">{{ m.get_tipo_display }}</strong>
-                        <span class="hoja-trabajo">{{ m.trabajo_realizado }}</span>
+                        <span class="hoja-trabajo">{{ m.trabajo_realizado_completo }}</span>
                         {% if m.motivo %}<span class="hoja-nota"><b>Motivo:</b> {{ m.motivo }}</span>{% endif %}
                         {% if m.repuestos_utilizados %}<span class="hoja-nota"><b>Repuestos:</b> {{ m.repuestos_utilizados }}</span>{% endif %}
                         {% if m.recibido_por_nombre %}<span class="hoja-nota"><b>Recibido por:</b> {{ m.recibido_por_nombre }}</span>{% endif %}

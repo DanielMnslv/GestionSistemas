@@ -97,7 +97,7 @@ Historial de intervenciones con búsqueda y filtros por tipo, técnico, resultad
                         <td data-label="Fecha">{% if item.origen_archivo %}{{ item.fecha_intervencion|date:"d/m/Y" }}{% else %}{{ item.fecha_intervencion|date:"d/m/Y H:i" }}{% endif %}</td>
                         <td data-label="Tipo">{{ item.get_tipo_display }}</td>
                         <td data-label="Técnico">{{ item.tecnico_responsable }}</td>
-                        <td data-label="Trabajo" class="mant-trabajo">{{ item.trabajo_realizado|truncatechars:90 }}</td>
+                        <td data-label="Trabajo" class="mant-trabajo">{{ item.trabajo_realizado_completo|default:"—" }}</td>
                         <td data-label="Resultado"><span class="mant-etiqueta mant-{{ item.resultado|lower }}">{{ item.get_resultado_display }}</span></td>
                         <td data-label="Estado final">{% if item.estado_final %}{{ item.get_estado_final_display }}{% else %}<span class="mant-sin-dato">Sin registrar</span>{% endif %}</td>
                         <td data-label="Origen">{% if item.origen_archivo %}<span class="mant-etiqueta mant-sin_mantenimiento">Histórico</span>{% else %}<span class="mant-etiqueta mant-info">JANO</span>{% endif %}</td>
