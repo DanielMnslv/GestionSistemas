@@ -54,7 +54,7 @@ Detalle de una solicitud de soporte: datos, historial, fotos, comentarios y acci
                 <dl class="jx-dl" style="margin-top:16px">
                     <div><dt>Intervención</dt><dd>{{ m.get_tipo_display }} · {{ m.equipo.placa }}<small class="jx-sub">{{ m.fecha_intervencion|date:"d/m/Y H:i" }} · {{ m.tecnico_responsable }}</small></dd></div>
                     <div><dt>Diagnóstico</dt><dd>{{ m.diagnostico|default:"—" }}</dd></div>
-                    <div><dt>Trabajo realizado</dt><dd>{{ m.trabajo_realizado|default:"—" }}</dd></div>
+                    <div><dt>Trabajo realizado</dt><dd>{{ m.trabajo_visible|default:"—" }}</dd></div>
                     <div><dt>Resultado</dt><dd>{{ m.get_resultado_display|default:"—" }}</dd></div>
                     <div><dt>Estado final</dt><dd>{{ m.get_estado_final_display|default:"—" }}</dd></div>
                 </dl>

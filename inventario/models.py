@@ -570,6 +570,27 @@ class MantenimientoEquipo(models.Model):
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
 
+    @property
+    def trabajo_visible(self):
+        """Descripción del trabajo, incluso en registros con casillas antiguas.
+
+        Algunas intervenciones previas guardaron las claves seleccionadas en
+        JSON, pero dejaron vacío ``trabajo_realizado``. Construir el texto al
+        mostrarlo recupera esas actividades sin alterar el registro original.
+        """
+        if self.trabajo_realizado:
+            return self.trabajo_realizado
+        if self.tipo != self.Tipo.PREVENTIVO:
+            return ""
+        from .actividades_mantenimiento import textos
+
+        actividades = textos(self.actividades_preventivas)
+        otras = (self.actividad_preventiva_otros or "").strip()
+        if "Otros" in actividades and otras:
+            actividades = [texto for texto in actividades if texto != "Otros"]
+            actividades.append(f"Otros: {otras}")
+        return ", ".join(actividades)
+
     def __str__(self):
         """Placa, tipo de intervención y fecha."""
         return (
