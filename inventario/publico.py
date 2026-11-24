@@ -10,7 +10,7 @@ from django.conf import settings
 from django.http import Http404, HttpResponseRedirect
 from django.http.request import split_domain_port, validate_host
 
-RUTAS_PUBLICAS = ("/soporte/", "/mi-soporte/", "/cuenta/", "/login/", "/logout/")
+RUTAS_PUBLICAS = ("/soporte/", "/mi-soporte/", "/cuenta/", "/login/", "/logout/", "/api/movil/")
 
 
 def es_host_publico(request):

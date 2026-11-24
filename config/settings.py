@@ -127,6 +127,9 @@ INSTALLED_APPS = [
 
     # Integración con Gestión TIC
     'api_integracion',
+
+    # API autenticada para la aplicación Android JANO MÓVIL
+    'api_movil.apps.ApiMovilConfig',
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

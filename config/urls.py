@@ -25,6 +25,8 @@ urlpatterns = [
         "api/v1/",
         include("api_integracion.urls"),
     ),
+    # API autenticada de operaciones de campo JANO MÓVIL
+    path("api/movil/", include("api_movil.urls")),
 
     # Módulos actuales de JANO
     # Mesa de ayuda pública (sin inicio de sesión)

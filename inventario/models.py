@@ -827,6 +827,8 @@ class AsignacionRadio(models.Model):
     )
 
     observaciones_devolucion = models.TextField(blank=True)
+    firma_devolucion = models.TextField(blank=True)
+    inspeccion_devolucion = models.JSONField(default=dict, blank=True)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
@@ -1201,6 +1203,10 @@ class AsignacionEquipo(models.Model):
     nombre_recibe = models.CharField(max_length=200, blank=True)
     cedula_recibe = models.CharField(max_length=50, blank=True)
     area = models.CharField(max_length=200, blank=True)
+    puesto = models.ForeignKey(
+        "Puesto", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="asignaciones_equipo",
+    )
 
     fecha_entrega = models.DateTimeField(default=timezone.now)
     estado = models.CharField(
@@ -1227,6 +1233,8 @@ class AsignacionEquipo(models.Model):
         related_name="equipos_recibidos", null=True, blank=True,
     )
     observaciones_devolucion = models.TextField(blank=True)
+    firma_devolucion = models.TextField(blank=True)
+    inspeccion_devolucion = models.JSONField(default=dict, blank=True)
 
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
