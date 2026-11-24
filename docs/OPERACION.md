@@ -24,6 +24,14 @@ Scripts de `C:\JANOTEC_INTEGRACION\operacion\`. Se ejecutan con clic derecho ›
 
 En Plesk se reinicia con **Sitios web › Python › Reiniciar aplicación**, o por SSH con `touch tmp/restart.txt`.
 
+### SQLite del servidor Plesk
+
+Django 5.2 requiere SQLite 3.31 o posterior. Si el Python de Plesk trae una
+versión anterior, JANO puede usar `pysqlite3-binary` desde el entorno virtual o
+desde `.runtime/vendor`, una carpeta privada del proyecto. Esto no reemplaza ni
+actualiza el Python o SQLite global del servidor. En Linux, `manage.py`, WSGI y
+ASGI cargan esta compatibilidad antes de importar Django.
+
 ## 3. Tareas programadas
 
 **Ya programadas en el equipo local.** Se registran con `registrar_tareas.ps1` y se quitan con `registrar_tareas.ps1 -Quitar`.
@@ -92,7 +100,9 @@ Igual que en la plataforma de tickets, cada `git push` a `main` puede publicarse
 3. En **Acciones de implementación adicionales**, con el Python del sitio:
 
    ```bash
-   PY=<python del sitio>
+   PY=<python 3.10 que ejecuta Django>
+   mkdir -p .runtime/vendor
+   "$PY" -m pip install --target .runtime/vendor "pysqlite3-binary==0.5.4"
    $PY manage.py respaldar_bd --destino respaldos/antes_de_actualizar --conservar 30
    $PY manage.py migrate --noinput
    $PY manage.py collectstatic --noinput -v 0
@@ -100,6 +110,14 @@ Igual que en la plataforma de tickets, cada `git push` a `main` puede publicarse
    ```
 
 Si un cambio no aparece, en Plesk › Git › **Extraer actualizaciones** se baja a mano; `actualizar.sh` queda como respaldo.
+
+La instalación en `.runtime/vendor` debe ejecutarse **antes del primer comando
+Django** de cada despliegue. Si Plesk solo deja ejecutar `touch .../deploy.pending`
+y un proceso propio hace las migraciones, ese proceso también debe instalar
+`pysqlite3-binary` antes de `check`, `makemigrations` o `migrate` (o debe llamar
+a `actualizar.sh`). No ejecutes los comandos Django con el Python 3.6.8 que
+aparece en una configuración que no encuentra `passenger_wsgi.py`: esta versión
+del proyecto usa Django 5.2 y requiere Python 3.10 o posterior.
 
 **Cuidado con las migraciones:** con la publicación automática se aplican apenas llega el `push`. Antes de subir una migración que cambie o borre datos, revísala en local con una copia de la base del servidor.
 

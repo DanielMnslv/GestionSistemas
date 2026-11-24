@@ -3,6 +3,11 @@
 import os
 import sys
 
+from config.sqlite_compat import configure_sqlite
+
+
+configure_sqlite()
+
 
 def main():
     """Run administrative tasks."""

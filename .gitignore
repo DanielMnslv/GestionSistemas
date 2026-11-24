@@ -6,6 +6,7 @@ __pycache__/
 # Entornos virtuales
 .venv/
 venv/
+.runtime/
 env/
 
 # Django y base de datos local

@@ -42,13 +42,6 @@ else
 fi
 echo "Python: $PY"
 
-if [ "${SIN_RESPALDO:-}" = "1" ]; then
-    echo "== Respaldo omitido (SIN_RESPALDO=1)"
-else
-    echo "== Respaldando la base de datos"
-    "$PY" manage.py respaldar_bd --destino respaldos/antes_de_actualizar --conservar 30
-fi
-
 echo "== Bajando cambios de GitHub"
 ANTES="$(git rev-parse --short HEAD)"
 git pull --ff-only
@@ -58,7 +51,20 @@ case "$PY" in
         echo "== Instalando dependencias"
         "$PY" -m pip install -q -r requirements.txt
         ;;
+    *)
+        echo "== Instalando SQLite compatible dentro del proyecto"
+        mkdir -p .runtime/vendor
+        "$PY" -m pip install -q --disable-pip-version-check \
+            --target .runtime/vendor "pysqlite3-binary==0.5.4"
+        ;;
 esac
+
+if [ "${SIN_RESPALDO:-}" = "1" ]; then
+    echo "== Respaldo omitido (SIN_RESPALDO=1)"
+else
+    echo "== Respaldando la base de datos"
+    "$PY" manage.py respaldar_bd --destino respaldos/antes_de_actualizar --conservar 30
+fi
 
 echo "== Aplicando cambios a la base de datos"
 "$PY" manage.py migrate --noinput

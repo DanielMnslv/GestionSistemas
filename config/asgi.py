@@ -9,6 +9,10 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 
 import os
 
+from config.sqlite_compat import configure_sqlite
+
+configure_sqlite()
+
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
