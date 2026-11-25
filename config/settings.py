@@ -35,6 +35,9 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "seguridad": {"format": "%(asctime)s %(message)s"},
+        "aplicacion": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
     },
     "handlers": {
         "archivo_seguridad": {
@@ -43,11 +46,22 @@ LOGGING = {
             "formatter": "seguridad",
             "encoding": "utf-8",
         },
+        "errores_django": {
+            "class": "logging.FileHandler",
+            "filename": str(_CARPETA_LOGS / "django_errors.log"),
+            "formatter": "aplicacion",
+            "encoding": "utf-8",
+        },
     },
     "loggers": {
         "nucleo.seguridad": {
             "handlers": ["archivo_seguridad"],
             "level": "WARNING",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["errores_django"],
+            "level": "ERROR",
             "propagate": False,
         },
     },
