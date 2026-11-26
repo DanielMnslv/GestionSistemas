@@ -113,7 +113,7 @@
 .mant-page .filters.filters-hist-mas { grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; margin-top: 8px; }
 .mant-filtros .filters-hist-mas .field label { font-size: 11px; }
 
-.mant-lista .mant-trabajo { min-width: 220px; max-width: 420px; }
+.mant-lista .mant-trabajo { min-width: 220px; max-width: 420px; white-space: normal; overflow-wrap: anywhere; }
 .mant-atraso { color: var(--mant-vencido); font-weight: 700; }
 .mant-acciones form { margin: 0; }
 .mant-cancelar { border: 0; background: none; color: var(--mant-vencido); cursor: pointer; font-family: inherit; }

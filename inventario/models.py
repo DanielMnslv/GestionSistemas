@@ -581,39 +581,36 @@ class MantenimientoEquipo(models.Model):
         super().save(*args, **kwargs)
         self.equipo.actualizar_estado_operativo()
 
-    def _consolidar_trabajo(self, texto, claves):
-        """Añade al trabajo las etiquetas legibles de las casillas marcadas."""
+    @property
+    def trabajo_realizado_completo(self):
+        """Descripción más actividades o partes seleccionadas.
+
+        Algunos registros JANO antiguos guardaron las casillas en sus campos
+        JSON, pero dejaron vacío ``trabajo_realizado``. En esos casos se arma
+        el texto para el historial y la hoja de vida.
+        """
         from .actividades_mantenimiento import textos
 
+        claves = []
+        if self.tipo == self.Tipo.PREVENTIVO:
+            claves = self.actividades_preventivas or []
+        elif self.tipo == self.Tipo.CORRECTIVO:
+            claves = self.componentes_intervenidos or []
+
         etiquetas = textos(claves)
-        otras = (self.actividad_preventiva_otros or "").strip()
-        if "Otros" in etiquetas and otras:
-            etiquetas = [etiqueta for etiqueta in etiquetas if etiqueta != "Otros"]
-            etiquetas.append(f"Otros: {otras}")
-        trabajo = (texto or "").strip()
-        faltantes = [
-            etiqueta for etiqueta in etiquetas
-            if etiqueta.casefold() not in trabajo.casefold()
-        ]
-        adicionales = ", ".join(faltantes)
-        return f"{trabajo}, {adicionales}" if trabajo and adicionales else trabajo or adicionales
+        otros = (self.actividad_preventiva_otros or "").strip()
+        if self.tipo == self.Tipo.PREVENTIVO and "otros" in claves:
+            etiquetas = [e for e in etiquetas if e.casefold() != "otros"]
+            if otros:
+                etiquetas.append(f"Otros: {otros}")
 
-    @property
-    def trabajo_visible(self):
-        """Descripción del trabajo, incluso en registros con casillas antiguas.
-
-        Algunas intervenciones previas guardaron las claves seleccionadas en
-        JSON, pero dejaron vacío ``trabajo_realizado``. Construir el texto al
-        mostrarlo recupera esas actividades sin alterar el registro original.
-        """
-        trabajo = (self.trabajo_realizado or "").strip()
-        if self.tipo == self.Tipo.PREVENTIVO and self.actividades_preventivas:
-            # Refleja siempre todas las casillas, incluso en registros antiguos
-            # cuyo campo de texto se guardó vacío o desactualizado.
-            return self._consolidar_trabajo(trabajo, self.actividades_preventivas)
-        if self.tipo == self.Tipo.CORRECTIVO and self.componentes_intervenidos:
-            return self._consolidar_trabajo(trabajo, self.componentes_intervenidos)
-        return trabajo
+        descripcion = (self.trabajo_realizado or "").strip()
+        if etiquetas:
+            etiquetas_texto = "; ".join(etiquetas)
+            if descripcion and all(e.casefold() in descripcion.casefold() for e in etiquetas):
+                return descripcion
+            return "; ".join([etiquetas_texto, descripcion]) if descripcion else etiquetas_texto
+        return descripcion
 
     def __str__(self):
         """Placa, tipo de intervención y fecha."""

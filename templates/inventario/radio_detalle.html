@@ -255,7 +255,7 @@ SIN USO: la vista radio_detalle redirige a la lista de equipos y la ficha vive e
                     <div class="rd-maintenance-field"><strong>Resultado</strong><p>{{ mantenimiento.get_resultado_display|default:"-" }}</p></div>
                     <div class="rd-maintenance-field"><strong>Motivo</strong><p>{{ mantenimiento.motivo|default:"Sin información"|linebreaksbr }}</p></div>
                     <div class="rd-maintenance-field"><strong>Diagnóstico</strong><p>{{ mantenimiento.diagnostico|default:"Sin información"|linebreaksbr }}</p></div>
-                    <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_visible|default:"Sin información"|linebreaksbr }}</p></div>
+                    <div class="rd-maintenance-field"><strong>Trabajo realizado</strong><p>{{ mantenimiento.trabajo_realizado_completo|default:"Sin información"|linebreaksbr }}</p></div>
                     <div class="rd-maintenance-field"><strong>Repuestos utilizados</strong><p>{{ mantenimiento.repuestos_utilizados|default:"Sin información"|linebreaksbr }}</p></div>
                 </div>
                 {% include "inventario/_mant_firma_detalle.html" with mantenimiento=mantenimiento %}
