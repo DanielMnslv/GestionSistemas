@@ -4643,8 +4643,8 @@ class MantenimientoPorTipoDeEquipoTests(TestCase):
         self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_realizado)
         self.assertIn("Verificación de fuente o adaptador de energía", mantenimiento.trabajo_realizado)
         mantenimiento.trabajo_realizado = ""
-        self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_visible)
-        self.assertIn("Verificación de fuente o adaptador de energía", mantenimiento.trabajo_visible)
+        self.assertIn("Verificación de componentes internos", mantenimiento.trabajo_realizado_completo)
+        self.assertIn("Verificación de fuente o adaptador de energía", mantenimiento.trabajo_realizado_completo)
         mantenimiento.registrado_por = self.usuario
         mantenimiento.save()
         mantenimiento.refresh_from_db()
