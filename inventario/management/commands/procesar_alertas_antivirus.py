@@ -11,7 +11,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from inventario.models import AvisoAntivirus, DetalleComputador
-from inventario.notificaciones import destinatarios_alerta_equipos
+from inventario.notificaciones import (
+    destinatarios_ti,
+    equipos_por_correo_responsable,
+)
 
 
 DIAS_ANTICIPACION = 30
@@ -83,15 +86,56 @@ class Command(BaseCommand):
             "vencimiento en la ficha de cada equipo.\n\n"
             "Mensaje automático del sistema JANO Inventario."
         )
-        send_mail(
-            subject=f"Antivirus por vencer: {len(pendientes)} equipo(s)",
-            message=mensaje,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=destinatarios_alerta_equipos(
-                d.equipo for d in pendientes
-            ),
-            fail_silently=False,
+        correos_ti = destinatarios_ti()
+        grupos_responsables = equipos_por_correo_responsable(
+            d.equipo for d in pendientes
         )
+        correos_ti_normalizados = {correo.casefold() for correo in correos_ti}
+        grupos_responsables = [
+            grupo for grupo in grupos_responsables
+            if grupo[0].casefold() not in correos_ti_normalizados
+        ]
+        if not correos_ti and not grupos_responsables:
+            raise CommandError(
+                "No hay destinatarios: configure EMAIL_ALERTAS_TI o asigne "
+                "responsables con correo en el directorio de funcionarios."
+            )
+        if correos_ti:
+            send_mail(
+                subject=f"Antivirus por vencer: {len(pendientes)} equipo(s)",
+                message=mensaje,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=correos_ti,
+                fail_silently=False,
+            )
+        else:
+            self.stderr.write(self.style.WARNING(
+                "EMAIL_ALERTAS_TI no tiene destinatarios; solo se avisará "
+                "a responsables identificados."
+            ))
+
+        for correo, equipos_responsable in grupos_responsables:
+            placas = {equipo.pk for equipo in equipos_responsable}
+            detalles = [d for d in pendientes if d.equipo_id in placas]
+            lineas_personales = [
+                f"{d.equipo.placa} · {d.antivirus or 'Antivirus'} · vence "
+                f"{d.vencimiento_antivirus:%d/%m/%Y}"
+                for d in detalles
+            ]
+            send_mail(
+                subject=f"Antivirus por vencer: {len(detalles)} equipo(s)",
+                message=(
+                    "Buen día,\n\nEstos equipos a tu cargo tienen el "
+                    "antivirus vencido o próximo a vencer:\n\n"
+                    + "\n".join(f"- {linea}" for linea in lineas_personales)
+                    + "\n\nSe solicita coordinar la renovación y actualizar "
+                    "la fecha de vencimiento en JANO Inventario.\n\n"
+                    "Mensaje automático del sistema JANO Inventario."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[correo],
+                fail_silently=False,
+            )
         with transaction.atomic():
             AvisoAntivirus.objects.bulk_create([
                 AvisoAntivirus(

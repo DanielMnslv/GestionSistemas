@@ -56,14 +56,9 @@ def destinatarios_alerta_equipo(equipo):
     return list(unicos.values())
 
 
-def destinatarios_alerta_equipos(equipos):
-    """Destinatarios sin duplicados para una alerta de varios equipos."""
+def equipos_por_correo_responsable(equipos):
+    """Agrupa equipos por el correo de su responsable vigente."""
     equipos = list(equipos)
-    unicos = {}
-    for correo in destinatarios_ti():
-        correo = (correo or "").strip()
-        if correo:
-            unicos.setdefault(correo.casefold(), correo)
     cedulas = {
         (getattr(equipo, "responsable_cedula", "") or "").strip()
         for equipo in equipos
@@ -74,12 +69,13 @@ def destinatarios_alerta_equipos(equipos):
             cedula__in=cedulas, activo=True,
         ).exclude(correo="").values_list("cedula", "correo")
     ) if cedulas else {}
+    grupos = {}
     for equipo in equipos:
         cedula = (getattr(equipo, "responsable_cedula", "") or "").strip()
         correo = correos_por_cedula.get(cedula, "").strip()
         if correo:
-            unicos.setdefault(correo.casefold(), correo)
-    return list(unicos.values())
+            grupos.setdefault(correo.casefold(), (correo, []))[1].append(equipo)
+    return list(grupos.values())
 
 
 def resumen(ticket):
