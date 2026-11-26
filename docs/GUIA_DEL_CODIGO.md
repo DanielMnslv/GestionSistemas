@@ -218,7 +218,7 @@ Todas las pantallas siguen este mismo patrón: **URL → vista → (permiso) →
 | Agregar un campo a los equipos | `models.py` (`Equipo` o `Detalle…`), `forms.py` (`EquipoForm`/`Detalle…Form`), `views_equipos.pasos_formulario_equipo` | 1) agregar el campo al modelo; 2) `manage.py makemigrations`; 3) agregarlo a `fields` del formulario; 4) ubicarlo en un paso; 5) `manage.py migrate` (con respaldo) |
 | Cambiar quién puede hacer algo | `permisos.py` → `ACCIONES` | Agregar o quitar el rol del conjunto de esa acción |
 | Cambiar el texto de la cláusula de equipos | `forms.py` → `CLAUSULA_EQUIPOS` | Se ve en el formulario y en todas las actas |
-| Cambiar los destinatarios de las alertas | `management/commands/procesar_alertas_mantenimiento.py` → `DESTINATARIOS` | Lista de correos |
+| Cambiar los destinatarios base de alertas | Variable de entorno `EMAIL_ALERTAS_TI` | Correos separados por comas; el responsable del equipo se obtiene del directorio si tiene correo |
 | Agregar actividades de mantenimiento | `actividades_mantenimiento.py` | Por tipo de equipo |
 | Cambiar los puntos de la política de seguridad | `politica.py` | Lista de puntos |
 | Agregar un informe | `informes/<categoría>.py` | Crear la clase `Informe` y agregarla a `INFORMES` (ver docstring de `informes/base.py`) |

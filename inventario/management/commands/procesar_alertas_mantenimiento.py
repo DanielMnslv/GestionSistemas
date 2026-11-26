@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.db.models import Q
 
 from inventario.estado_mantenimiento import sumar_seis_meses
+from inventario.notificaciones import destinatarios_alerta_equipo
 from inventario.models import (
     AlertaMantenimiento,
     MantenimientoEquipo,
@@ -22,12 +23,6 @@ from inventario.models import (
 
 ZONA_COLOMBIA = ZoneInfo("America/Bogota")
 
-
-DESTINATARIOS = [
-    "direcciontics@seguridadjano.com",
-    "d.jimenez@seguridadjano.com",
-    "janotec@seguridadjano.com",
-]
 
 DESTINATARIO_PRUEBA = "d.jimenez@seguridadjano.com"
 MAX_INTENTOS_ALERTA = 3
@@ -366,7 +361,7 @@ class Command(BaseCommand):
                     subject=asunto,
                     message=mensaje,
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=DESTINATARIOS,
+                    recipient_list=destinatarios_alerta_equipo(equipo),
                     fail_silently=False,
                 )
 

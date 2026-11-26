@@ -75,6 +75,13 @@ El servidor web termina el HTTPS, envía la cabecera
 Copia la carpeta de respaldos (`JANO_RESPALDOS_DIR`) fuera del servidor
 con regularidad.
 
+Las alertas de inventario se envían a los destinatarios base de TI definidos
+en `EMAIL_ALERTAS_TI` (direcciones separadas por comas) y al responsable
+vigente de cada equipo cuando su cédula coincide con un funcionario activo
+que tiene correo en el directorio. En producción, programa ambos comandos
+diariamente en Plesk con el Python y la carpeta de la aplicación. Sin esa
+tarea programada, la plataforma no ejecuta las alertas automáticamente.
+
 ## 4. Usuarios y roles
 
 Crea los usuarios desde *Usuarios* (solo el superusuario):

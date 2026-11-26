@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.urls import reverse
 
-from .models import EventoTicket, Ticket
+from .models import EventoTicket, Funcionario, Ticket
 
 T = EventoTicket.Tipo
 
@@ -26,9 +26,60 @@ def enlace_interno(ticket):
 
 def destinatarios_ti():
     """Correos del área de TI que reciben los avisos."""
-    from .management.commands.procesar_alertas_mantenimiento import DESTINATARIOS
+    return list(getattr(settings, "EMAIL_ALERTAS_TI", ()))
 
-    return list(DESTINATARIOS)
+
+def destinatarios_alerta_equipo(equipo):
+    """TI y funcionario actualmente responsable del equipo, si tiene correo.
+
+    El inventario conserva la cédula del responsable vigente; el correo se
+    consulta en el directorio de funcionarios. No se intenta adivinar un
+    destinatario usando nombres de texto.
+    """
+    destinatarios = destinatarios_ti()
+    cedula = (getattr(equipo, "responsable_cedula", "") or "").strip()
+    if cedula:
+        correo = (
+            Funcionario.objects.filter(cedula=cedula, activo=True)
+            .exclude(correo="")
+            .values_list("correo", flat=True)
+            .first()
+        )
+        if correo:
+            destinatarios.append(correo.strip())
+    # Mantener un único envío por dirección, ignorando mayúsculas.
+    unicos = {}
+    for correo in destinatarios:
+        correo = (correo or "").strip()
+        if correo:
+            unicos.setdefault(correo.casefold(), correo)
+    return list(unicos.values())
+
+
+def destinatarios_alerta_equipos(equipos):
+    """Destinatarios sin duplicados para una alerta de varios equipos."""
+    equipos = list(equipos)
+    unicos = {}
+    for correo in destinatarios_ti():
+        correo = (correo or "").strip()
+        if correo:
+            unicos.setdefault(correo.casefold(), correo)
+    cedulas = {
+        (getattr(equipo, "responsable_cedula", "") or "").strip()
+        for equipo in equipos
+    }
+    cedulas.discard("")
+    correos_por_cedula = dict(
+        Funcionario.objects.filter(
+            cedula__in=cedulas, activo=True,
+        ).exclude(correo="").values_list("cedula", "correo")
+    ) if cedulas else {}
+    for equipo in equipos:
+        cedula = (getattr(equipo, "responsable_cedula", "") or "").strip()
+        correo = correos_por_cedula.get(cedula, "").strip()
+        if correo:
+            unicos.setdefault(correo.casefold(), correo)
+    return list(unicos.values())
 
 
 def resumen(ticket):

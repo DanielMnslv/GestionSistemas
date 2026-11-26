@@ -10,10 +10,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from inventario.management.commands.procesar_alertas_mantenimiento import (
-    DESTINATARIOS,
-)
 from inventario.models import AvisoAntivirus, DetalleComputador
+from inventario.notificaciones import destinatarios_alerta_equipos
 
 
 DIAS_ANTICIPACION = 30
@@ -89,7 +87,9 @@ class Command(BaseCommand):
             subject=f"Antivirus por vencer: {len(pendientes)} equipo(s)",
             message=mensaje,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=DESTINATARIOS,
+            recipient_list=destinatarios_alerta_equipos(
+                d.equipo for d in pendientes
+            ),
             fail_silently=False,
         )
         with transaction.atomic():

@@ -262,6 +262,17 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
+# Destinatarios base de las alertas operativas. Puede cambiarse en el entorno
+# de producción sin editar código; separar varias direcciones con comas.
+EMAIL_ALERTAS_TI = [
+    correo.strip()
+    for correo in os.getenv(
+        'EMAIL_ALERTAS_TI',
+        'direcciontics@seguridadjano.com,d.jimenez@seguridadjano.com,janotec@seguridadjano.com',
+    ).split(',')
+    if correo.strip()
+]
+
 # Dirección con la que se abre JANO desde otros equipos (enlaces de los
 # correos de soporte).
 SITIO_URL = os.getenv('DJANGO_SITIO_URL', 'http://127.0.0.1:8080')
