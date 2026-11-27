@@ -6,7 +6,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
 {% endcomment %}
 
 {% block title %}{{ titulo }} | JANO Inventario{% endblock %}
-{% block body_class %}{% if request.GET.embed %}ficha-embed{% endif %}{% endblock %}
+{% block body_class %}{% if request.GET.embed or request.POST.pestanas_radio == "1" %}ficha-embed{% endif %}{% endblock %}
 
 
 {% block content %}
@@ -47,7 +47,7 @@ Vista asignacion_crear (views.py); con embed=1 se pinta dentro de la ficha.
 
         <form method="post" class="ficha-form-content">
             {% csrf_token %}
-            {% if request.GET.pestanas_radio %}
+            {% if request.GET.pestanas_radio == "1" or request.POST.pestanas_radio == "1" %}
             <input type="hidden" name="pestanas_radio" value="1">
             {% endif %}
 

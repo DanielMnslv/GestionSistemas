@@ -3623,9 +3623,18 @@ class ClientesPuestosYAntivirusTests(TestCase):
     def test_sin_puesto_exige_los_textos(self):
         respuesta = self.entregar(pestanas_radio="1")
         self.assertIn("puesto_asignado", respuesta.context["formulario"].errors)
+        self.assertContains(respuesta, '<input type="hidden" name="pestanas_radio" value="1">', html=True)
         self.assertFalse(AsignacionRadio.objects.exists())
 
-        self.entregar(cliente_asignado="Seguridad Jano", puesto_asignado="Sistemas")
+        respuesta = self.entregar(
+            cliente_asignado="Seguridad Jano", puesto_asignado="Sistemas",
+            pestanas_radio="1",
+        )
+        self.assertRedirects(
+            respuesta,
+            reverse("inventario:equipo_pestanas", args=[self.radio.equipo.placa])
+            + "?embed=1&pestanas_radio=1#entregas",
+        )
         self.assertEqual(AsignacionRadio.objects.get().puesto_asignado, "Sistemas")
 
     def test_puestos_json_solo_devuelve_activos_del_cliente(self):
@@ -3893,6 +3902,13 @@ class FichaRadioPestanasTests(TestCase):
             url, {"embed": "1", "pestanas_radio": "1"}
         )
         self.assertContains(respuesta, "Asignaciones y actas")
+        asignar = reverse("inventario:asignacion_crear")
+        self.assertContains(
+            respuesta,
+            f'<a class="rd-btn" href="{asignar}?radio={self.radio.pk}'
+            '&amp;embed=1&amp;pestanas_radio=1">Asignar radio</a>',
+            html=True,
+        )
         self.assertContains(respuesta, "Mantenimientos")
         self.assertContains(respuesta, "Editar datos")
         self.assertContains(respuesta, "Dar de baja")
@@ -3926,6 +3942,7 @@ class FichaRadioPestanasTests(TestCase):
         )
         self.assertContains(respuesta, "Acta de asignación de radio")
         self.assertContains(respuesta, "Registrar devolución del radio")
+        self.assertNotContains(respuesta, "Asignar radio")
         self.assertNotContains(respuesta, "Ver acta</span>")
 
     def test_boton_registrar_mantenimiento_respeta_permiso_de_tecnico(self):

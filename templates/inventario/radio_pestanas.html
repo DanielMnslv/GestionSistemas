@@ -24,13 +24,15 @@ Vista equipo_pestanas con pestanas_radio=1 (views_equipos.py) y _render_radio_ed
         <div class="rd-panel-heading rd-panel-heading-row">
             <div>
                 <h2>Asignaciones y actas</h2>
-                <p>Elige una asignaci?n de la lista para ver su acta completa al lado.</p>
+                <p>Elige una asignación de la lista para ver su acta completa al lado.</p>
             </div>
-            {% if not asignacion_activa and radio.activo and permisos.entregas %}
-            <a class="rd-btn" href="{% url 'inventario:asignacion_crear' %}?radio={{ radio.pk }}&amp;embed=1&amp;pestanas_radio=1">Asignar radio</a>
-            {% endif %}
         </div>
         <div class="rd-panel-body">
+            {% if not asignacion_activa and radio.activo and permisos.entregas %}
+            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+                <a class="rd-btn" href="{% url 'inventario:asignacion_crear' %}?radio={{ radio.pk }}&amp;embed=1&amp;pestanas_radio=1">Asignar radio</a>
+            </div>
+            {% endif %}
             {% if asignacion_activa and permisos.entregas %}
             <div class="rd-devolver">
                 <button class="rd-devolver-trigger" type="button" data-abrir-devolucion="modal-devolucion-radio-{{ radio.pk }}">Registrar devolución</button>
@@ -81,7 +83,7 @@ Vista equipo_pestanas con pestanas_radio=1 (views_equipos.py) y _render_radio_ed
                 {% endfor %}
             </ul>
             <div class="rd-visor" id="visor-actas-radio-{{ radio.pk }}">
-                <p class="rd-visor-vacio" data-acta-vacia>Haz clic en una asignaci?n para ver su acta.</p>
+                <p class="rd-visor-vacio" data-acta-vacia>Haz clic en una asignación para ver su acta.</p>
                 {% for asignacion in asignaciones %}
                 <div class="acta-embed rd-acta" id="acta-radio-{{ asignacion.pk }}" hidden>
                     {% include "inventario/_acta_radio.html" %}
